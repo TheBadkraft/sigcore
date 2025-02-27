@@ -1,0 +1,7 @@
+gcc -Wall -g -Iinclude -c test/test_mem.c -o build/test/test_mem.o
+gcc -Wall -g -Iinclude -c src/collections.c -o build/collections.o
+gcc -Wall -g -Iinclude -c src/list.c -o build/list.o
+gcc -Wall -g -Iinclude -c src/mem.c -o build/mem.o
+gcc build/test/test_mem.o  build/collections.o  build/list.o  build/mem.o -o build/test/test_mem  -lsigtest -L/usr/lib
+Running test: test_allocate [PASS]
+rm build/test/test_mem

@@ -1,0 +1,20 @@
+gcc -Wall -g -Iinclude -c test/test_list.c -o build/test/test_list.o
+gcc -Wall -g -Iinclude -c src/collections.c -o build/collections.o
+gcc -Wall -g -Iinclude -c src/list.c -o build/list.o
+gcc -Wall -g -Iinclude -c src/mem.c -o build/mem.o
+gcc build/test/test_list.o  build/collections.o  build/list.o  build/mem.o -o build/test/test_list  -lsigtest -L/usr/lib
+Running test: iterate_list 
+allocate list: expected {cap(3) count(3)} :: actual {cap(3) count(3)}
+Iterator created: 0x60b2aa110360
+hasNext true, iterCount=0, current=0x60b2aa110330, end=0x60b2aa110348
+next returned: 0x7ffc5fdaa580
+hasNext true, iterCount=1, current=0x60b2aa110338, end=0x60b2aa110348
+next returned: 0x7ffc5fdaa5c0
+hasNext true, iterCount=2, current=0x60b2aa110340, end=0x60b2aa110348
+next returned: 0x7ffc5fdaa5a0
+Iterated 3 items
+Post-loop next: (nil)
+
+iterate list: expected {count(3)} :: [PASS]
+[PASS]
+rm build/test/test_list
