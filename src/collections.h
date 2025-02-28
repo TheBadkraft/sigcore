@@ -1,19 +1,24 @@
 // collections.h
+/*
+ *	An internal header for collections utilities
+ */
 #ifndef COLLECTIONS_H
 #define COLLECTIONS_H
 
 #include "sigcore.h"
 
+/* assign constant size of (uintptr_t) */
 extern const size_t ADDR_SIZE;  			// declaration only
 
+/* iterator structure for traversing collections */
 struct iterator_s {
 	addr* current;
 	addr end;
 };
 
+/* Collections interface */
 typedef struct ICollections {
 	int (*count)(addr*, addr);
-	int (*capacity)(addr*, addr);
 	void (*clear)(addr*, addr);
 	void (*copyTo)(addr*, addr*, addr);	//	copy from -> to .. end
 	int (*indexOf)(addr*, addr, addr);

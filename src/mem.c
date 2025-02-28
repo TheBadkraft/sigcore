@@ -1,74 +1,75 @@
 // mem.c
+/*
+ * Implements a memory allocation tracker for sigcore.
+ * Provides the IMem interface for allocating and freeing memory using standard malloc/free,
+ * tracking allocations in a growable array of addr pointers. Uses a singleton struct with
+ * block as the storage array and end pointing past the last usable slot. Resizes by doubling
+ * capacity when full, leveraging Collections for slot management. Designed for lightweight
+ * memory tracking in sigcore without compaction or active count.
+ */
 #include "sigcore.h"
 #include "collections.h"
 #include <stdlib.h>
 
 const size_t DEFAULT_SIZE = 256;
 
-// Mem
 struct mem_s {
-	addr* bucket;
-	addr last;
-	addr cap;
+    addr* block;
+    addr end; /* Past last usable slot */
 } singleton_mem = {0};
 
-//	TODO: refactor to reduce code duplication - getCount, getCapacity, nextSlot, etc.
 static object allocMem(size_t size) {
-	object ptr = malloc(size);
-	if (ptr) {
-		if (!singleton_mem.bucket) {  // Lazy init
-			singleton_mem.bucket = malloc(10 * ADDR_SIZE);
-			singleton_mem.last = (addr)singleton_mem.bucket;
-			singleton_mem.cap = (addr)singleton_mem.bucket + 10 * ADDR_SIZE;
-			for (int i = 0; i < 10; i++) {
-				singleton_mem.bucket[i] = 0;
-			}
-		}
-		int count = Collections.count(singleton_mem.bucket, singleton_mem.last);
-		int capacity = Collections.capacity(singleton_mem.bucket, singleton_mem.cap);
-		int freeSlot = Collections.nextEmpty(singleton_mem.bucket, singleton_mem.last);
-		
-		if (freeSlot != -1) {
-			//	reuse free slot
-			singleton_mem.bucket[freeSlot] = (addr)ptr;
-		} else if (singleton_mem.last == singleton_mem.cap) {
-			//	resize and append
-			capacity = capacity ? capacity * 2 : 10;
-			addr* new_bucket = realloc(singleton_mem.bucket, capacity * ADDR_SIZE);
-			if (!new_bucket) {
-				free(ptr);
-				return NULL;
-			}
-			singleton_mem.bucket = new_bucket;
-			singleton_mem.last = (addr)singleton_mem.bucket + count * ADDR_SIZE;
-			singleton_mem.cap = (addr)singleton_mem.bucket + capacity * ADDR_SIZE;
-			for (int i = count; i < capacity; i++) {
-				singleton_mem.bucket[i] = 0;
-			}
-			singleton_mem.bucket[count] = (addr)ptr;
-			singleton_mem.last += ADDR_SIZE;
-		} else {
-			//	append to existing space
-			singleton_mem.bucket[count] = (addr)ptr;
-			singleton_mem.last += ADDR_SIZE;
-		}
-	}
-	
-	return ptr;
+    object ptr = malloc(size);
+    if (!ptr) return NULL;
+
+    if (!singleton_mem.block) {  // Lazy init
+        size_t initial_capacity = 10;
+        singleton_mem.block = malloc(initial_capacity * ADDR_SIZE);
+        if (!singleton_mem.block) {
+            free(ptr);
+            return NULL;
+        }
+        singleton_mem.end = (addr)singleton_mem.block + initial_capacity * ADDR_SIZE;
+        for (int i = 0; i < initial_capacity; i++) {
+            singleton_mem.block[i] = 0;
+        }
+    }
+
+    int capacity = Collections.count(singleton_mem.block, singleton_mem.end);
+    int freeSlot = Collections.nextEmpty(singleton_mem.block, singleton_mem.end);
+
+    if (freeSlot == -1) { /* Full—resize */
+        capacity = capacity ? capacity * 2 : 10;
+        addr* new_block = realloc(singleton_mem.block, capacity * ADDR_SIZE);
+        if (!new_block) {
+            free(ptr);
+            return NULL;
+        }
+        singleton_mem.block = new_block;
+        singleton_mem.end = (addr)singleton_mem.block + capacity * ADDR_SIZE;
+        for (int i = capacity / 2; i < capacity; i++) { /* Clear new slots */
+            singleton_mem.block[i] = 0;
+        }
+        freeSlot = capacity / 2; /* First new slot */
+    }
+
+    singleton_mem.block[freeSlot] = (addr)ptr;
+    return ptr;
 }
 
 static void freeMem(object ptr) {
-	int count = (singleton_mem.last - (addr)singleton_mem.bucket) / ADDR_SIZE;
-	for (int i = 0; i < count; i++) {
-		if (singleton_mem.bucket[i] == (addr)ptr) {
-			singleton_mem.bucket[i] = 0;  // Mark slot free
-			break;  // First match only
-		}
-	}
-	free(ptr);
+    if (!ptr || !singleton_mem.block) return;
+    int capacity = (singleton_mem.end - (addr)singleton_mem.block) / ADDR_SIZE;
+    for (int i = 0; i < capacity; i++) {
+        if (singleton_mem.block[i] == (addr)ptr) {
+            singleton_mem.block[i] = 0;
+            break;
+        }
+    }
+    free(ptr);
 }
 
 const IMem Mem = {
-	.alloc = allocMem,
-	.free = freeMem
+    .alloc = allocMem,
+    .free = freeMem
 };
