@@ -18,14 +18,14 @@ void new_list(void) {
 	int expCount = 0;
 	
 	list index = List.new(expEnd);
-	printf("list initialized bucket=%p last=%p end=%p\n", index->bucket, (addr*)index->last, (addr*)index->end);
+	printf("\nlist initialized bucket=%p last=%p end=%p\n", index->bucket, (addr*)index->last, (addr*)index->end);
 	
 	int actCount = List.count(index);
 	printf("retrieved count:    %d\n", actCount);
 	int actEnd = List.capacity(index);
 	printf("retrieved capacity: %d\n", actEnd);
 		
-	printf("\nallocate list: expected {end(%d) count(%d)} :: ", expEnd, expCount);
+	printf("allocate list: expected {end(%d) count(%d)} :: ", expEnd, expCount);
 	Assert.isTrue(index != NULL, "list (index) did not allocate");
 	Assert.areEqual(&expEnd, &actEnd, INT, "capacities are not equal");
 	Assert.areEqual(&expCount, &actCount, INT, "counts are not equal");
@@ -245,22 +245,20 @@ void iterate_list(void) {
 	Assert.areEqual(&expCount, &actCount, INT, "counts are not equal");
 
 	//	test iterator
-	iterator it = List.iterator(index);
+	iterator it = Array.getIterator(index, LIST);
 	printf("Iterator created: %p\n", (object)it);
 	Assert.isTrue(it != NULL, "iterator do not initialize");
 
 	int iterCount = 0;
-	addr expected[] = { (addr)&david, (addr)&mandy, (addr)&rick };
-	addr item;
+	object expected[] = { &david, &mandy, &rick };
+	object item;
 	while (Iterator.hasNext(it)) {
-		printf("hasNext true, iterCount=%d, current=%p, end=%p\n", 
-    	iterCount, it ? (object)it->current : NULL, it ? (object)it->end : NULL);
 		item = Iterator.next(it);
 		printf("next returned: %p\n", (object)item);
-		
+
 		if (iterCount >= expCount || item != expected[iterCount]) {
 			printf("[FAIL] Iterator item mismatch at index %d: expected %p, got %p\n", 
-				iterCount, (object)expected[iterCount], (object)item);
+				iterCount, expected[iterCount], item);
 			Iterator.free(it);
 			List.free(index);
 			return;
@@ -280,16 +278,15 @@ void iterate_list(void) {
     
 	// Verify no extra items
 	item = Iterator.next(it);
-	printf("Post-loop next: %p\n", (object)item);
-	if (item != 0) {
-		printf("[FAIL] Iterator returned extra item: %p\n", (object)item);
+	printf("Post-loop next: %p\n", item);
+	if (item != NULL) {
+		printf("[FAIL] Iterator returned extra item: %p\n", item);
 		Iterator.free(it);
 		List.free(index);
 		return;
 	}
     
 	printf("\niterate list: expected {count(%d)} :: [PASS]\n", expCount);
-
 
 	Iterator.free(it);
 	List.free(index);

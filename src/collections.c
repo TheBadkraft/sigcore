@@ -8,40 +8,91 @@
  */
 #include "collections.h"
 #include <stdlib.h>
+#include <string.h>
 
 #include <stdio.h>
 
 const size_t ADDR_SIZE = sizeof(addr);
 
 //	iterator	==================================================================
-/* Returns an iterator for traversing from start to end */
-static iterator getIterator(addr* start, addr end) {
+
+/* iterator structure for traversing collections */
+struct iterator_s {
+	object current;
+	object end;
+	int step;
+};
+
+iterator create_iterator(object start, object end, int step) {
 	iterator it = Mem.alloc(sizeof(struct iterator_s));
 	if (it) {
 		it->current = start;
 		it->end = end;
+		it->step = step;
 	}
 	
 	return it;
 }
+/* Returns an iterator for traversing collection */
+static iterator getIterator(object collection, ITER_TYPE type) {
+	if (!collection) return NULL;
+	
+	object start = NULL;
+	object end = NULL;
+	int step = 0;
+	
+	switch (type) {
+	case LIST:
+		list l = (list)collection;
+		if (!l->bucket) return NULL;
+		start = l->bucket;
+		end = (object)l->last;
+		step = ADDR_SIZE;
+		
+		break;
+	case STRB:
+		string_builder sb = (string_builder)collection;
+		if (!sb->buffer) return NULL;
+		start = sb->buffer;
+		end = (char*)sb->buffer + StringBuilder.length(sb);
+		step = 1;
+		
+		break;
+	default:
+		return NULL;
+	}
+	
+	return create_iterator(start, end, step);
+}
 /* Returns the next item in the iteration, or 0 if at the end */
-static addr getNext(iterator it) {
-	if (!it || (addr)it->current >= it->end) return 0;
-	addr value = *it->current;
-	it->current++;
+static object getNext(iterator it) {
+	if (!it || it->current >= it->end) return NULL;
+	object value = (object)*(addr*)it->current;
+	it->current = (char*)it->current + it->step;
 	
 	return value;
 }
 /* Returns 1 if there are more items to iterate, 0 otherwise */
 static int hasNext(iterator it) {
 	if (!it) return 0;
-	return (addr)it->current < it->end;
+	return it->current < it->end;
 }
 /* Frees the iterator structure */
 static void freeIterator(iterator it) {
 	if (it) Mem.free(it);
 }
 
+//	bytearray		================================================================
+/* Clears byte array */
+static void clearByteArray(object start, size_t bytes) {
+	if (!start || bytes <= 0) return;
+	memset(start, 0, bytes);
+}
+/* Copies byte array to destination */
+static void copyByteArrayTo(object source, object dest, size_t bytes) {
+	if(!source || !dest) return;
+	memcpy(dest, source, bytes);
+}
 //	collections	================================================================
 /* Returns the number of addr elements between start and end */
 static int countSpan(addr* start, addr end) {
@@ -66,13 +117,18 @@ static void copyCollectionTo(addr* source, addr* dest, addr end) {
 	}
 }
 /* Returns the index of the first occurrence of item, or -1 if not found */
-static int getIndex(addr* start, addr end, addr item) {
+static int getIndex(addr* start, addr end, object item) {
 	if (!start) return -1;
-
-	iterator it = getIterator(start, end);
+	//printf("\niterator looking for %p\n", item);
+	
+	iterator it = create_iterator(start, (object)end, ADDR_SIZE);
 	int i = 0;
+	object current = NULL;
 	while(hasNext(it)) {
-		if (getNext(it) == item) {
+		current = getNext(it);
+		//printf("iterator[%d] -> %p\n", i, current);
+		
+		if (current == item) {
 			freeIterator(it);
 			return i;
 		}
@@ -127,6 +183,11 @@ static int getNextEmpty(addr* start, addr end) {
 	return -1;
 }
 
+const IByteArray ByteArray = {
+	.clear = clearByteArray,
+	.copyTo = copyByteArrayTo,
+};
+
 const ICollections Collections = {
 	.count = countSpan,
 	.clear = clearCollection,
@@ -135,8 +196,11 @@ const ICollections Collections = {
 	.getAtIndex = getAtIndex,
 	.removeAtIndex = removeItemAt,
 	.compact = compactCollection,
-	.nextEmpty = getNextEmpty,
-	.iterator = getIterator
+	.nextEmpty = getNextEmpty
+};
+
+const IArray Array = {
+	.getIterator = getIterator
 };
 
 const IIterator Iterator = {
