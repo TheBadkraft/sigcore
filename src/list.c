@@ -55,8 +55,16 @@ static void clearList(list self) {
 	self->last = (addr)self->bucket;
 }
 /* Returns an iterator for traversing the list’s items */
-static iterator getListIterator(list self) {
-	return Collections.iterator(self->bucket, self->last);
+static iterator getRangeIterator(list self, int start, int count) {
+	if (!self || !self->bucket || start < 0 || count < 0) return NULL;
+	int total = getCount(self);
+	if (start >= total) return NULL;	// bounds check
+	//	adjust count to actual range
+	count = (count > (total - start)) ? (total - start) : count;
+	
+	object range_start = self->bucket + start;
+	object range_end = self->bucket + start + count;
+	return create_iterator(range_start, range_end, ADDR_SIZE);
 }
 /* Frees the list’s bucket and the list structure itself */
 static void freeList(list self) {
@@ -144,7 +152,7 @@ static int copyToList(list source, list dest, int start, int count) {
 static int getIndexOf(list self, object item) {
 	int res = -1;
 	if (self) {
-		res = Collections.indexOf(self->bucket, self->last, (addr)item);
+		res = Collections.indexOf(self->bucket, self->last, item);
 	}
 	
 	return res;
@@ -159,7 +167,7 @@ static object getItemAt(list self, int index) {
 static void removeItem(list self, object item) {
 	if (!self) return;
 	
-	int index = Collections.indexOf(self->bucket, self->last, (addr)item);
+	int index = Collections.indexOf(self->bucket, self->last, item);
 	if (index != -1) {
 		//	we found the item
 		Collections.removeAtIndex(self->bucket, self->last, index);
@@ -199,5 +207,5 @@ const IList List = {
 	.count = getCount,
 	.capacity = getCapacity,
 	.clear = clearList,
-	.iterator = getListIterator
+	.iterateRange = getRangeIterator
 };
