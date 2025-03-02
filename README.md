@@ -94,31 +94,3 @@ Use Doxygen comments in source/header files—see sigcore.h for style.
 
 License
 [Specify your license here—e.g., MIT, GPL, etc.]
-
----
-
-### Why This Works
-- **Doxygen Integration**: Pulled `@brief` and `@details` from `sigcore.h`—e.g., `IMem`’s "Provides allocation and deallocation" becomes the memory section.
-- **Markdown Symbols**:
-  - `#`—Headings (e.g., `# sigcore Library`).
-  - `*`—Bullets (e.g., `* Allocates and frees memory`).
-  - `````—Code blocks (e.g., ```c ... ```).
-- **Manual**: No auto-tool—Doxygen’s HTML guided content, adapted to Markdown.
-
-#### Adjustments
-- **`expLength`**: Test uses `strlen`—19 in output vs. 18—`appendf` matches now, test reflects it.
-- **No Escaping**: Symbols (`#`, `*`) render as-is in GitHub—intent met.
-
----
-
-### Advice
-- **Save**: Add as `README.md` in repo root.
-- **Push**:
-  ```bash
-  git add README.md
-  git commit -m "Add README.md with Doxygen integration"
-  git push
-Enhance: Add more Doxygen details (e.g., iterateRange)—want specifics?
-Doxygen: Run doxygen—copy more from docs/html if needed.
-You’re golden—README.md’s live with Doxygen flair! Next step? Crushing it!
- 
