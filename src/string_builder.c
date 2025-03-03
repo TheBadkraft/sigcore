@@ -64,7 +64,7 @@ static void appendf(string_builder sb, string format, ...) {
 	va_list args_copy;
 	va_copy(args_copy, args);
 	int len = vsnprintf(NULL, 0, format, args_copy);
-	printf("\nappendf: expected length=%d\n", len);
+	//printf("\nappendf: expected length=%d\n", len);
 	
 	va_end(args_copy);
 	if (len < 0) {
@@ -73,23 +73,23 @@ static void appendf(string_builder sb, string format, ...) {
 	}
 	size_t required_len = (size_t)len;
 	size_t current_len = sb->last + 1 - (addr)sb->buffer; /* Fix offset */
-	printf("appendf: current length=%ld\n", current_len);
+	//printf("appendf: current length=%ld\n", current_len);
 	
 	if (sb->last + required_len + 1 >= sb->end) {
-		printf("appendf: resizing ");
+		//printf("appendf: resizing ");
 		size_t old_capacity = sb->end - (addr)sb->buffer;
 		size_t new_capacity = old_capacity ? old_capacity * 2 : 16;
-		printf("capacity=(%ld) -> (%ld) (curr_len + req_len=%ld)\n", old_capacity, new_capacity, current_len + required_len);
+		//printf("capacity=(%ld) -> (%ld) (curr_len + req_len=%ld)\n", old_capacity, new_capacity, current_len + required_len);
 		
 		while (new_capacity < current_len + required_len + 1) new_capacity *= 2;
-		printf("appendf: adj new_cap=%ld\n", new_capacity);
+		//printf("appendf: adj new_cap=%ld\n", new_capacity);
 		
 		char* new_buffer = Mem.alloc(new_capacity + 1);
 		if (!new_buffer) {
 			va_end(args);
 			return;
 		}
-		printf("appendf: allocated new buffer [%s]\n", new_buffer ? "TRUE" : "FALSE");
+		//printf("appendf: allocated new buffer [%s]\n", new_buffer ? "TRUE" : "FALSE");
 		
 		ByteArray.copyTo(sb->buffer, new_buffer, current_len); /* Byte-based */
 		ByteArray.clear(new_buffer + current_len, new_capacity + 1 - current_len); /* Byte-based */
@@ -101,8 +101,8 @@ static void appendf(string_builder sb, string format, ...) {
 	}
 	
 	char* write_pos = (char*)sb->last + 1; /* Start after last char */
-	size_t pos = write_pos - sb->buffer;
-	printf("appendf: write_pos=%lu\n", pos);
+	//size_t pos = write_pos - sb->buffer;
+	//printf("appendf: write_pos=%lu\n", pos);
 	
 	len = vsnprintf(write_pos, required_len + 1, format, args);
 	sb->last = (addr)(write_pos + len - 1); /* Point to last char, not \0 */
@@ -151,15 +151,24 @@ static string toString(string_builder sb) {
 	string result = Mem.alloc(len + 1);
 	if (!result) return NULL;
 	
-	printf("\n");
-	printf("source:   buffer=%lu last=%lu count=%ld\n", (addr)sb->buffer, sb->last, len);
-	printf("				 %p	   %p		%ld\n", sb->buffer, (char*)sb->last, (char*)sb->last - sb->buffer);
-	printf("dest:	 buffer=%lu last=%lu count=%ld\n", (addr)result, (addr)result + len, ((addr)result + len) - (addr)result);
-	printf("				 %p	   %p		%ld\n", (addr*)sb->buffer, (addr*)result, (addr)(result + len) - (addr)result);
+	//printf("\n");
+	//printf("source:   buffer=%lu last=%lu count=%ld\n", (addr)sb->buffer, sb->last, len);
+	//printf("				 %p	   %p		%ld\n", sb->buffer, (char*)sb->last, (char*)sb->last - sb->buffer);
+	//printf("dest:	 buffer=%lu last=%lu count=%ld\n", (addr)result, (addr)result + len, ((addr)result + len) - (addr)result);
+	//printf("				 %p	   %p		%ld\n", (addr*)sb->buffer, (addr*)result, (addr)(result + len) - (addr)result);
 	
 	ByteArray.copyTo(sb->buffer, result, len + 1);
-	printf("result:   length=%ld\n", strlen(result));
+	//printf("result:   length=%ld\n", strlen(result));
 	return result;
+}
+/* Writes the buffer contents to the given stream */
+static void writeToStream(string_builder sb, FILE* stream) {
+ if (!sb || !sb->buffer || !stream) return;
+ size_t len = getLength(sb);
+ 
+ if (len > 0) {
+ 	fwrite(sb->buffer, 1, len, stream);
+ }
 }
 /* Returns the current number of characters in the buffer */
 static size_t getLength(string_builder sb) {
@@ -210,6 +219,7 @@ const IStringBuilder StringBuilder = {
 	.appendLine = appendLine,
 	.clear = clear,
 	.toString = toString,
+	.toStream = writeToStream,
 	.length = getLength,
 	.capacity = getCapacity,
 	.setCapacity = setCapacity,

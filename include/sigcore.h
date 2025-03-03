@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 
 /** @brief	Generic pointer type for objects */
 typedef void* object;
@@ -61,6 +62,7 @@ typedef struct IStringBuilder {
 	void (*appendLine)(string_builder, string);   /**< Appends a string followed by a newline, or just a newline if NULL. */
 	void (*clear)(string_builder);								/**< Resets the buffer to empty. */
 	string (*toString)(string_builder);						/**< Returns the concatenated string (caller frees). */
+	void (*toStream)(string_builder, FILE*);			/**< Writes the string buffer to the given stream */
 	size_t (*length)(string_builder);							/**< Returns the current string length. */
 	size_t (*capacity)(string_builder);						/**< Returns the current capacity. */
 	void (*setCapacity)(string_builder, size_t);	/**< Adjusts the capacity, preserving content. */
