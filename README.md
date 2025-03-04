@@ -1,32 +1,3 @@
-
-From sigcore.h (latest):
-IMem:
-c
-/**
- * @brief Interface for memory management in sigcore.
- * @details Provides allocation and deallocation functions for all sigcore components.
- */
-typedef struct IMem {
-    object (*alloc)(size_t size); /**< Allocates memory of the specified size. */
-    void (*free)(object ptr);     /**< Frees previously allocated memory. */
-} IMem;
-IList:
-c
-/**
- * @brief Interface for managing dynamic lists of objects.
- * @details Defines operations for creating, modifying, and querying a list of addr pointers,
- *          leveraging Mem for memory management and Iterator for traversal.
- */
-IStringBuilder:
-c
-/**
- * @brief Interface for building strings efficiently in sigcore.
- * @details Methods to append text, manage capacity, and retrieve the final string,
- *          optimized to avoid repeated allocations.
- */
-README.md for sigcore
-Here’s a generated README.md using Doxygen content, formatted with Markdown symbols:
-markdown
 # sigcore Library
 
 ## Overview
