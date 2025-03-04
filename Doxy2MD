@@ -1,0 +1,5 @@
+# Default target
+default: sigcore
+
+# Sigcore header target
+sigcore: include/sigcore.h outdir=docs
