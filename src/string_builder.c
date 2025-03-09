@@ -13,8 +13,9 @@
 #include <string.h>
 #include <stdarg.h>
 
-static size_t getLength(string_builder sb);
-static size_t getCapacity(string_builder sb);
+static size_t getLength(string_builder);
+static size_t getCapacity(string_builder);
+static void append(string_builder, string);
 
 /* Initializes a string builder with the given capacity, allocating buffer + 1 for null */
 static string_builder newStringBuilder(size_t capacity) {
@@ -30,6 +31,13 @@ static string_builder newStringBuilder(size_t capacity) {
 	sb->last = (addr)sb->buffer - 1;
 	sb->end = (addr)sb->buffer + capacity;
 	sb->buffer[0] = '\0';
+	return sb;
+}
+/* Initializes a new string builder from char* buffer. */
+static string_builder newSbFromCharBuffer(string str) {
+	string_builder sb = newStringBuilder(strlen(str) + 1);
+	append(sb, str);
+	
 	return sb;
 }
 /* Appends a plain string to the buffer, resizing if necessary */
@@ -56,7 +64,7 @@ static void append(string_builder sb, string str) {
 	((char*)sb->last)[1] = '\0';
 }
 /* Appends a formatted string using printf-style specifiers, resizing if necessary */
-static void appendf(string_builder sb, string format, ...) {
+static void appendFormat(string_builder sb, string format, ...) {
 	if (!sb || !format) return;
 	va_list args;
 	va_start(args, format);
@@ -120,8 +128,10 @@ static void appendLine(string_builder sb, string str) {
 		while (new_capacity < current_len + len) new_capacity *= 2;
 		char* new_buffer = Mem.alloc(new_capacity + 1);
 		if (!new_buffer) return;
-		Collections.copyTo((addr*)sb->buffer, (addr*)new_buffer, sb->last + 1);
-		Collections.clear((addr*)(new_buffer + current_len), (addr)(new_buffer + new_capacity + 1));
+		
+		ByteArray.copyTo(sb->buffer, new_buffer, current_len);  // Byte-based
+		ByteArray.clear(new_buffer + current_len, new_capacity + 1 - current_len);
+		
 		Mem.free(sb->buffer);
 		sb->last = (addr)new_buffer + current_len - 1;
 		sb->buffer = new_buffer;
@@ -135,6 +145,76 @@ static void appendLine(string_builder sb, string str) {
 	((char*)sb->last)[1] = '\n';
 	((char*)sb->last)[2] = '\0';
 	sb->last++; /* Now points to \n */
+}
+/* Appends a newline followed by the string */
+static void lineAppendStr(string_builder sb, string str) {
+	if (!sb) return;
+	size_t len = str ? strlen(str) + 1 : 1; /* +1 for \n */
+	size_t current_len = sb->last + 1 - (addr)sb->buffer;
+	size_t extra = current_len > 0 ? 1 : 0;  // \n if not empty
+	
+	if ((addr)sb->last + len + extra + 1 > sb->end) {
+		size_t old_capacity = sb->end - (addr)sb->buffer;
+		size_t new_capacity = old_capacity ? old_capacity * 2 : 16;
+		while (new_capacity < current_len + len + extra + 1) new_capacity *= 2;
+		char* new_buffer = Mem.alloc(new_capacity + 1);
+		if (!new_buffer) return;
+		ByteArray.copyTo(sb->buffer, new_buffer, current_len);
+		ByteArray.clear(new_buffer + current_len, new_capacity + 1 - current_len);
+		Mem.free(sb->buffer);
+		sb->last = (addr)new_buffer + current_len - 1;
+		sb->buffer = new_buffer;
+		sb->end = (addr)new_buffer + new_capacity;
+	}
+
+	char* write_pos = (char*)sb->last + 1;
+	if (current_len > 0) *write_pos++ = '\n';
+	if (str) {
+		memcpy(write_pos, str, len - 1);
+		write_pos += len - 1;
+	}
+	*write_pos = '\0';
+	sb->last = (addr)(write_pos - 1);
+}
+
+static void lineAppendFmt(string_builder sb, string format, ...) {
+	if (!sb || !format) return;
+	va_list args;
+	va_start(args, format);
+	va_list args_copy;
+	va_copy(args_copy, args);
+	int len = vsnprintf(NULL, 0, format, args_copy);
+	va_end(args_copy);
+	if (len < 0) {
+		va_end(args);
+		return;
+	}
+	size_t required_len = (size_t)len + 1;  // +1 for \0
+	size_t current_len = sb->last + 1 - (addr)sb->buffer;
+	size_t extra = current_len > 0 ? 1 : 0;  // \n if not empty
+	
+	if ((addr)sb->last + required_len + extra + 1 > sb->end) {
+		size_t old_capacity = sb->end - (addr)sb->buffer;
+		size_t new_capacity = old_capacity ? old_capacity * 2 : 16;
+		while (new_capacity < current_len + required_len + extra + 1) new_capacity *= 2;
+		char* new_buffer = Mem.alloc(new_capacity + 1);
+		if (!new_buffer) {
+			va_end(args);
+			return;
+		}
+		ByteArray.copyTo(sb->buffer, new_buffer, current_len);
+		ByteArray.clear(new_buffer + current_len, new_capacity + 1 - current_len);
+		Mem.free(sb->buffer);
+		sb->last = (addr)new_buffer + current_len - 1;
+		sb->buffer = new_buffer;
+		sb->end = (addr)new_buffer + new_capacity;
+	}
+
+	char* write_pos = (char*)sb->last + 1;
+	if (current_len > 0) *write_pos++ = '\n';
+	vsnprintf(write_pos, required_len, format, args);
+	sb->last = (addr)(write_pos + len - 1);
+	va_end(args);
 }
 /* Resets the buffer to empty, clearing content and resetting last */
 static void clear(string_builder sb) {
@@ -214,9 +294,12 @@ static void free_string_builder(string_builder sb) {
 
 const IStringBuilder StringBuilder = {
 	.new = newStringBuilder,
+	.snew = newSbFromCharBuffer,
 	.append = append,
-	.appendf = appendf,
-	.appendLine = appendLine,
+	.appendf = appendFormat,
+	.appendl = appendLine,
+	.lappends = lineAppendStr,
+	.lappendf = lineAppendFmt,
 	.clear = clear,
 	.toString = toString,
 	.toStream = writeToStream,

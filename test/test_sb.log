@@ -1,27 +1,26 @@
-gcc -Wall -g -fPIC -Iinclude -c src/string_builder.c -o build/string_builder.o
+gcc -Wall -g -fPIC -Iinclude -c test/test_stringbuilder.c -o build/test/test_stringbuilder.o
 gcc build/test/test_stringbuilder.o  build/collections.o  build/list.o  build/mem.o  build/string_builder.o -o build/test/test_stringbuilder -lsigtest -L/usr/lib
 Running test: new_stringbuilder [PASS]
-Running test: sb_to_string 
-source:   buffer=97367925191472 last=97367925191483 count=12
-				 0x588e3c97f330	   0x588e3c97f33b		11
-dest:	 buffer=97367925191504 last=97367925191516 count=12
-				 0x588e3c97f330	   0x588e3c97f350		12
-result:   length=12
-[PASS]
+Running test: sb_to_string [PASS]
 Running test: append_sb 
  length=5[PASS]
-Running test: appendf_sb 
-appendf: expected length=19
-appendf: current length=0
-appendf: resizing capacity=(16) -> (32) (curr_len + req_len=19)
-appendf: adj new_cap=32
-appendf: allocated new buffer [TRUE]
-appendf: write_pos=0
-
-source:   buffer=97367925191536 last=97367925191554 count=19
-				 0x588e3c97f370	   0x588e3c97f382		18
-dest:	 buffer=97367925191472 last=97367925191491 count=19
-				 0x588e3c97f370	   0x588e3c97f330		19
-result:   length=19
-[PASS]
+Running test: appendf_sb [PASS]
+Running test: snew_sb 
+base string 'A char* buffer' length=14
+sb string   'A char* buffer' length=14  : [PASS]
+Running test: appendl_sb 
+output length=33
+ (output)
+'A char* bufferwith appended line
+' length=33  : [PASS]
+Running test: lappends_sb 
+output length=33
+ (output)
+'A char* buffer
+with appended line' length=33  : [PASS]
+Running test: lappendf_sb 
+output length=45
+ (output)
+'A char* buffer
+with appended line (formatted)' length=45  : [PASS]
 rm build/test/test_stringbuilder
