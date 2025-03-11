@@ -14,15 +14,13 @@
 #### typedef struct IMem
 Interface for memory management in sigcore.
 
-Provides allocation and deallocation functions for all sigcore components.
-
+Provides allocation and deallocation functions for all sigcore components.  
 ``` c
 typedef struct IMem  
    /* Allocates memory of the specified size. */  
-	object (*alloc)(size_t);
-	/* Frees previously allocated memory. */  
-	void (*free)(object);	
-	
+   object (*alloc)(size_t);
+   /* Frees previously allocated memory. */  
+   void (*free)(object);	
 ```  
 #### typedef struct IList
 Interface for managing dynamic lists of objects.
