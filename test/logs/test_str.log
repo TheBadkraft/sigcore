@@ -1,0 +1,8 @@
+gcc -Wall -g -fPIC -Iinclude -DTSTDBG -c test/test_string.c -o build/test/test_string.o
+gcc build/test/test_string.o  build/collections.o  build/list.o  build/mem.o  build/string_builder.o  build/string.o -o build/test/test_string -lsigtest -L/usr/lib
+Running test: get_length [PASS]
+Running test: copy_string [PASS]
+Running test: concat_string [PASS]
+Running test: compare_string [PASS]
+Running test: format_string [PASS]
+rm build/test/test_string

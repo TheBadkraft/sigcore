@@ -3,6 +3,18 @@
 #include "sigcore.h"
 #include <string.h>
 
+#include "../src/sigdebug.h"  // Adjust path as needed
+
+void check_debug(void) {
+    #ifdef TSTDBG
+        flogf(stdout, "TSTDBG is defined!\n");
+        Assert.isTrue(1, NULL);
+    #else
+        flogf(stdout, "TSTDBG is NOT defined!\n");
+        Assert.isTrue(0, NULL);
+    #endif
+}
+
     // Assert.isTrue(condition, "fail message");
     // Assert.isFalse(condition, "fail message");
     // Assert.areEqual(obj1, obj2, INT, "fail message");
@@ -24,7 +36,7 @@ void new_stringbuilder(void) {
 	StringBuilder.free(sb);
 }
 /* stringbuilder to string */
-void sb_to_string(void) {
+void sb_tostring(void) {
 	string expOutput = "Hello, World";
 	
 	string_builder sb = StringBuilder.new(16);
@@ -37,8 +49,8 @@ void sb_to_string(void) {
 	Mem.free(actOutput);
 	StringBuilder.free(sb);
 }
-/* append plain string */
-void append_sb(void) {
+/* append plain string to empty sb */
+void append_empty_sb(void) {
 	int expLength = 0;
 	int expCapacity = 16;
 	string_builder sb = StringBuilder.new(expCapacity);
@@ -48,10 +60,29 @@ void append_sb(void) {
 	StringBuilder.append(sb, hello);
 	
 	int actLength = StringBuilder.length(sb);
-	printf("\n length=%d", actLength);
+	flogf(stdout, "\n length=%d", actLength);
 	Assert.areEqual(&expLength, &actLength, INT, "Length should be 5");
 	
 	StringBuilder.free(sb);
+}
+/* append plain string to populated sb */
+void append_populated_sb(void) {
+	string str1 = "Hello, ";
+	string str2 = "World!";
+	string expOutput = "Hello, World!";
+	printf("\n");
+	fflush(stdout);
+	
+	// string result = String.concat(str1, str2);
+	flogf(stdout, "new sb from '%s' -> ", str1);
+	string_builder sb = StringBuilder.snew(str1);
+	flogf(stdout, "sb=%s", StringBuilder.toString(sb));
+	
+	flogf(stdout, "append sb '%s' ->", str2);
+	StringBuilder.append(sb, str2);
+	string result = StringBuilder.toString(sb);
+	
+	flogf(stdout, "expected=%s\n  concat=%s : ", expOutput, result);
 }
 /* append formatted string */
 void appendf_sb(void) {
@@ -78,13 +109,13 @@ void snew_sb(void) {
 	string str = "A char* buffer";
 	int expLength = strlen(str);
 	
-	printf("\nbase string '%s' length=%d\n", str, expLength);
+	flogf(stdout, "\nbase string '%s' length=%d\n", str, expLength);
 	
 	string_builder sb = StringBuilder.snew(str);
 	size_t actLength = StringBuilder.length(sb);
 	
 	Assert.isTrue(expLength == actLength, "length mismatch");
-	printf("sb string   '%s' length=%ld  : ", StringBuilder.toString(sb), actLength);
+	flogf(stdout, "sb string   '%s' length=%ld  : ", StringBuilder.toString(sb), actLength);
 	
 	StringBuilder.free(sb);
 }
@@ -94,7 +125,7 @@ void appendl_sb(void) {
 	string appStr = "with appended line";
 	
 	int expLength = snprintf(NULL, 0, "%s%s\n", str, appStr);
-	printf("\noutput length=%d\n", expLength);
+	flogf(stdout, "\noutput length=%d\n", expLength);
 	
 	string_builder sb = StringBuilder.snew(str);
 	StringBuilder.appendl(sb, appStr);
@@ -105,7 +136,7 @@ void appendl_sb(void) {
 	
 	Assert.isTrue(expLength == actLength, "length mismatch");
 	Assert.isTrue(strcmp(expOutput, actOutput) == 0, "string mismatch");
-	printf(" (output)\n'%s' length=%ld  : ", actOutput, actLength);
+	flogf(stdout, " (output)\n'%s' length=%ld  : ", actOutput, actLength);
 	
 	Mem.free(actOutput);
 	StringBuilder.free(sb);
@@ -116,7 +147,7 @@ void lappends_sb(void) {
 	string appStr = "with appended line";
 	
 	int expLength = snprintf(NULL, 0, "%s\n%s", str, appStr);
-	printf("\noutput length=%d\n", expLength);
+	flogf(stdout, "\noutput length=%d\n", expLength);
 	
 	string_builder sb = StringBuilder.snew(str);
 	StringBuilder.lappends(sb, appStr);
@@ -127,7 +158,7 @@ void lappends_sb(void) {
 	
 	Assert.isTrue(expLength == actLength, "length mismatch");
 	Assert.isTrue(strcmp(expOutput, actOutput) == 0, "string mismatch");
-	printf(" (output)\n'%s' length=%ld  : ", actOutput, actLength);
+	flogf(stdout, " (output)\n'%s' length=%ld  : ", actOutput, actLength);
 	
 	Mem.free(actOutput);
 	StringBuilder.free(sb);
@@ -139,7 +170,7 @@ void lappendf_sb(void) {
 	string fmtStr = "(formatted)";
 	
 	int expLength = snprintf(NULL, 0, "%s\n%s %s", str, appStr, fmtStr);
-	printf("\noutput length=%d\n", expLength);
+	flogf(stdout, "\noutput length=%d\n", expLength);
 	
 	string_builder sb = StringBuilder.snew(str);
 	StringBuilder.lappendf(sb, "%s %s", appStr, fmtStr);
@@ -150,7 +181,7 @@ void lappendf_sb(void) {
 	
 	Assert.isTrue(expLength == actLength, "length mismatch");
 	Assert.isTrue(strcmp(expOutput, actOutput) == 0, "string mismatch");
-	printf(" (output)\n'%s' length=%ld  : ", actOutput, actLength);
+	flogf(stdout, " (output)\n'%s' length=%ld  : ", actOutput, actLength);
 	
 	Mem.free(actOutput);
 	StringBuilder.free(sb);
@@ -158,9 +189,11 @@ void lappendf_sb(void) {
 
 // Register test cases
 __attribute__((constructor)) void init_sigtest_tests(void) {
+//	register_test("check_debug", check_debug);
 	register_test("new_stringbuilder", new_stringbuilder);
-	register_test("sb_to_string", sb_to_string);
-	register_test("append_sb", append_sb);
+	register_test("sb_tostring", sb_tostring);
+	register_test("append_empty_sb", append_empty_sb);
+	register_test("append_populated_sb", append_populated_sb);
 	register_test("appendf_sb", appendf_sb);
 	register_test("snew_sb", snew_sb);
 	register_test("appendl_sb", appendl_sb);
