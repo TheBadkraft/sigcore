@@ -31,8 +31,8 @@ typedef enum { LIST, STRB } ITER_TYPE;
  * @details Provides allocation and deallocation functions for all sigcore components.
  */
 typedef struct IMem {
-object (*alloc)(size_t size);	/**< Allocates memory of the specified size. */
-	void (*free)(object ptr);	/**< Frees previously allocated memory. */
+	object (*alloc)(size_t);	/**< Allocates memory of the specified size. */
+	void (*free)(object);		/**< Frees previously allocated memory. */
 } IMem;
 /**
  * @brief Interface for managing dynamic lists of objects.
