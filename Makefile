@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -g -fPIC -I$(INCLUDE_DIR)
 LDFLAGS = -shared
-TST_CFLAGS = $(CFLAGS)
+TST_CFLAGS = $(CFLAGS) -DTSTDBG
 TST_LDFLAGS = -lsigtest -L/usr/lib
 
 SRC_DIR = src

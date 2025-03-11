@@ -7,18 +7,12 @@
  * and integrates with Mem and Collections for memory management and buffer operations. Ideal for text
  * construction in sigcore applications like rendering or logging.
  */
-#include "sigcore.h"
-#include "collections.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
+#include "strings.h"
 
-static size_t getLength(string_builder);
 static size_t getCapacity(string_builder);
-static void append(string_builder, string);
 
 /* Initializes a string builder with the given capacity, allocating buffer + 1 for null */
-static string_builder newStringBuilder(size_t capacity) {
+string_builder sb_new(size_t capacity) {
 	if (capacity == 0) capacity = 16;
 	string_builder sb = Mem.alloc(sizeof(struct string_builder_s));
 	if (!sb) return NULL;
@@ -34,25 +28,31 @@ static string_builder newStringBuilder(size_t capacity) {
 	return sb;
 }
 /* Initializes a new string builder from char* buffer. */
-static string_builder newSbFromCharBuffer(string str) {
-	string_builder sb = newStringBuilder(strlen(str) + 1);
-	append(sb, str);
+string_builder sb_from_string(string str) {
+	string_builder sb = sb_new(strlen(str) + 1);
+	sb_append(sb, str);
 	
 	return sb;
 }
 /* Appends a plain string to the buffer, resizing if necessary */
-static void append(string_builder sb, string str) {
+void sb_append(string_builder sb, string str) {
 	if (!sb || !str) return;
 	size_t len = strlen(str);
-	size_t current_len = sb->last - (addr)sb->buffer + 1;
+	size_t current_len = sb_get_length(sb);
+	DEBUG_PRINT(stderr, "curLen=%ld addLen=%ld", current_len, len);
+	
 	if (sb->last + len + 1 >= sb->end) {
 		size_t old_capacity = sb->end - (addr)sb->buffer;
 		size_t new_capacity = old_capacity ? old_capacity * 2 : 16;
+		DEBUG_PRINT(stderr, "oldCap=%ld newCap=%ld", old_capacity, new_capacity);
+		
 		while (new_capacity < current_len + len) new_capacity *= 2;
 		char* new_buffer = Mem.alloc(new_capacity + 1);
 		if (!new_buffer) return;
-		Collections.copyTo((addr*)sb->buffer, (addr*)new_buffer, sb->last + 1);
-		Collections.clear((addr*)(new_buffer + current_len), (addr)(new_buffer + new_capacity + 1));
+		
+		ByteArray.copyTo(sb->buffer, new_buffer, current_len); /* Byte-based */
+		ByteArray.clear(new_buffer + current_len, new_capacity + 1 - current_len);
+		
 		Mem.free(sb->buffer);
 		sb->last = (addr)new_buffer + current_len - 1;
 		sb->buffer = new_buffer;
@@ -224,9 +224,9 @@ static void clear(string_builder sb) {
 	sb->buffer[0] = '\0';
 }
 /* Returns a new string with the current content, caller must free */
-static string toString(string_builder sb) {
+string sb_to_string(string_builder sb) {
 	if (!sb || !sb->buffer) return NULL;
-	size_t len = getLength(sb);
+	size_t len = sb_get_length(sb);
 	
 	string result = Mem.alloc(len + 1);
 	if (!result) return NULL;
@@ -244,14 +244,14 @@ static string toString(string_builder sb) {
 /* Writes the buffer contents to the given stream */
 static void writeToStream(string_builder sb, FILE* stream) {
  if (!sb || !sb->buffer || !stream) return;
- size_t len = getLength(sb);
+ size_t len = sb_get_length(sb);
  
  if (len > 0) {
  	fwrite(sb->buffer, 1, len, stream);
  }
 }
 /* Returns the current number of characters in the buffer */
-static size_t getLength(string_builder sb) {
+size_t sb_get_length(string_builder sb) {
 	if (!sb) return 0;
 	return sb->last - (addr)sb->buffer + 1;
 }
@@ -262,7 +262,7 @@ static size_t getCapacity(string_builder sb) {
 }/* Returns an iterator for traversing the string builder’s buffer */
 static iterator getRangeIterator(string_builder sb, int start, int count) {
 	if (!sb || !sb->buffer || start < 0 || count < 0) return NULL;
-	size_t total = getLength(sb);
+	size_t total = sb_get_length(sb);
 	if (start >= total) return NULL;	// bounds check
 	//	adjust count to actual range
 	count = (count > (total - start)) ? (total - start) : count;
@@ -286,26 +286,26 @@ static void setCapacity(string_builder sb, size_t new_capacity) {
 	sb->end = (addr)new_buffer + new_capacity;
 }
 /* Frees the string builder and its buffer */
-static void free_string_builder(string_builder sb) {
+void sb_free(string_builder sb) {
 	if (!sb) return;
 	Mem.free(sb->buffer);
 	Mem.free(sb);
 }
 
 const IStringBuilder StringBuilder = {
-	.new = newStringBuilder,
-	.snew = newSbFromCharBuffer,
-	.append = append,
+	.new = sb_new,
+	.snew = sb_from_string,
+	.append = sb_append,
 	.appendf = appendFormat,
 	.appendl = appendLine,
 	.lappends = lineAppendStr,
 	.lappendf = lineAppendFmt,
 	.clear = clear,
-	.toString = toString,
+	.toString = sb_to_string,
 	.toStream = writeToStream,
-	.length = getLength,
+	.length = sb_get_length,
 	.capacity = getCapacity,
 	.setCapacity = setCapacity,
-	.free = free_string_builder,
+	.free = sb_free,
 	.iterateRange = getRangeIterator
 };

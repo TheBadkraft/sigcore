@@ -35,7 +35,7 @@ typedef struct IByteArray {
 typedef struct ICollections {
 	int (*count)(addr*, addr);
 	void (*clear)(addr*, addr);
-	void (*copyTo)(addr*, addr*, addr);	//	copy from -> to .. end
+	void (*copyTo)(addr*, addr*, addr);		//	copy from -> to .. end
 	int (*indexOf)(addr*, addr, object);
 	addr (*getAtIndex)(addr*, addr, int);
 	void (*removeAtIndex)(addr*, addr, int);
