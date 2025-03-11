@@ -28,9 +28,6 @@ Interface for managing dynamic lists of objects.
 Defines operations for creating, modifying, and querying a list of addr pointers,
 leveraging Mem for memory management and Iterator for traversal.
 
-*Iterator type for collection iterators.*  
-`typedef enum { LIST, STRB } ITER_TYPE;`
-
 ``` c
 typedef struct IList
 ```  
@@ -69,3 +66,6 @@ Provides methods to traverse a sequence of addr values, used by List and other s
 ``` c
 typedef struct IIterator
 ```  
+
+*Iterator type for collection iterators.*  
+`typedef enum { LIST, STRB } ITER_TYPE;`
