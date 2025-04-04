@@ -35,6 +35,18 @@ void new_stringbuilder(void) {
 	
 	StringBuilder.free(sb);
 }
+/* clear stringbuilder */
+void sb_clear(void) {
+	string_builder sb = StringBuilder.snew("Hello");
+	int expLength = 0;
+	
+	StringBuilder.clear(sb);
+	int actLength = StringBuilder.length(sb);
+	
+	Assert.areEqual(&expLength, &actLength, INT, "sb length should be 0");
+	
+	StringBuilder.free(sb);
+}
 /* stringbuilder to string */
 void sb_tostring(void) {
 	string expOutput = "Hello, World";
@@ -47,6 +59,18 @@ void sb_tostring(void) {
 	Assert.isTrue(strcmp(expOutput, actOutput) == 0, "strings are not identical");
 	
 	Mem.free(actOutput);
+	StringBuilder.free(sb);
+}
+/* return a non-allocating string */
+void sb_get_string(void) {
+	string expString = "Hello, World";
+	string_builder sb = StringBuilder.snew(expString);
+	
+	//	get the string
+	string actString = StringBuilder.getString(sb);
+	Assert.isTrue(strcmp(expString, actString) == 0, "strings are not the same");
+	Assert.isTrue(StringBuilder.length(sb) == 0, "string builder length should be 0");
+	
 	StringBuilder.free(sb);
 }
 /* append plain string to empty sb */
@@ -191,6 +215,7 @@ void lappendf_sb(void) {
 __attribute__((constructor)) void init_sigtest_tests(void) {
 //	register_test("check_debug", check_debug);
 	register_test("new_stringbuilder", new_stringbuilder);
+	register_test("sb_clear", sb_clear);
 	register_test("sb_tostring", sb_tostring);
 	register_test("append_empty_sb", append_empty_sb);
 	register_test("append_populated_sb", append_populated_sb);

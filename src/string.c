@@ -3,6 +3,8 @@
  * Implements efficient string utilities.
  */
 #include "strings.h"
+#include "mem_utils.h"
+#include <stdlib.h>
 
 /* Returns the length of a string */
 size_t str_get_length(const string str) {
@@ -18,6 +20,18 @@ string str_copy(const string str) {
 	}
 	
 	return copy;
+}
+/* Returns a duplcate string */
+string str_duplicate(const char* str) {
+	string s = strdup(str);
+	if (!s) return NULL;
+	
+	if (!trackMem(s)) {
+		free(s);
+		return NULL;
+	}
+	
+	return s;
 }
 /* Returns a concatenated string */
 string str_concat(const string str1, const string str2) {
@@ -69,6 +83,7 @@ static void freeString(string str) {
 const IString String = {
 	.length = str_get_length,
 	.copy = str_copy,
+	.dupe = str_duplicate,
 	.concat = str_concat,
 	.compare = str_compare,
 	.format = formatString,

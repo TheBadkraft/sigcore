@@ -16,7 +16,14 @@ iterator create_iterator(object start, object end, int step); /* Internal */
 struct list_s {
 	addr* bucket;		/*	Array of address pointers.	*/
 	addr last;			/*	Address of the last used element.	*/
-	addr end;				/*	Address setting boundary of usable elements	*/
+	addr end;			/*	Address setting boundary of usable elements	*/
+};
+/* opaque queue structure */
+struct queue_s {
+	addr* bucket;		/* Array of address pointers. */
+	addr first;			/* Pointer to the front item. */
+	addr last;			/* Pointer to the next free slot. */
+	addr end;			/* Pointer to the capacity boundary. */
 };
 /* opaque string builder structure */
 struct string_builder_s {

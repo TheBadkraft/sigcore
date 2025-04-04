@@ -1,7 +1,6 @@
 #ifndef STRINGS_H
 #define STRINGS_H
 
-
 #include "sigcore.h"
 #include "sigdebug.h"
 #include "collections.h"
@@ -26,4 +25,5 @@ size_t sb_get_length(string_builder);
 void sb_append(string_builder, string);
 string sb_to_string(string_builder sb);
 void sb_free(string_builder);
-#endif
+
+#endif	// STRINGS_H

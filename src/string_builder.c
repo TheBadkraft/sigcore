@@ -219,7 +219,7 @@ static void lineAppendFmt(string_builder sb, string format, ...) {
 /* Resets the buffer to empty, clearing content and resetting last */
 static void clear(string_builder sb) {
 	if (!sb) return;
-	Collections.clear((addr*)sb->buffer, sb->last + 1);
+	ByteArray.clear(sb->buffer, (sb->last - (addr)sb->buffer + 1));
 	sb->last = (addr)sb->buffer - 1;
 	sb->buffer[0] = '\0';
 }

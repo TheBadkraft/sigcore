@@ -77,6 +77,15 @@ void format_string(void) {
 	
 	String.free(result);
 }
+/* test string duplicate */
+void dupe_string(void) {
+	const char* original = "Hello";
+	string dupe = String.dupe(original);
+	
+	Assert.isTrue(String.compare(original, dupe) == 0, "string compare mismatch");
+	
+	String.free(dupe);
+}
 
 // Register test cases
 __attribute__((constructor)) void init_sigtest_tests(void) {
@@ -85,4 +94,5 @@ __attribute__((constructor)) void init_sigtest_tests(void) {
     register_test("concat_string", concat_string);
     register_test("compare_string", compare_string);
     register_test("format_string", format_string);
+    register_test("dupe_string", dupe_string);
 }
