@@ -42,7 +42,7 @@ object ptr = Mem.alloc(1024);  // Allocate 1KB
 Mem.free(ptr);                // Free memory  
 ```  
 
-**Advanced Features**:  
+**Advanced Features**: *(Planned)*  
 ```c  
 Mem_track(external_ptr);      // Track externally allocated memory  
 Mem_freeWith(ptr, custom_free); // Custom deallocator  
@@ -95,7 +95,9 @@ Iterator.free(it);
 **Filtered Iteration**:  
 ```c  
 int is_non_null(object obj) { return obj != NULL; }  
-Iterator.findNext(it, is_non_null, &item); // Skip empty slots  
+while (Iterator.findNext(it, is_non_null, &item)) {
+   // skip null/empty slots
+} 
 ```  
 
 ---
