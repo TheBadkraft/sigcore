@@ -131,7 +131,7 @@ StringBuilder.toStream(sb, stdout); // Write to console
 
 --- 
 
-**Need More?** See the full API in [`sigcore.h`](https://github.com/TheBadkraft/sigcore/blob/main/include/sigcore.h).
+**Need More?** See the full API in [`sigcore.h`](/include/sigcore.h).
 
 Building and Testing
 Build: make -- creates bin/lib/libsigcore.so.
