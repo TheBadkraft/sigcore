@@ -11,30 +11,40 @@
 #endif
 
 /** @brief Generic pointer type for objects */
-typedef void* object;
+typedef void *object;
 /** @brief Unsigned integer type representing memory addresses or offsets */
 typedef uintptr_t addr;
 /** @brief Pointer to a null-terminated character string */
-typedef char* string;
+typedef char *string;
 /** @brief Pointer to an iterator_s structure for traversing collecions */
-typedef struct iterator_s* iterator;
+typedef struct iterator_s *iterator;
 /** @brief Pointer to a string_builder_s structure for efficient string construction. */
-typedef struct string_builder_s* string_builder;
+typedef struct string_builder_s *string_builder;
 /** @brief Pointer to a list_s structure.	*/
-typedef struct list_s* list;
+typedef struct list_s *list;
 /** @brief Pointer to a queue_s structure. */
-typedef struct queue_s* queue;
+typedef struct queue_s *queue;
+/** @brief Pointer to an index_s structure. */
+typedef struct slot_array_s *slot_array;
+/** @brief Predicate function */
+typedef int (*predicate)(object);
 
 /** @brief Iterator type for colleciton iterators */
-typedef enum { LIST, STRB } ITER_TYPE;
+typedef enum
+{
+	LIST,
+	STRB,
+	SLOT
+} ITER_TYPE;
 
 /**
  * @brief Interface for memory management in sigcore.
  * @details Provides allocation and deallocation functions for all sigcore components.
  */
-typedef struct IMem {
-	object (*alloc)(size_t);	/**< Allocates memory of the specified size. */
-	void (*free)(object);		/**< Frees previously allocated memory. */
+typedef struct IMem
+{
+	object (*alloc)(size_t); /**< Allocates memory of the specified size. */
+	void (*free)(object);	 /**< Frees previously allocated memory. */
 } IMem;
 /**
  * @brief Interface for managing dynamic lists of objects.
@@ -42,7 +52,8 @@ typedef struct IMem {
  *          leveraging Mem for memory management and Iterator for traversal.
  *				Contents must be manually freed by user.
  */
-typedef struct IList {
+typedef struct IList
+{
 	list (*new)(int);									/**< Creates a new list with the given capacity. */
 	void (*free)(list);								/**< Destroys the list and frees its memory. */
 	void (*add)(list, object);						/**< Adds an object to the list, resizing if needed. */
@@ -56,57 +67,77 @@ typedef struct IList {
 	iterator (*iterateRange)(list, int, int); /**< Iterate item range */
 } IList;
 /**
+ * @brief Interface for managing dynamic indexes of objects.
+ * @details Defines operations for creating, modifying, and querying an index of addr pointers,
+ * 		   leveraging Mem for memory management and Iterator for traversal.
+ */
+typedef struct ISlotArray
+{
+	slot_array (*new)(int);							  /**< Creates a new index with the given capacity. */
+	void (*free)(slot_array);						  /**< Destroys the index and frees its memory. */
+	void (*add)(slot_array, object);				  /**< Adds an object to the index, resizing if needed. */
+	int (*tryGetAt)(slot_array, int, object *); /**< Returns the object at a specific index. */
+	void (*remove)(slot_array, object);			  /**< Removes the first occurrence of an object. */
+	int (*count)(slot_array);						  /**< Returns the number of items in the index. */
+	int (*capacity)(slot_array);					  /**< Returns the current capacity of the index. */
+	void (*clear)(slot_array);						  /**< Clears all items from the index. */
+															  //	int (*copyTo)(slot_array, list);				  /**< Copies items from one index to another. */
+} ISlotArray;
+/**
  * @brief Interface for managing a dynamic queue (FIFO) of objects.
- * @details Defines operations for creating, enqueuing, dequeuing, and clearing a queue of 
+ * @details Defines operations for creating, enqueuing, dequeuing, and clearing a queue of
  *				addr pointers, leveraging Mem for memory management.
  *				Contents must be manually freed by user.
  */
-typedef struct IQueue {
-	queue (*new)(int);								/**< Creates a new queue with the given capacity. */
-	void (*free)(queue);								/**< Frees the queue and its memory. */
-	void (*enqueue)(queue, object);				/**< Adds an object to the rear of the queue. */
-	object (*dequeue)(queue);						/**< Removes and returns the object at the front of the queue. */
-	object (*peek)(queue);							/**< Returns the front object without removing it. */
-	int (*count)(queue);								/**< Returns the number of items in the queue. */
-	int (*capacity)(queue);							/**< Returns the current capacity of the queue. */
-	void (*clear)(queue);							/**< Clears all items from the queue. */
-	int (*isEmpty)(queue);							/**< Returns 1 if the queue is empty, otherwise 0. */
-	int (*isFull)(queue);							/**< Returns 1 if the queue is full, otherwise 0. */
+typedef struct IQueue
+{
+	queue (*new)(int);				  /**< Creates a new queue with the given capacity. */
+	void (*free)(queue);				  /**< Frees the queue and its memory. */
+	void (*enqueue)(queue, object); /**< Adds an object to the rear of the queue. */
+	object (*dequeue)(queue);		  /**< Removes and returns the object at the front of the queue. */
+	object (*peek)(queue);			  /**< Returns the front object without removing it. */
+	int (*count)(queue);				  /**< Returns the number of items in the queue. */
+	int (*capacity)(queue);			  /**< Returns the current capacity of the queue. */
+	void (*clear)(queue);			  /**< Clears all items from the queue. */
+	int (*isEmpty)(queue);			  /**< Returns 1 if the queue is empty, otherwise 0. */
+	int (*isFull)(queue);			  /**< Returns 1 if the queue is full, otherwise 0. */
 } IQueue;
 /**
  * @brief Interface for basic string manipulation in sigcore.
  * @details Provides a clean set of utility functions for common string operations,
  *          abstracting away low-level details. Designed for simplicity and efficiency.
  */
-typedef struct IString {
-	size_t (*length)(string);						/**< Returns the length of a string. */
-	string (*copy)(string);							/**< Creates a copy of a string. */
-	string (*dupe)(const char*);					/**< Duplicates a string. */
-	string (*concat)(string, string);			/**< Returns a concatenated string. */
-	string (*format)(string, ...);				/**< Returns a formatted string. */
-	int (*compare)(string, string);				/**< Compares two strings for equality. */
-	void (*free)(string);							/**< Frees the string allocation. */
+typedef struct IString
+{
+	size_t (*length)(string);			 /**< Returns the length of a string. */
+	string (*copy)(string);				 /**< Creates a copy of a string. */
+	string (*dupe)(const char *);		 /**< Duplicates a string. */
+	string (*concat)(string, string); /**< Returns a concatenated string. */
+	string (*format)(string, ...);	 /**< Returns a formatted string. */
+	int (*compare)(string, string);	 /**< Compares two strings for equality. */
+	void (*free)(string);				 /**< Frees the string allocation. */
 } IString;
 /**
  * @brief Interface for building strings efficiently in sigcore.
- * @details Methods to append text, manage capacity, and retrieve the final string, 
+ * @details Methods to append text, manage capacity, and retrieve the final string,
  *				optimized to avoid repeated allocations.
  */
-typedef struct IStringBuilder {
-	string_builder (*new)(size_t capacity);			/**< Initializes with a starting capacity. */
-	string_builder (*snew)(string);						/**< Initializes a new string builder from char* buffer. */
-	void (*append)(string_builder, string);			/**< Appends a string to the buffer. */
-	void (*appendf)(string_builder, string, ...);	/**< Appends a formatted string using printf-style specifiers. */
-	void (*appendl)(string_builder, string);  		/**< Appends a string followed by a newline, or just a newline if NULL. */
-	void (*lappends)(string_builder, string);			/**< Appends a newline followed by the string */
-	void (*lappendf)(string_builder, string, ...);	/**< Appends a newline followed by a formatted string */
-	void (*clear)(string_builder);						/**< Resets the buffer to empty. */
-	string (*toString)(string_builder);					/**< Returns an allocated concatenated string. */
-	void (*toStream)(string_builder, FILE*);			/**< Writes the string buffer to the given stream */
-	size_t (*length)(string_builder);					/**< Returns the current string length. */
-	size_t (*capacity)(string_builder);					/**< Returns the current capacity. */
-	void (*setCapacity)(string_builder, size_t);		/**< Adjusts the capacity, preserving content. */
-	void (*free)(string_builder);							/**< Frees the string builder and its buffer. */
+typedef struct IStringBuilder
+{
+	string_builder (*new)(size_t capacity);				 /**< Initializes with a starting capacity. */
+	string_builder (*snew)(string);							 /**< Initializes a new string builder from char* buffer. */
+	void (*append)(string_builder, string);				 /**< Appends a string to the buffer. */
+	void (*appendf)(string_builder, string, ...);		 /**< Appends a formatted string using printf-style specifiers. */
+	void (*appendl)(string_builder, string);				 /**< Appends a string followed by a newline, or just a newline if NULL. */
+	void (*lappends)(string_builder, string);				 /**< Appends a newline followed by the string */
+	void (*lappendf)(string_builder, string, ...);		 /**< Appends a newline followed by a formatted string */
+	void (*clear)(string_builder);							 /**< Resets the buffer to empty. */
+	string (*toString)(string_builder);						 /**< Returns an allocated concatenated string. */
+	void (*toStream)(string_builder, FILE *);				 /**< Writes the string buffer to the given stream */
+	size_t (*length)(string_builder);						 /**< Returns the current string length. */
+	size_t (*capacity)(string_builder);						 /**< Returns the current capacity. */
+	void (*setCapacity)(string_builder, size_t);			 /**< Adjusts the capacity, preserving content. */
+	void (*free)(string_builder);								 /**< Frees the string builder and its buffer. */
 	iterator (*iterateRange)(string_builder, int, int); /**< Iterate buffer range */
 } IStringBuilder;
 /**
@@ -114,23 +145,29 @@ typedef struct IStringBuilder {
  * @details Provide the List or StringBuilder object and the iterator type:
  *					LIST, STRB
  */
-typedef struct IArray {
+typedef struct IArray
+{
 	iterator (*getIterator)(object, ITER_TYPE);
 } IArray;
 /**
  * @brief Interface for iterating over collections.
  * @details Provides methods to traverse a sequence of addr values, used by List and other structures.
  */
-typedef struct IIterator {
-	object (*next)(iterator);
-	int (*hasNext)(iterator);
-	void (*free)(iterator);
+typedef struct IIterator
+{
+	object (*next)(iterator);								/**< Gets the next object and advances pointer to next index. */
+	int (*hasNext)(iterator);								/**< Determins if the underlying collection has a next index. */
+	int (*findNext)(iterator, predicate, object *); /**< Finds the next object matching the predicate. */
+	void (*free)(iterator);									/**< Frees the iterator structure. */
+	void (*reset)(iterator);								/**< Resets the iterator to the start. */
 } IIterator;
 
 /** @brief Global instance of the memory management interface. */
 extern const IMem Mem;
 /** @brief Global instance of the list management interface. */
 extern const IList List;
+/** @brief Global instance of the slot array management interface. */
+extern const ISlotArray SlotArray;
 /** @brief Global instance of the queue iterface. */
 extern const IQueue Queue;
 /** #brief Global instance of the string interface. */

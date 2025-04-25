@@ -46,6 +46,8 @@ $(TST_TARGET): $(TST_OBJS) $(OBJS)
 $(TST_BUILD_DIR)/test_%: $(TST_BUILD_DIR)/test_%.o $(OBJS)
 	@mkdir -p $(TST_BUILD_DIR)
 	$(CC) $< $(OBJS) -o $@ $(TST_LDFLAGS)
+	
+lib: $(LIB_TARGET) $(HEADER)
 
 install: $(LIB_TARGET) $(HEADER)
 	sudo cp $(LIB_TARGET) $(INSTALL_LIB_DIR)/
@@ -62,4 +64,4 @@ clean:
 	find $(BUILD_DIR) -type f -delete
 	find $(BIN_DIR) -type f -delete
 
-.PHONY: all clean install test test_%
+.PHONY: all clean lib install test test_%
