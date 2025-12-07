@@ -1,67 +1,95 @@
-CC = gcc
-CFLAGS = -Wall -g -fPIC -I$(INCLUDE_DIR)
-LDFLAGS = -shared
-TST_CFLAGS = $(CFLAGS) -DTSTDBG
-TST_LDFLAGS = -lsigtest -L/usr/lib
+.SILENT:
 
-SRC_DIR = src
-INCLUDE_DIR = include
-BUILD_DIR = build
-BIN_DIR = bin
-LIB_DIR = $(BIN_DIR)/lib
-TEST_DIR = test
+# =====================================================================
+# SigmaCore v1.0.0 – Pure C2x – src/ + include/sigcore/
+# =====================================================================
+CC          = gcc
+STD         = c2x
+CFLAGS      = -Wall -Wextra -g -fPIC -std=$(STD) -Iinclude
+TST_CFLAGS  = $(CFLAGS) -DTSTDBG -I/usr/include/sigmatest
+LDFLAGS     = -shared
+WRAP_LDFLAGS = -Wl,--wrap=malloc -Wl,--wrap=free -Wl,--wrap=calloc -Wl,--wrap=realloc
+TST_LDFLAGS = -lstest -L/usr/lib $(WRAP_LDFLAGS)
+
+SRC_DIR       = src
+BUILD_DIR     = build
+BIN_DIR       = bin
+LIB_DIR       = $(BIN_DIR)/lib
+TEST_DIR      = test
 TST_BUILD_DIR = $(BUILD_DIR)/test
 
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRCS))
-TST_SRCS = $(wildcard $(TEST_DIR)/*.c)
-TST_OBJS = $(patsubst $(TEST_DIR)/%.c, $(TST_BUILD_DIR)/%.o, $(TST_SRCS))
+# ---------------------------------------------------------------------
+# Sources & Objects
+# ---------------------------------------------------------------------
+SOURCES = $(wildcard $(SRC_DIR)/*.c)
+OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
-HEADER = $(INCLUDE_DIR)/sigcore.h
+TEST_SOURCES = $(wildcard $(TEST_DIR)/*.c)
+TEST_OBJECTS = $(patsubst $(TEST_DIR)/%.c, $(TST_BUILD_DIR)/%.o, $(TEST_SOURCES))
 
 LIB_TARGET = $(LIB_DIR)/libsigcore.so
-TST_TARGET = $(TST_BUILD_DIR)/run_tests
 
-INSTALL_LIB_DIR = /usr/lib
-INSTALL_INCLUDE_DIR = /usr/include
-
+# =====================================================================
+# Primary targets
+# =====================================================================
 all: $(LIB_TARGET)
 
-$(LIB_TARGET): $(OBJS)
-	@mkdir -p $(LIB_DIR)
-	$(CC) $(OBJS) -o $(LIB_TARGET) $(LDFLAGS)
+$(LIB_TARGET): $(OBJECTS)
+	mkdir -p $(LIB_DIR)
+	if [ -n "$(OBJECTS)" ]; then \
+	    $(CC) $(OBJECTS) -o $@ $(LDFLAGS); \
+	else \
+	    echo "Warning: No source files – creating empty shared library"; \
+	    touch $@; \
+	fi
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(HEADER)
-	@mkdir -p $(BUILD_DIR)
+# ---------------------------------------------------------------------
+# Compile library sources (src/*.c → build/*.o)
+# ---------------------------------------------------------------------
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(TST_BUILD_DIR)/%.o: $(TEST_DIR)/%.c $(HEADER)
-	@mkdir -p $(TST_BUILD_DIR)
+# ---------------------------------------------------------------------
+# Compile test sources
+# ---------------------------------------------------------------------
+$(TST_BUILD_DIR)/%.o: $(TEST_DIR)/%.c
+	mkdir -p $(TST_BUILD_DIR)
 	$(CC) $(TST_CFLAGS) -c $< -o $@
 
-$(TST_TARGET): $(TST_OBJS) $(OBJS)
-	@mkdir -p $(TST_BUILD_DIR)
-	$(CC) $(TST_OBJS) $(OBJS) -o $(TST_TARGET) $(TST_LDFLAGS)
+# ---------------------------------------------------------------------
+# Individual test executables
+# ---------------------------------------------------------------------
+$(TST_BUILD_DIR)/test_%: $(TST_BUILD_DIR)/test_%.o $(OBJECTS)
+	mkdir -p $(TST_BUILD_DIR)
+	$(CC) $< $(OBJECTS) -o $@ $(TST_LDFLAGS)
 
-$(TST_BUILD_DIR)/test_%: $(TST_BUILD_DIR)/test_%.o $(OBJS)
-	@mkdir -p $(TST_BUILD_DIR)
-	$(CC) $< $(OBJS) -o $@ $(TST_LDFLAGS)
-	
-lib: $(LIB_TARGET) $(HEADER)
+# Run a single test
+test_%: $(TST_BUILD_DIR)/test_%
+	echo "=== Running $* ==="
+	$<
 
-install: $(LIB_TARGET) $(HEADER)
-	sudo cp $(LIB_TARGET) $(INSTALL_LIB_DIR)/
-	sudo cp $(INCLUDE_DIR)/sigcore.h $(INSTALL_INCLUDE_DIR)/
+# Run all tests
+test: $(patsubst $(TEST_DIR)/test_%.c, test_%, $(TEST_SOURCES))
+
+# =============================================================================
+# Clean
+# =============================================================================
+clean:
+	rm -f $(BUILD_DIR)/*.o $(TST_BUILD_DIR)/*.o $(TST_BUILD_DIR)/test_*
+
+clean_all: clean
+	rm -rf $(BUILD_DIR) $(BIN_DIR)
+
+# =============================================================================
+# Install
+# =============================================================================
+install: $(LIB_TARGET)
+	sudo install -m 644 $(LIB_TARGET) /usr/lib/
+	sudo cp -r include/sigcore /usr/include/
 	sudo ldconfig
 
-test: $(TST_TARGET)
-	@$(TST_TARGET)
-
-test_%: $(TST_BUILD_DIR)/test_%
-	@$<
-
-clean:
-	find $(BUILD_DIR) -type f -delete
-	find $(BIN_DIR) -type f -delete
-
-.PHONY: all clean lib install test test_%
+# =============================================================================
+# Phony
+# =============================================================================
+.PHONY: all clean clean_all install test
