@@ -30,6 +30,7 @@
  *        Iterator mechanism can be uniformly applied across all collection types.
  */
 #include "sigcore/array.h"
+#include "sigcore/internal/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
 
@@ -93,12 +94,15 @@ static void array_dispose(array arr) {
    Memory.free(arr->bucket);
    Memory.free(arr);
 }
+
+// get the current capacity of the array
 static int array_capacity(array arr) {
    if (!arr || !arr->bucket) {
       return 0; // invalid array
    }
    return (int)((arr->end - (addr)(arr->bucket)) / sizeof(addr));
 }
+// clear the contents of the array
 static void array_clear(array arr) {
    if (!arr) {
       return; // invalid array
@@ -107,7 +111,8 @@ static void array_clear(array arr) {
    size_t num_elements = array_capacity(arr);
    memset(arr->bucket, 0, num_elements * sizeof(addr));
 }
-// handle value set and get functions
+
+// set the value at the specified index in the array
 static int array_set_at(array arr, int index, addr value) {
    if (!arr || !arr->bucket) {
       return -1; // invalid array
@@ -119,6 +124,7 @@ static int array_set_at(array arr, int index, addr value) {
    arr->bucket[index] = value;
    return 0; // success
 }
+// get the value at the specified index in the array
 static int array_get_at(array arr, int index, addr *out_value) {
    if (!arr || !arr->bucket || !out_value) {
       return -1; // invalid parameters
@@ -130,7 +136,15 @@ static int array_get_at(array arr, int index, addr *out_value) {
    *out_value = arr->bucket[index];
    return 0; // success
 }
+// remove the element at the specified index
 static int array_remove_at(array arr, int index) {
+   /*
+      The reason array does not shift elements left upon removal is to maintain
+      consistent performance characteristics and to maintain consitency with
+      expectations from derived structures like SlotArray, where shifting elements
+      leads to complications with index validity; on the other hand, List does
+      shift elements left upon removal to maintain contiguous data for iteration.
+    */
    if (!arr || !arr->bucket) {
       return -1; // invalid array
    }
@@ -138,13 +152,27 @@ static int array_remove_at(array arr, int index) {
    if (index < 0 || index >= cap) {
       return -1; // index out of bounds
    }
-   // Shift elements left to fill the gap
-   for (int i = index; i < cap - 1; i++) {
-      arr->bucket[i] = arr->bucket[i + 1];
-   }
-   // Clear the last element
-   arr->bucket[cap - 1] = (addr)0;
+   // we do not shift elements, just set to ADDR_EMPTY
+   arr->bucket[index] = ADDR_EMPTY;
+
    return 0; // success
+}
+
+// Internal function
+addr array_get_bucket_start(array arr) {
+   if (!arr)
+      return (addr)0;
+   return (addr)arr->bucket;
+}
+addr array_get_bucket_end(array arr) {
+   if (!arr)
+      return (addr)0;
+   return arr->end;
+}
+addr *array_get_bucket(array arr) {
+   if (!arr)
+      return NULL;
+   return arr->bucket;
 }
 
 //  public interface implementation

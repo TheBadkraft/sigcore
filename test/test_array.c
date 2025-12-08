@@ -1,6 +1,15 @@
 /*
  *  Test File: test_array.c
  *  Description: Test cases for SigmaCore array interfaces
+ *
+ *  The array is a low-level, core collection primitive that other
+ *  collection types (like List, SlotArray, Map) are built upon. Due
+ *  to its foundational nature, the array provides basic operations
+ *  for element storage and retrieval by index, without higher-level
+ *  behaviors like dynamic resizing or element shifting on removal.
+ *  Even functions like `append` and `prepend` are not provided here,
+ *  as they are more appropriate for derived structures like List
+ *  where these functions determine a higher-level behavior.
  */
 
 #include "sigcore/array.h"
@@ -135,11 +144,11 @@ static void test_array_remove_at(void) {
       Array.set(arr, i, (addr)initial_values[i]);
    }
 
-   // Remove at index 2 (removes 30)
+   // Remove at index 2 (removes 30) -- array should not shift left
    Assert.areEqual(&(int){0}, &(int){Array.remove(arr, 2)}, INT, "Array remove failed at index 2");
 
-   // Expected after removal: 10, 20, 40, 50, 0
-   int expected_values[] = {10, 20, 40, 50, 0};
+   // Expected after removal: 10, 20, ADDR_EMPTY, 40, 50
+   int expected_values[] = {10, 20, ADDR_EMPTY, 40, 50};
    struct spoofed_array {
       addr *bucket;
       addr end;

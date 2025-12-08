@@ -21,25 +21,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * ----------------------------------------------
- * File: collections.h
- * Description: Header file for SigmaCore collections definitions and interfaces
+ * File: collections.c
+ * Description: Source file for SigmaCore collections definitions and interfaces
  *
  * Collections: The core generic collection structures used within SigmaCore.
  *              This includes Iterator and query mechanisms that operate across
  *              all collection types.
  */
-#pragma once
+#include "sigcore/collections.h"
+#include "sigcore/internal/collections.h"
+#include "sigcore/types.h"
+#include <string.h>
 
-#include "sigcore/array.h"
+// forward declarations of internal functions
+static usize collections_compact(array arr);
 
-/* Public interface for collections operations                */
-/* ============================================================ */
-typedef struct sc_collections_i {
-   /**
-    * @brief Compact an array by removing empty entries and moving non-empty entries to the front.
-    * @param arr The array to compact
-    * @return The number of non-empty elements after compacting
-    */
-   usize (*compact)(array);
-} sc_collections_i;
-extern const sc_collections_i Collections;
+// compact an array by removing null entries and compacting non-null to front
+static usize collections_compact(array arr) {
+   //   return 0 means nothing moved, non-zero is count of moved entries (size)
+   if (!arr) {
+      return 0; // invalid array
+   }
+
+   int cap = Array.capacity(arr);
+   usize write_index = 0;
+
+   // iterate through the array, move non-empty entries to front
+   for (int i = 0; i < cap; ++i) {
+      addr entry;
+      if (Array.get(arr, i, &entry) == 0 && entry != ADDR_EMPTY) {
+         Array.set(arr, (int)write_index++, entry);
+      }
+   }
+
+   // set remaining entries to empty
+   for (usize i = write_index; i < (usize)cap; ++i) {
+      Array.set(arr, (int)i, ADDR_EMPTY);
+   }
+
+   // do not shrink the underlying array; maintain capacity
+
+   return write_index; // return count of non-empty elements
+}
+
+// public interface implementation
+const sc_collections_i Collections = {
+    .compact = collections_compact,
+};

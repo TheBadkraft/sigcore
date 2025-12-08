@@ -49,5 +49,67 @@ typedef struct sc_list_i {
     * @param lst The list to dispose of
     */
    void (*dispose)(list);
+   /**
+    * @brief Get the current capacity of the list.
+    * @param lst The list to query
+    * @return Current capacity of the list
+    */
+   int (*capacity)(list);
+   /**
+    * @brief Get the current size (number of elements) of the list.
+    * @param lst The list to query
+    * @return Current size of the list
+    */
+   int (*size)(list);
+   /**
+    * @brief Append a value to the end of the list.
+    * @param lst The list to append to
+    * @param value The value to append
+    * @return 0 on success; otherwise, non-zero
+    */
+   int (*append)(list, object);
+   /**
+    * @brief Get the value at the specified index in the list.
+    * @param lst The list to query
+    * @param index Index of the value to retrieve
+    * @param out_value Pointer to store the retrieved value
+    * @return 0 on success; otherwise, non-zero
+    */
+   int (*get)(list, int, object *);
+   /**
+    * @brief Remove the element at the specified index from the list.
+    * @param lst The list to modify
+    * @param index Index of the element to remove
+    * @return 0 on success; otherwise, non-zero
+    */
+   int (*remove)(list, int);
+   /**
+    * @brief Overwrite the value at the specified index in the list.
+    * @param lst The list to modify
+    * @param index Index at which to set the value
+    * @param value Value to set
+    * @return 0 on success; otherwise, non-zero
+    */
+   int (*set)(list, int, object);
+   /**
+    * @brief Insert a value at the specified index in the list, shifting subsequent elements right.
+    * @param lst The list to modify
+    * @param index Index at which to insert the value
+    * @param value Value to insert
+    * @return 0 on success; otherwise, non-zero
+    */
+   int (*insert)(list, int, object);
+   /**
+    * @brief Prepend a value to the start of the list.
+    * @param lst The list to modify
+    * @param value Value to prepend
+    * @return 0 on success; otherwise, non-zero
+    */
+   int (*prepend)(list, object);
+   /**
+    * @brief Clear the contents of the list. Does not free individual elements.
+    * @param lst The list to clear
+    */
+   void (*clear)(list);
 } sc_list_i;
 extern const sc_list_i List;

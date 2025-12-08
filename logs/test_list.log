@@ -1,0 +1,34 @@
+[1] core_list_set            :  23 :         2025-12-08  12:24:44
+=================================================================
+Running: list_creation                           1.669 us  [PASS]
+Running: list_dispose                            0.472 us  [PASS]
+Running: list_get_capacity                       0.383 us  [PASS]
+Running: list_get_size                           0.287 us  [PASS]
+Running: list_append_value                       0.431 us  [PASS]
+Running: list_get_value                          0.542 us  [PASS]
+Running: list_remove_at                          0.653 us  [PASS]
+Running: list_set_value                          0.478 us  [PASS]
+Running: list_insert_value                       0.524 us  [PASS]
+Running: list_prepend_value                      0.973 us  [PASS]
+Running: list_clear                              0.789 us  [PASS]
+Running: list_growth                             0.938 us  [PASS]
+Running: list_add_all                            1.102 us  [SKIP]
+Running: list_add_from_array                     0.181 us  [SKIP]
+Running: list_set_out_of_bounds                  0.484 us  [PASS]
+Running: list_get_out_of_bounds                  0.368 us  [PASS]
+Running: list_remove_out_of_bounds               0.419 us  [PASS]
+Running: list_append_null                        0.256 us  [PASS]
+Running: list_prepend_null                       0.244 us  [PASS]
+Running: list_set_empty_list                     0.310 us  [PASS]
+Running: list_get_empty_list                     0.247 us  [PASS]
+Running: list_remove_empty_list                  0.271 us  [PASS]
+Running: list_append_null_value                  0.238 us  [PASS]
+=================================================================
+[1]     TESTS= 23        PASS= 21        FAIL=  0        SKIP=  2
+
+===== Memory Allocations Report =================================
+Memory clean — all 93 allocations freed.
+
+
+  Total mallocs:                93
+  Total frees:                  93

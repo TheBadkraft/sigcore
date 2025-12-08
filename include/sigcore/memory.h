@@ -37,11 +37,17 @@ typedef struct sc_memory_i {
     * @param size Size of memory to allocate in bytes
     * @return Pointer to the allocated memory block
     */
-   void *(*alloc)(usize);
+   object (*alloc)(usize);
    /**
     * @brief Free a previously allocated block of memory.
     * @param ptr Pointer to the memory block to free
     */
-   void (*free)(void *);
+   void (*free)(object);
+   /**
+    * @brief Check if a given memory pointer is currently allocated.
+    * @param ptr Pointer to check
+    * @return true if allocated; otherwise false
+    */
+   bool (*has)(object);
 } sc_memory_i;
 extern const sc_memory_i Memory;

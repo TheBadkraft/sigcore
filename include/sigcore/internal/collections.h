@@ -21,41 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * ----------------------------------------------
- * File: memory.h
- * Description: Header file for SigmaCore memory management and core interfaces
- *
+ * File:  internal/collections.h
+ * Description: Header file for SigmaCore internal collection functions
  */
-#include "sigcore/memory.h"
-#include <stdlib.h>
+#pragma once
 
-/*
-   As soon as SlotArray is implemented, we can have a proper memory tracking
-   system to back the mem_has function.  For now, we provide basic alloc and free
-   implementations using standard malloc and free.
- */
+#include "sigcore/array.h"
 
-// allocate a block of memory of the specified size
-static object memory_alloc(usize size) {
-   object ptr = malloc(size);
-   // add to tracking structure when SlotArray is ready
-   return ptr;
-}
-// free a previously allocated block of memory
-static void memory_free(object ptr) {
-   // we could just null the pointer ... ??? but ptr is passed by value
-   // remove from tracking structure when SlotArray is ready
-   free(ptr);
-}
-// check if a given memory pointer is currently allocated
-static bool memory_has(object ptr) {
-   // placeholder implementation; SlotArray to track allocations
-   (void)ptr; // for now
-
-   return false; // right now we know this is what the test expects
-}
-
-const sc_memory_i Memory = {
-    .alloc = memory_alloc,
-    .free = memory_free,
-    .has = memory_has,
-};
+// array internal functions
+addr array_get_bucket_start(array arr);
+addr array_get_bucket_end(array arr);
+addr *array_get_bucket(array arr);
