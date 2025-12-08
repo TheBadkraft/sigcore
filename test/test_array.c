@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
+//  configure test set
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_array.log", "w");
 }
@@ -47,6 +48,8 @@ static void test_array_get_capacity(void) {
    Assert.areEqual(&exp_capacity, &act_capacity, INT, "Array capacity mismatch");
    Array.dispose(arr);
 }
+
+//  data manipulation tests
 static void test_array_clear(void) {
    int initial_capacity = 10;
    array arr = Array.new(initial_capacity);
@@ -81,8 +84,6 @@ static void test_array_clear(void) {
 
    Array.dispose(arr);
 }
-
-//  array set value at index
 static void test_array_set_value(void) {
    int initial_capacity = 10;
    array arr = Array.new(initial_capacity);
@@ -159,7 +160,6 @@ static void test_array_set_out_of_bounds(void) {
    Assert.areEqual(&result, &((int){-1}), INT, "set out of bounds should return -1");
    Array.dispose(arr);
 }
-
 static void test_array_get_out_of_bounds(void) {
    array arr = Array.new(5);
    addr value = 0;
@@ -167,7 +167,6 @@ static void test_array_get_out_of_bounds(void) {
    Assert.areEqual(&result, &((int){-1}), INT, "get out of bounds should return -1");
    Array.dispose(arr);
 }
-
 static void test_array_remove_out_of_bounds(void) {
    array arr = Array.new(5);
    int result = Array.remove(arr, 10);
