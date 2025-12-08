@@ -31,18 +31,17 @@
 
 /* Public interface for memory operations                        */
 /* ============================================================= */
-typedef struct sc_memory_i
-{
-    /**
-     * @brief Allocate a block of memory of the specified size.
-     * @param size Size of memory to allocate in bytes
-     * @return Pointer to the allocated memory block
-     */
-    void *(*alloc)(usize);
-    /**
-     * @brief Free a previously allocated block of memory.
-     * @param ptr Pointer to the memory block to free
-     */
-    void (*free)(void *);
+typedef struct sc_memory_i {
+   /**
+    * @brief Allocate a block of memory of the specified size.
+    * @param size Size of memory to allocate in bytes
+    * @return Pointer to the allocated memory block
+    */
+   void *(*alloc)(usize);
+   /**
+    * @brief Free a previously allocated block of memory.
+    * @param ptr Pointer to the memory block to free
+    */
+   void (*free)(void *);
 } sc_memory_i;
 extern const sc_memory_i Memory;

@@ -28,16 +28,15 @@
 #include "sigcore/memory.h"
 #include <stdlib.h>
 
-static void *mem_alloc(usize size)
-{
-    return malloc(size);
+static void *mem_alloc(usize size) {
+   return malloc(size);
 }
 
-static void mem_free(void *ptr)
-{
-    free(ptr);
+static void mem_free(void *ptr) {
+   free(ptr);
 }
 
 const sc_memory_i Memory = {
     .alloc = mem_alloc,
-    .free = mem_free};
+    .free = mem_free,
+};

@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 static void set_config(FILE **log_stream) {
-   *log_stream = fopen("logs/test_sigtest.log", "w");
+   *log_stream = fopen("logs/test_memory.log", "w");
 }
 
 //  test memory allocation and deallocation
@@ -26,5 +26,6 @@ void test_memory_alloc_free(void) {
 //  register test cases
 __attribute__((constructor)) void init_memory_tests(void) {
    testset("core_memory_set", set_config, NULL);
+
    testcase("memory_alloc_free", test_memory_alloc_free);
 }

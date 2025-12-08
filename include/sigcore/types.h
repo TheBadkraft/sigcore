@@ -25,11 +25,16 @@
  * Description: Header file for SigmaCore type definitions
  */
 #pragma once
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef void *object;
 typedef uintptr_t addr;
 typedef int64_t integer;
 typedef char *string;
 typedef size_t usize;
+
+// empty addr
+#define ADDR_EMPTY ((addr)0)
+// size of addr
+#define ADDR_SIZE sizeof(addr)

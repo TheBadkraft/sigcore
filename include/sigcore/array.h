@@ -39,17 +39,54 @@ typedef struct sc_array *array;
 
 /* Public interface for array operations                        */
 /* ============================================================ */
-typedef struct sc_array_i
-{
-    /**
-     * @brief Initialize a new array with the specified initial capacity.
-     * @param capacity Initial array capacity
-     */
-    array (*new)(int);
-    /**
-     * @brief Dispose of the array and free associated resources.
-     * @param arr The array to dispose of
-     */
-    void (*dispose)(array);
+typedef struct sc_array_i {
+   /**
+    * @brief Initialize a new array with the specified initial capacity.
+    * @param capacity Initial array capacity
+    */
+   array (*new)(int);
+   /**
+    * @brief Initialize an array with the specified capacity.
+    * @param arr The array to initialize
+    * @param capacity Initial array capacity
+    */
+   void (*init)(array *, int);
+   /**
+    * @brief Dispose of the array and free associated resources.
+    * @param arr The array to dispose of
+    */
+   void (*dispose)(array);
+   /**
+    * @brief Get the current capacity of the array.
+    * @param arr The array to query
+    * @return Current capacity of the array
+    */
+   int (*capacity)(array);
+   /**
+    * @brief Clear the contents of the array.
+    * @param arr The array to clear
+    */
+   void (*clear)(array);
+   /**
+    * @brief Set the value at the specified index in the array.
+    * @param arr The array to modify
+    * @param index Index at which to set the value
+    * @param value Value to set
+    */
+   void (*set)(array, int, addr);
+   /**
+    * @brief Get the value at the specified index in the array.
+    * @param arr The array to query
+    * @param index Index from which to get the value
+    * @param out_value Pointer to store the retrieved value
+    * @return 0 on success; otherwise non-zero
+    */
+   int (*get)(array, int, addr *);
+   /**
+    * @brief Remove the element at the specified index, shifting remaining elements left.
+    * @param arr The array to modify
+    * @param index Index of the element to remove
+    */
+   void (*remove)(array, int);
 } sc_array_i;
 extern const sc_array_i Array;
