@@ -33,7 +33,7 @@
 #include "sigcore/memory.h"
 #include <string.h>
 
-//  now declare the Array struct: the collection with attitude
+//  declare the Array struct: the collection with attitude
 struct sc_array {
    addr *bucket; // pointer to first element (array of addr)
    addr end;     // one past allocated memory (as raw addr)
