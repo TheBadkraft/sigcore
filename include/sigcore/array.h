@@ -72,8 +72,9 @@ typedef struct sc_array_i {
     * @param arr The array to modify
     * @param index Index at which to set the value
     * @param value Value to set
+    * @return 0 on success; otherwise non-zero
     */
-   void (*set)(array, int, addr);
+   int (*set)(array, int, addr);
    /**
     * @brief Get the value at the specified index in the array.
     * @param arr The array to query
@@ -86,7 +87,8 @@ typedef struct sc_array_i {
     * @brief Remove the element at the specified index, shifting remaining elements left.
     * @param arr The array to modify
     * @param index Index of the element to remove
+    * @return 0 on success; otherwise non-zero
     */
-   void (*remove)(array, int);
+   int (*remove)(array, int);
 } sc_array_i;
 extern const sc_array_i Array;

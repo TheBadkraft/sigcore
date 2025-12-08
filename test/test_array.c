@@ -90,7 +90,7 @@ static void test_array_set_value(void) {
    int values[] = {1, 2, 3, 4, 5};
    // set values in array
    for (int i = 0; i < 5; i++) {
-      Array.set(arr, i, (addr)values[i]);
+      Assert.areEqual(&(int){0}, &(int){Array.set(arr, i, (addr)values[i])}, INT, "Array set failed at index %d", i);
    }
    // we can spoof the array here with an anonymous struct
    struct spoofed_array {
@@ -135,7 +135,7 @@ static void test_array_remove_at(void) {
    }
 
    // Remove at index 2 (removes 30)
-   Array.remove(arr, 2);
+   Assert.areEqual(&(int){0}, &(int){Array.remove(arr, 2)}, INT, "Array remove failed at index 2");
 
    // Expected after removal: 10, 20, 40, 50, 0
    int expected_values[] = {10, 20, 40, 50, 0};
@@ -152,6 +152,29 @@ static void test_array_remove_at(void) {
    Array.dispose(arr);
 }
 
+//  negative test cases
+static void test_array_set_out_of_bounds(void) {
+   array arr = Array.new(5);
+   int result = Array.set(arr, 10, (addr)999);
+   Assert.areEqual(&result, &((int){-1}), INT, "set out of bounds should return -1");
+   Array.dispose(arr);
+}
+
+static void test_array_get_out_of_bounds(void) {
+   array arr = Array.new(5);
+   addr value = 0;
+   int result = Array.get(arr, 10, &value);
+   Assert.areEqual(&result, &((int){-1}), INT, "get out of bounds should return -1");
+   Array.dispose(arr);
+}
+
+static void test_array_remove_out_of_bounds(void) {
+   array arr = Array.new(5);
+   int result = Array.remove(arr, 10);
+   Assert.areEqual(&result, &((int){-1}), INT, "remove out of bounds should return -1");
+   Array.dispose(arr);
+}
+
 //  register test cases
 __attribute__((constructor)) void init_array_tests(void) {
    testset("core_array_set", set_config, NULL);
@@ -165,4 +188,8 @@ __attribute__((constructor)) void init_array_tests(void) {
    testcase("array_set_value", test_array_set_value);
    testcase("array_get_value", test_array_get_value);
    testcase("array_remove_at", test_array_remove_at);
+
+   testcase("array_set_out_of_bounds", test_array_set_out_of_bounds);
+   testcase("array_get_out_of_bounds", test_array_get_out_of_bounds);
+   testcase("array_remove_out_of_bounds", test_array_remove_out_of_bounds);
 }

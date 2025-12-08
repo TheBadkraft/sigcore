@@ -30,4 +30,4 @@
  */
 #pragma once
 
-#include "sigcore/types.h"
+#include "sigcore/array.h"

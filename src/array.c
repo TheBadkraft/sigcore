@@ -108,16 +108,16 @@ static void array_clear(array arr) {
    memset(arr->bucket, 0, num_elements * sizeof(addr));
 }
 // handle value set and get functions
-static void array_set_at(array arr, int index, addr value) {
+static int array_set_at(array arr, int index, addr value) {
    if (!arr || !arr->bucket) {
-      return; // invalid array
+      return -1; // invalid array
    }
    int cap = array_capacity(arr);
    if (index < 0 || index >= cap) {
-      return; // index out of bounds
+      return -1; // index out of bounds
    }
    arr->bucket[index] = value;
-   // Note: last is not updated here; caller manages it if needed
+   return 0; // success
 }
 static int array_get_at(array arr, int index, addr *out_value) {
    if (!arr || !arr->bucket || !out_value) {
@@ -130,13 +130,13 @@ static int array_get_at(array arr, int index, addr *out_value) {
    *out_value = arr->bucket[index];
    return 0; // success
 }
-static void array_remove_at(array arr, int index) {
+static int array_remove_at(array arr, int index) {
    if (!arr || !arr->bucket) {
-      return; // invalid array
+      return -1; // invalid array
    }
    int cap = array_capacity(arr);
    if (index < 0 || index >= cap) {
-      return; // index out of bounds
+      return -1; // index out of bounds
    }
    // Shift elements left to fill the gap
    for (int i = index; i < cap - 1; i++) {
@@ -144,6 +144,7 @@ static void array_remove_at(array arr, int index) {
    }
    // Clear the last element
    arr->bucket[cap - 1] = (addr)0;
+   return 0; // success
 }
 
 //  public interface implementation
