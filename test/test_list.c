@@ -390,7 +390,6 @@ static void test_list_remove_out_of_bounds(void) {
    List.append(lst, p);
 
    // Try to remove at invalid indices
-
    // Index -1 (negative)
    int result = List.remove(lst, -1);
    Assert.areEqual(&(int){-1}, &result, INT, "List remove should fail for negative index");
@@ -561,7 +560,7 @@ static void load_person_list(list *lst) {
 }
 static void dispose_persons(list lst) {
    object p = NULL;
-   for (int i = 0; i < List.size(lst); i++) {
+   for (usize i = 0; i < List.size(lst); i++) {
       List.get(lst, i, &p);
       // writelnf("Disposing person id: %d, name: %s", ((Person *)p)->id, ((Person *)p)->name);
       Memory.free(p);

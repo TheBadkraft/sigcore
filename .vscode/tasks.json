@@ -35,6 +35,7 @@
                 "build/test/${fileBasenameNoExtension}.o",
                 "build/array.o",
                 "build/list.o",
+                "build/slotarray.o",
                 "build/memory.o",
                 "-o",
                 "build/test/${fileBasenameNoExtension}",

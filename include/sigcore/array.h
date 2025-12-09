@@ -44,13 +44,13 @@ typedef struct sc_array_i {
     * @brief Initialize a new array with the specified initial capacity.
     * @param capacity Initial array capacity
     */
-   array (*new)(int);
+   array (*new)(usize);
    /**
     * @brief Initialize an array with the specified capacity.
     * @param arr The array to initialize
     * @param capacity Initial array capacity
     */
-   void (*init)(array *, int);
+   void (*init)(array *, usize);
    /**
     * @brief Dispose of the array and free associated resources.
     * @param arr The array to dispose of
@@ -74,7 +74,7 @@ typedef struct sc_array_i {
     * @param value Value to set
     * @return 0 on success; otherwise non-zero
     */
-   int (*set)(array, int, addr);
+   int (*set)(array, usize, addr);
    /**
     * @brief Get the value at the specified index in the array.
     * @param arr The array to query
@@ -82,13 +82,13 @@ typedef struct sc_array_i {
     * @param out_value Pointer to store the retrieved value
     * @return 0 on success; otherwise non-zero
     */
-   int (*get)(array, int, addr *);
+   int (*get)(array, usize, addr *);
    /**
     * @brief Remove the element at the specified index, shifting remaining elements left.
     * @param arr The array to modify
     * @param index Index of the element to remove
     * @return 0 on success; otherwise non-zero
     */
-   int (*remove)(array, int);
+   int (*remove)(array, usize);
 } sc_array_i;
 extern const sc_array_i Array;

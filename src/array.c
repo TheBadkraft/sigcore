@@ -41,11 +41,11 @@ struct sc_array {
 };
 
 // forward declarations of internal functions
-static array array_new(int);
+static array array_new(usize);
 static void array_dispose(array);
 
 // create a new array with the specified initial capacity
-static array array_new(int capacity) {
+static array array_new(usize capacity) {
    //  allocate memory for the array structure
    struct sc_array *arr = Memory.alloc(sizeof(struct sc_array));
    if (!arr) {
@@ -65,7 +65,7 @@ static array array_new(int capacity) {
    return (array)arr;
 }
 // initialize array with the specified capacity
-static void array_init(array *arr, int capacity) {
+static void array_init(array *arr, usize capacity) {
    // we expect the arr to be uninitialized
    if (!*arr) {
       // allocate memory for the array structure
@@ -113,31 +113,31 @@ static void array_clear(array arr) {
 }
 
 // set the value at the specified index in the array
-static int array_set_at(array arr, int index, addr value) {
+static int array_set_at(array arr, usize index, addr value) {
    if (!arr || !arr->bucket) {
       return -1; // invalid array
    }
-   int cap = array_capacity(arr);
-   if (index < 0 || index >= cap) {
+   usize cap = array_capacity(arr);
+   if (index >= cap) {
       return -1; // index out of bounds
    }
    arr->bucket[index] = value;
    return 0; // success
 }
 // get the value at the specified index in the array
-static int array_get_at(array arr, int index, addr *out_value) {
+static int array_get_at(array arr, usize index, addr *out_value) {
    if (!arr || !arr->bucket || !out_value) {
       return -1; // invalid parameters
    }
-   int cap = array_capacity(arr);
-   if (index < 0 || index >= cap) {
+   usize cap = array_capacity(arr);
+   if (index >= cap) {
       return -1; // index out of bounds
    }
    *out_value = arr->bucket[index];
    return 0; // success
 }
 // remove the element at the specified index
-static int array_remove_at(array arr, int index) {
+static int array_remove_at(array arr, usize index) {
    /*
       The reason array does not shift elements left upon removal is to maintain
       consistent performance characteristics and to maintain consitency with
@@ -148,8 +148,8 @@ static int array_remove_at(array arr, int index) {
    if (!arr || !arr->bucket) {
       return -1; // invalid array
    }
-   int cap = array_capacity(arr);
-   if (index < 0 || index >= cap) {
+   usize cap = array_capacity(arr);
+   if (index >= cap) {
       return -1; // index out of bounds
    }
    // we do not shift elements, just set to ADDR_EMPTY

@@ -40,7 +40,7 @@ struct sc_list {
 };
 
 //  create new list with specified initial capacity
-static list list_new(int capacity) {
+static list list_new(usize capacity) {
    //  allocate memory for the list structure
    struct sc_list *lst = Memory.alloc(sizeof(struct sc_list));
    if (!lst) {
@@ -78,8 +78,8 @@ static int list_grow(list lst) {
    }
 
    // calculate new capacity (1.5x growth, minimum +1)
-   int current_capacity = Array.capacity(lst->bucket);
-   int new_capacity = (current_capacity * 3) / 2;
+   usize current_capacity = Array.capacity(lst->bucket);
+   usize new_capacity = (current_capacity * 3) / 2;
    if (new_capacity == current_capacity) {
       new_capacity++; // ensure growth
    }
@@ -113,14 +113,14 @@ static int list_grow(list lst) {
    return 0; // success
 }
 //  get the current capacity of the list
-static int list_capacity(list lst) {
+static usize list_capacity(list lst) {
    if (!lst) {
       return 0; // invalid list
    }
    return Array.capacity(lst->bucket);
 }
 //  get the current size of the list
-static int list_size(list lst) {
+static usize list_size(list lst) {
    if (!lst) {
       return 0; // invalid list
    }
@@ -156,7 +156,7 @@ static int list_append(list lst, object value) {
    return 0; // success
 }
 //  get the value at the specified index in the list
-static int list_get_at(list lst, int index, object *out_value) {
+static int list_get_at(list lst, usize index, object *out_value) {
    // out_value is going to be NULL coming in
    if (!lst) {
       return -1; // invalid list
@@ -172,7 +172,7 @@ static int list_get_at(list lst, int index, object *out_value) {
    return Array.get(lst->bucket, index, (addr *)out_value);
 }
 //  remove the element at the specified index from the list
-static int list_remove_at(list lst, int index) {
+static int list_remove_at(list lst, usize index) {
    int result = -1;
    if (!lst) {
       return result; // invalid list
@@ -201,7 +201,7 @@ static int list_remove_at(list lst, int index) {
    return result;
 }
 // set the value at the specified index in the list
-static int list_set_at(list lst, int index, object value) {
+static int list_set_at(list lst, usize index, object value) {
    // any reason we should prevent NULLs from being set?
    if (!lst) {
       return -1; // invalid parameters
@@ -217,7 +217,7 @@ static int list_set_at(list lst, int index, object value) {
    // now use the array's set function
    return Array.set(lst->bucket, index, (addr)value);
 }
-static int list_insert_at(list lst, int index, object value) {
+static int list_insert_at(list lst, usize index, object value) {
    // NULLs are allowed ... not my call, that's on the user
    if (!lst) {
       return -1; // invalid parameters

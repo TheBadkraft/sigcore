@@ -36,14 +36,14 @@
 struct sc_list;
 typedef struct sc_list *list;
 
-/* Public interface for list operations                        */
+/* Public interface for list operations                         */
 /* ============================================================ */
 typedef struct sc_list_i {
    /**
     * @brief Create a new list with the specified initial capacity.
     * @param capacity Initial list capacity
     */
-   list (*new)(int);
+   list (*new)(usize);
    /**
     * @brief Dispose of the list and free associated resources.
     * @param lst The list to dispose of
@@ -54,13 +54,13 @@ typedef struct sc_list_i {
     * @param lst The list to query
     * @return Current capacity of the list
     */
-   int (*capacity)(list);
+   usize (*capacity)(list);
    /**
     * @brief Get the current size (number of elements) of the list.
     * @param lst The list to query
     * @return Current size of the list
     */
-   int (*size)(list);
+   usize (*size)(list);
    /**
     * @brief Append a value to the end of the list.
     * @param lst The list to append to
@@ -75,14 +75,14 @@ typedef struct sc_list_i {
     * @param out_value Pointer to store the retrieved value
     * @return 0 on success; otherwise, non-zero
     */
-   int (*get)(list, int, object *);
+   int (*get)(list, usize, object *);
    /**
     * @brief Remove the element at the specified index from the list.
     * @param lst The list to modify
     * @param index Index of the element to remove
     * @return 0 on success; otherwise, non-zero
     */
-   int (*remove)(list, int);
+   int (*remove)(list, usize);
    /**
     * @brief Overwrite the value at the specified index in the list.
     * @param lst The list to modify
@@ -90,7 +90,7 @@ typedef struct sc_list_i {
     * @param value Value to set
     * @return 0 on success; otherwise, non-zero
     */
-   int (*set)(list, int, object);
+   int (*set)(list, usize, object);
    /**
     * @brief Insert a value at the specified index in the list, shifting subsequent elements right.
     * @param lst The list to modify
@@ -98,7 +98,7 @@ typedef struct sc_list_i {
     * @param value Value to insert
     * @return 0 on success; otherwise, non-zero
     */
-   int (*insert)(list, int, object);
+   int (*insert)(list, usize, object);
    /**
     * @brief Prepend a value to the start of the list.
     * @param lst The list to modify
