@@ -1,6 +1,15 @@
 {
-   "C_Cpp.errorSquiggles": "disabled",
-   "files.associations": {
-      "collections.h": "c"
-   }
+    "C_Cpp.clang_format_style": "file",
+    "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools",
+        "editor.tabSize": 3,
+        "editor.formatOnSave": true,
+        "editor.detectIndentation": false
+    },
+    "[cpp]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools",
+        "editor.tabSize": 3,
+        "editor.formatOnSave": true,
+        "editor.detectIndentation": false
+    }
 }

@@ -1,0 +1,59 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "gcc: compile active test",
+            "type": "shell",
+            "command": "gcc",
+            "args": [
+                "-Wall",
+                "-Wextra",
+                "-g",
+                "-fPIC",
+                "-std=c2x",
+                "-Iinclude",
+                "-DTSTDBG",
+                "-I/usr/include/sigmatest",
+                "-c",
+                "${file}",
+                "-o",
+                "build/test/${fileBasenameNoExtension}.o"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "panel": "shared"
+            },
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "gcc: link active test",
+            "type": "shell",
+            "command": "gcc",
+            "args": [
+                "build/test/${fileBasenameNoExtension}.o",
+                "build/array.o",
+                "build/list.o",
+                "build/slotarray.o",
+                "build/memory.o",
+                "-o",
+                "build/test/${fileBasenameNoExtension}",
+                "-lstest",
+                "-L/usr/lib",
+                "-Wl,--wrap=malloc",
+                "-Wl,--wrap=free",
+                "-Wl,--wrap=calloc",
+                "-Wl,--wrap=realloc"
+            ],
+            "dependsOn": "gcc: compile active test",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

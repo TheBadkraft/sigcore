@@ -1,240 +1,287 @@
-// list.c
 /*
- * Implements a dynamic list of object pointers for sigcore.
- * Provides the IList interface for managing a growable array of addr (object pointers).
- * Uses Mem for allocation, with bucket as the storage array, end as the address of the last used element
- * (indicating the next slot is free), and end pointing past the last usable slot. Resizes by doubling capacity
- * when full, leveraging Collections for copy, clear, and index operations. Designed for efficient addition
- * and iteration, with a focus on modularity and reuse across sigcore applications.
+ * Sigma-Test
+ * Copyright (c) 2025 David Boarman (BadKraft) and contributors
+ * QuantumOverride [Q|]
+ * ----------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * ----------------------------------------------
+ * File: list.c
+ * Description: Source file for SigmaCore list definitions and interfaces
+ *
+ * List:    An ordered collection structure derived from Array that allows
+ *          dynamic resizing, element insertion, removal, and retrieval by index,
+ *          or by appending to the end.
  */
-#include "sigcore.h"
-#include "collections.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include "sigcore/list.h"
+#include "sigcore/collections.h"
+#include "sigcore/internal/collections.h"
+#include "sigcore/memory.h"
 
-//	static void print_list_items(list);
-static int getCount(list self);
-static int getCapacity(list self);
+//  declare the List struct: derived from Array
+struct sc_list {
+   array bucket; // base array structure
+   addr last;    // pointer to the last valid element (inclusive)
+};
 
-/* Creates a new list with initial capacity, allocating space for capacity + 1 slots */
-static list newList(int capacity)
-{
-	// printf("create new list cap=%d ", capacity);
-	list self = Mem.alloc(sizeof(struct list_s));
-	// printf("[%s]\n", self != NULL ? "TRUE" : "FALSE");
+//  create new list with specified initial capacity
+static list list_new(usize capacity) {
+   //  allocate memory for the list structure
+   struct sc_list *lst = Memory.alloc(sizeof(struct sc_list));
+   if (!lst) {
+      return NULL; // allocation failed
+   }
 
-	if (self)
-	{
-		self->bucket = Mem.alloc((capacity + 1) * ADDR_SIZE);
+   //  create the underlying array
+   lst->bucket = Array.new(capacity);
+   if (!lst->bucket) {
+      Memory.free(lst);
+      return NULL; // allocation failed
+   }
 
-		if (!self->bucket)
-		{
-			Mem.free(self);
-			return NULL;
-		}
-		self->last = (addr)self->bucket;
-		self->end = (addr)self->bucket + capacity * ADDR_SIZE;
+   //  initialize last pointer to one before start (empty list)
+   lst->last = array_get_bucket_start(lst->bucket) - ADDR_SIZE;
 
-		// printf("set list last=%lu end=%lu capacity=%d\n", self->last, self->end, getCapacity(self));
-
-		Collections.clear(self->bucket, self->end + ADDR_SIZE);
-	}
-
-	return self;
+   return lst;
 }
-/* Returns the number of items currently in the list */
-static int getCount(list self)
-{
-	return Collections.count(self->bucket, self->last);
+//  dispose of the list and free resources
+static void list_dispose(list lst) {
+   if (!lst) {
+      return; // nothing to dispose
+   }
+
+   //  dispose of the underlying array
+   Array.dispose(lst->bucket);
+
+   //  free the list structure itself
+   Memory.free(lst);
 }
-/* Returns the total number of slots available in the list */
-static int getCapacity(list self)
-{
-	return Collections.count(self->bucket, self->end);
+//  grow the list's underlying array to accommodate more elements
+static int list_grow(list lst) {
+   if (!lst) {
+      return -1; // invalid list
+   }
+
+   // calculate new capacity (1.5x growth, minimum +1)
+   usize current_capacity = Array.capacity(lst->bucket);
+   usize new_capacity = (current_capacity * 3) / 2;
+   if (new_capacity == current_capacity) {
+      new_capacity++; // ensure growth
+   }
+
+   // create new array with larger capacity
+   array new_bucket = Array.new(new_capacity);
+   if (!new_bucket) {
+      return -1; // allocation failed
+   }
+
+   // copy existing data
+   addr old_start = array_get_bucket_start(lst->bucket);
+   addr new_start = array_get_bucket_start(new_bucket);
+   addr old_last = lst->last;
+
+   for (addr pos = old_start; pos <= old_last; pos += ADDR_SIZE) {
+      addr offset = pos - old_start;
+      addr new_pos = new_start + offset;
+      *((object *)new_pos) = *((object *)pos);
+   }
+
+   // update list pointers
+   addr old_bucket_start = array_get_bucket_start(lst->bucket);
+   addr new_bucket_start = array_get_bucket_start(new_bucket);
+   lst->last = new_bucket_start + (lst->last - old_bucket_start);
+
+   // dispose old array and update bucket
+   Array.dispose(lst->bucket);
+   lst->bucket = new_bucket;
+
+   return 0; // success
 }
-/* Resets the list to empty, clearing all items and resetting last to the start */
-static void clearList(list self)
-{
-	if (!self)
-		return;
-	Collections.clear(self->bucket, self->last);
-	self->last = (addr)self->bucket;
+//  get the current capacity of the list
+static usize list_capacity(list lst) {
+   if (!lst) {
+      return 0; // invalid list
+   }
+   return Array.capacity(lst->bucket);
 }
-/* Returns an iterator for traversing the list’s items */
-static iterator getRangeIterator(list self, int start, int count)
-{
-	if (!self || !self->bucket || start < 0 || count < 0)
-		return NULL;
-	int total = getCount(self);
-	if (start >= total)
-		return NULL; // bounds check
-	//	adjust count to actual range
-	count = (count > (total - start)) ? (total - start) : count;
-
-	object range_start = self->bucket + start;
-	object range_end = self->bucket + start + count;
-	return create_iterator(range_start, range_end, ADDR_SIZE);
+//  get the current size of the list
+static usize list_size(list lst) {
+   if (!lst) {
+      return 0; // invalid list
+   }
+   addr start = array_get_bucket_start(lst->bucket);
+   if (lst->last < start) {
+      return 0; // empty list
+   }
+   return (int)(((lst->last - start) / sizeof(addr)) + 1);
 }
-/* Frees the list’s bucket and the list structure itself */
-static void freeList(list self)
-{
-	// printf("\nMem.free ");
-	if (self)
-	{
-		Mem.free(self->bucket);
-		// printf("bucket(%p)\n", self->bucket);
-		Mem.free(self);
-		// printf("Mem.free self  (%p)\n", self);
-	}
+//  append a value to the end of the list
+static int list_append(list lst, object value) {
+   if (!lst || !value) {
+      return -1; // invalid parameters
+   }
+   //  get next position (one past current last)
+   addr next_pos = lst->last + ADDR_SIZE;
+   //  make sure we are within capacity
+   addr bucket_end = array_get_bucket_end(lst->bucket);
+   if (next_pos >= bucket_end) {
+      // try to grow the list
+      if (list_grow(lst) != 0) {
+         return -1; // growth failed
+      }
+      // recalculate after growth
+      bucket_end = array_get_bucket_end(lst->bucket);
+      next_pos = lst->last + ADDR_SIZE;
+   }
+
+   //  append the value
+   *((object *)next_pos) = value;
+   lst->last = next_pos;
+
+   return 0; // success
 }
-/* Adds an object to the list, resizing by doubling capacity if full */
-static void addItem(list self, object item)
-{
-	if (!self)
-		return;
-	int count = getCount(self);
-	int capacity = getCapacity(self);
-
-	//	resizing if necessary (doubling capacity)
-	if (self->last == self->end)
-	{
-		capacity = capacity ? capacity * 2 : 4;
-		addr *new_bucket = Mem.alloc((capacity + 1) * ADDR_SIZE);
-		if (!new_bucket)
-			return;
-
-		//	new Collections.copyTo
-		Collections.copyTo(self->bucket, new_bucket, self->last);
-		//	leverage Collections.clear
-		Collections.clear(new_bucket + count, (addr)new_bucket + (capacity + 1) * ADDR_SIZE);
-
-		Mem.free(self->bucket);
-		self->bucket = new_bucket;
-		self->last = (addr)self->bucket + count * ADDR_SIZE;
-		self->end = (addr)self->bucket + capacity * ADDR_SIZE;
-	}
-
-	self->bucket[count] = (addr)item;
-	self->last += ADDR_SIZE;
+//  get the value at the specified index in the list
+static int list_get_at(list lst, usize index, object *out_value) {
+   // out_value is going to be NULL coming in
+   if (!lst) {
+      return -1; // invalid list
+   }
+   // validate the index
+   addr start = array_get_bucket_start(lst->bucket);
+   //  indices are incremented by ADDR size
+   addr target_pos = start + (index * ADDR_SIZE);
+   if (target_pos > lst->last) {
+      return -1; // index out of bounds
+   }
+   // now use the array's get function
+   return Array.get(lst->bucket, index, (addr *)out_value);
 }
-/* Copies a range of items from source to dest, resizing dest if needed */
-static int copyToList(list source, list dest, int start, int count)
-{
-	int res = 0;
-	if (!source || !dest || start < 0 || count < 0)
-		return res;
+//  remove the element at the specified index from the list
+static int list_remove_at(list lst, usize index) {
+   int result = -1;
+   if (!lst) {
+      return result; // invalid list
+   }
+   // validate the index
+   addr start = array_get_bucket_start(lst->bucket);
+   addr target_pos = start + (index * ADDR_SIZE);
+   if (target_pos > lst->last) {
+      return result; // index out of bounds
+   }
+   // remove at index using the array's remove function
+   result = Array.remove(lst->bucket, index);
+   // do we need to condense array and reset last ... ???
+   if (result == 0) {
+      // compact the array to remove the hole
+      usize non_empty_count = Collections.compact(lst->bucket);
+      // reset last pointer based on non-empty count
+      addr bucket_start = array_get_bucket_start(lst->bucket);
+      if (non_empty_count == 0) {
+         lst->last = bucket_start - ADDR_SIZE; // empty list
+      } else {
+         lst->last = bucket_start + ((non_empty_count - 1) * ADDR_SIZE);
+      }
+   }
 
-	//	validate source count and capacity
-	int srcCount = getCount(source);
-	if (start >= srcCount)
-		return 0;
-
-	//	adjust count to fit source availability
-	int itemCount = srcCount - start;
-	int copyCount = (count > itemCount) ? itemCount : count;
-	if (copyCount <= 0)
-		return 0;
-
-	//	validate dest count and capacity
-	int dstCount = getCount(dest);
-	int dstCapacity = getCapacity(dest);
-	int incrCapacity = dstCount + copyCount;
-
-	//	resize if necessary
-	if (incrCapacity > dstCapacity)
-	{
-		int newCapacity = dstCapacity ? dstCapacity * 2 : 4;
-		while (newCapacity < incrCapacity)
-			newCapacity *= 2;
-
-		addr *new_bucket = Mem.alloc((newCapacity + 1) * ADDR_SIZE);
-		if (!new_bucket)
-			return 0;
-
-		//	copy existing dest items
-		Collections.copyTo(dest->bucket, new_bucket, dest->last);
-		Collections.clear(new_bucket + dstCount, (addr)new_bucket + (newCapacity + 1) * ADDR_SIZE);
-
-		Mem.free(dest->bucket);
-		dest->bucket = new_bucket;
-		dest->last = (addr)dest->bucket + dstCount * ADDR_SIZE;
-		dest->end = (addr)dest->bucket + newCapacity * ADDR_SIZE;
-	}
-
-	//	copy items from source to dest
-	addr *srcStart = source->bucket + start;
-	addr *dstStart = dest->bucket + dstCount;
-	addr dstEnd = dest->last + (copyCount * ADDR_SIZE);
-	Collections.copyTo(srcStart, dstStart, dstEnd);
-	dest->last = dstEnd;
-
-	return copyCount;
+   return result;
 }
-/* Returns the index of the first occurrence of an item, or -1 if not found */
-static int getIndexOf(list self, object item)
-{
-	int res = -1;
-	if (self)
-	{
-		res = Collections.indexOf(self->bucket, self->last, item);
-	}
-
-	return res;
+// set the value at the specified index in the list
+static int list_set_at(list lst, usize index, object value) {
+   // any reason we should prevent NULLs from being set?
+   if (!lst) {
+      return -1; // invalid parameters
+   }
+   // validate the index
+   addr start = array_get_bucket_start(lst->bucket);
+   addr target_pos = start + (index * ADDR_SIZE);
+   // last is inclusive .. it is the last valid position, period
+   if (target_pos > lst->last) {
+      return -1; // index out of bounds
+   }
+   // set is an overwrite, so no need to adjust last pointer
+   // now use the array's set function
+   return Array.set(lst->bucket, index, (addr)value);
 }
-/* Returns the object at the specified index */
-static object getItemAt(list self, int index)
-{
-	if (!self)
-		return NULL;
-	addr item = Collections.getAtIndex(self->bucket, self->last, index);
-	return (object)item;
-}
-/* Removes the first occurrence of an item, compacting the list afterward */
-static void removeItem(list self, object item)
-{
-	if (!self)
-		return;
+static int list_insert_at(list lst, usize index, object value) {
+   // NULLs are allowed ... not my call, that's on the user
+   if (!lst) {
+      return -1; // invalid parameters
+   }
+   // validate the index
+   addr start = array_get_bucket_start(lst->bucket);
+   addr target_pos = start + (index * ADDR_SIZE);
+   // allow insert at size (append)
+   addr one_past_last = lst->last + ADDR_SIZE;
+   if (target_pos > one_past_last) {
+      return -1; // index out of bounds
+   }
+   // make sure we have capacity
+   addr bucket_end = array_get_bucket_end(lst->bucket);
+   if (one_past_last >= bucket_end) {
+      // try to grow the list
+      if (list_grow(lst) != 0) {
+         return -1; // growth failed
+      }
+      // recalculate after growth
+      bucket_end = array_get_bucket_end(lst->bucket);
+      one_past_last = lst->last + ADDR_SIZE;
+   }
+   // shift elements right from index to last
+   for (addr pos = one_past_last; pos > target_pos; pos -= ADDR_SIZE) {
+      addr prev_pos = pos - ADDR_SIZE;
+      *((object *)pos) = *((object *)prev_pos);
+   }
+   // insert the new value
+   *((object *)target_pos) = value;
+   // update last pointer
+   lst->last += ADDR_SIZE;
 
-	int index = Collections.indexOf(self->bucket, self->last, item);
-	if (index != -1)
-	{
-		//	we found the item
-		Collections.removeAtIndex(self->bucket, self->last, index);
-		// printf("removed:   item=%p end=%p count=%d\n", (object)item, (object)self->end, getCount(self));
-		Collections.compact(self->bucket, &self->last);
-		// printf("compacted:       end=%p count=%d\n", (object)self->end, getCount(self));
-	}
+   return 0; // success
+}
+// prepend a value to the start of the list
+static int list_prepend(list lst, object value) {
+   if (!lst || !value) {
+      return -1; // invalid parameters
+   }
+   return list_insert_at(lst, 0, value);
+}
+// clear the contents of the list
+static void list_clear(list lst) {
+   if (!lst) {
+      return; // invalid list
+   }
+   // clear the underlying array
+   Array.clear(lst->bucket);
+   // reset last pointer to one before start (empty list)
+   lst->last = array_get_bucket_start(lst->bucket) - ADDR_SIZE;
 }
 
-/* utiliity print method */
-/*
-static void print_list_items(list source) {
-	printf("list:   count=%d capacity=%d\n", getCount(source), getCapacity(source));
-	iterator it = getListIterator(source);
-	if (!it) {
-		printf("error retrieving list iterator");
-		return;
-	}
-
-	int index = 0;
-	addr item;
-	while(Iterator.hasNext(it)) {
-		item = Iterator.next(it);
-		printf("[%d] item=%p (%ld)\n", index, (object)item, item);
-	}
-}
-*/
-
-const IList List = {
-	 .new = newList,
-	 .free = freeList,
-	 .add = addItem,
-	 .copyTo = copyToList,
-	 .indexOf = getIndexOf,
-	 .getAt = getItemAt,
-	 .remove = removeItem,
-	 .count = getCount,
-	 .capacity = getCapacity,
-	 .clear = clearList,
-	 .iterateRange = getRangeIterator,
+//  public interface implementation
+const sc_list_i List = {
+    .new = list_new,
+    .dispose = list_dispose,
+    .capacity = list_capacity,
+    .size = list_size,
+    .append = list_append,
+    .get = list_get_at,
+    .remove = list_remove_at,
+    .set = list_set_at,
+    .insert = list_insert_at,
+    .prepend = list_prepend,
+    .clear = list_clear,
 };
