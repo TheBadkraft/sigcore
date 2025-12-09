@@ -1,7 +1,9 @@
-# **SigCore Library**  
+# **SigmaCore Library**  
+
+### TODO: Update ... lot's to update and we could use a lot more information in here ... this is an unimpressive README ...
 
 ## **Overview**  
-**SigCore** is a lightweight C library offering foundational utilities for **memory management**, **dynamic collections**, and **string manipulation**. Designed for simplicity and performance, it provides a consistent interface for allocation, list operations, and efficient string building—ideal for embedded systems, game engines, and high-performance applications.  
+**SigmaCore** is a lightweight C library offering foundational utilities for **memory management**, **dynamic collections**, and **string manipulation**. Designed for simplicity and performance, it provides a consistent interface for allocation, list operations, and efficient string building — ideal for embedded systems, game engines, and high-performance applications.  
 
 ### **Purpose**  
 - **Memory Management**: Centralized allocation/deallocation with optional tracking.  
@@ -119,8 +121,8 @@ StringBuilder.toStream(sb, stdout); // Write to console
 
 ---
 
-## **Why SigCore?**  
-- **Zero Bloat**: No unnecessary features or dependencies.  
+## **Why SigmaCore?**  
+- **Zero Bloat**: The focus is on stability, maintainability, usability, and intuitiveness.  
 - **Stable Indices**: `SlotArray` preserves references for handle-based systems.  
 - **Extensible**: Wrap primitives in domain-specific types (e.g., `EntityManager`).  
 - **Thread-Unsafe by Design**: Opt-in safety via user-managed locks.  
@@ -135,7 +137,7 @@ StringBuilder.toStream(sb, stdout); // Write to console
 
 Building and Testing
 Build: make -- creates bin/lib/libsigcore.so.
-Test: make test_string_builder -- runs StringBuilder tests (requires sigtest).
+Test: make test_string_builder -- runs StringBuilder tests (requires **[SigmaTest](https://github.com/Quantum-Override/sigma-test/blob/main/README.md)**).
 Clean: make clean -- clears build files, keeps directories.
 
 Contributing
