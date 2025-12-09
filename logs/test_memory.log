@@ -1,12 +1,12 @@
-[1] core_collections_set     :   1 :         2025-12-09  17:27:24
+[1] core_memory_set          :   1 :         2025-12-09  17:27:24
 =================================================================
-Running: collections_compact                     2.558 us  [PASS]
+Running: memory_alloc_free                       1.485 us  [PASS]
 =================================================================
 [1]     TESTS=  1        PASS=  1        FAIL=  0        SKIP=  0
 
 ===== Memory Allocations Report =================================
-Memory clean — all 5 allocations freed.
+Memory clean — all 1 allocations freed.
 
 
-  Total mallocs:                5
-  Total frees:                  5
+  Total mallocs:                1
+  Total frees:                  1

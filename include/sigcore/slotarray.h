@@ -33,7 +33,7 @@
  */
 #pragma once
 
-#include "sigcore/array.h"
+#include "sigcore/farray.h"
 struct sc_slotarray;
 typedef struct sc_slotarray *slotarray;
 

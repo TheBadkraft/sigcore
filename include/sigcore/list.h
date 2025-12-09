@@ -30,7 +30,7 @@
  */
 #pragma once
 
-#include "sigcore/array.h"
+#include "sigcore/collections.h"
 
 // forward declaration of the list structure
 struct sc_list;

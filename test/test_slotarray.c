@@ -3,6 +3,7 @@
  *  Description: Test cases for SigmaCore array interfaces
  */
 
+#include "sigcore/farray.h"
 #include "sigcore/memory.h"
 #include "sigcore/slotarray.h"
 #include <sigtest/sigtest.h>
@@ -27,21 +28,19 @@ static void test_slotarray_dispose(void) {
    slotarray sa = SlotArray.new(initial_capacity);
    Assert.isNotNull(sa, "SlotArray creation failed");
 
-   object allocated_bucket = NULL;
-   // spoof the slotarray to access underlying array
+   // spoof the slotarray to access underlying buffer
    struct sc_slotarray {
-      array bucket;
+      struct {
+         void *buffer;
+         void *end;
+      } array;
+      usize stride;
    } *spoofed = (struct sc_slotarray *)sa;
-   // now spoof the underlying array to check disposal
-   struct sc_array {
-      addr *bucket;
-      addr end;
-   } *bucket = (struct sc_array *)spoofed->bucket;
-   allocated_bucket = (object)bucket->bucket;
+   object allocated_buffer = spoofed->array.buffer;
 
    SlotArray.dispose(sa);
-   // after disposal, the allocated bucket should be freed
-   Assert.isFalse(Memory.has(allocated_bucket), "SlotArray disposal failed to free underlying array");
+   // after disposal, the allocated buffer should be freed
+   Assert.isFalse(Memory.has(allocated_buffer), "SlotArray disposal failed to free underlying buffer");
    Assert.isFalse(Memory.has(sa), "SlotArray disposal failed to free slotarray structure");
 }
 
@@ -55,16 +54,16 @@ static void test_slotarray_add_value(void) {
    int handle = SlotArray.add(sa, p1);
    Assert.isTrue(handle >= 0, "SlotArray add failed");
 
-   // spoof the slotarray to access underlying array
+   // spoof the slotarray to access underlying buffer
    struct sc_slotarray {
-      array bucket;
+      struct {
+         void *buffer;
+         void *end;
+      } array;
+      usize stride;
    } *spoofed = (struct sc_slotarray *)sa;
-   // now spoof the underlying array to check added value
-   struct sc_array {
-      addr *bucket;
-      addr end;
-   } *bucket = (struct sc_array *)spoofed->bucket;
-   int *actValue = (int *)bucket->bucket[handle];
+   addr *bucket = (addr *)spoofed->array.buffer;
+   int *actValue = (int *)bucket[handle];
    // just check for value equality
    Assert.areEqual(p1, actValue, PTR, "SlotArray add pointer mismatch");
 

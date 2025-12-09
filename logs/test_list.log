@@ -1,34 +1,34 @@
-[1] core_list_set            :  23 :         2025-12-08  17:49:10
+[1] core_list_set            :  23 :         2025-12-09  17:27:24
 =================================================================
-Running: list_creation                           2.077 us  [PASS]
-Running: list_dispose                            0.642 us  [PASS]
-Running: list_get_capacity                       0.670 us  [PASS]
-Running: list_get_size                           0.460 us  [PASS]
-Running: list_append_value                       0.706 us  [PASS]
-Running: list_get_value                          0.774 us  [PASS]
-Running: list_remove_at                          0.907 us  [PASS]
-Running: list_set_value                          0.955 us  [PASS]
-Running: list_insert_value                       1.057 us  [PASS]
-Running: list_prepend_value                      1.531 us  [PASS]
-Running: list_clear                              1.101 us  [PASS]
-Running: list_growth                             1.355 us  [PASS]
-Running: list_add_all                            1.480 us  [SKIP]
-Running: list_add_from_array                     0.307 us  [SKIP]
-Running: list_set_out_of_bounds                  0.740 us  [PASS]
-Running: list_get_out_of_bounds                  0.578 us  [PASS]
-Running: list_remove_out_of_bounds               0.602 us  [PASS]
-Running: list_append_null                        0.397 us  [PASS]
-Running: list_prepend_null                       0.372 us  [PASS]
-Running: list_set_empty_list                     0.483 us  [PASS]
-Running: list_get_empty_list                     0.389 us  [PASS]
-Running: list_remove_empty_list                  0.412 us  [PASS]
-Running: list_append_null_value                  0.401 us  [PASS]
+Running: list_creation                          19.685 us  [PASS]
+Running: list_dispose                            0.441 us  [PASS]
+Running: list_get_capacity                       0.574 us  [PASS]
+Running: list_get_size                           0.371 us  [PASS]
+Running: list_append_value                       0.721 us  [PASS]
+Running: list_get_value                          1.085 us  [PASS]
+Running: list_remove_at                          0.876 us  [PASS]
+Running: list_set_value                          0.617 us  [PASS]
+Running: list_insert_value                       0.725 us  [PASS]
+Running: list_prepend_value                      1.778 us  [PASS]
+Running: list_clear                              1.107 us  [PASS]
+Running: list_growth                             1.100 us  [PASS]
+Running: list_add_all                            2.112 us  [SKIP]
+Running: list_add_from_array                     0.219 us  [SKIP]
+Running: list_set_out_of_bounds                  0.725 us  [PASS]
+Running: list_get_out_of_bounds                  0.534 us  [PASS]
+Running: list_remove_out_of_bounds               0.593 us  [PASS]
+Running: list_append_null                        0.364 us  [PASS]
+Running: list_prepend_null                       0.365 us  [PASS]
+Running: list_set_empty_list                     0.434 us  [PASS]
+Running: list_get_empty_list                     0.342 us  [PASS]
+Running: list_remove_empty_list                  0.365 us  [PASS]
+Running: list_append_null_value                  0.377 us  [PASS]
 =================================================================
 [1]     TESTS= 23        PASS= 21        FAIL=  0        SKIP=  2
 
 ===== Memory Allocations Report =================================
-Memory clean — all 93 allocations freed.
+Memory clean — all 92 allocations freed.
 
 
-  Total mallocs:                93
-  Total frees:                  93
+  Total mallocs:                92
+  Total frees:                  92
