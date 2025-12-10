@@ -39,3 +39,7 @@ typedef size_t usize;
 #define ADDR_EMPTY ((addr)0)
 // size of addr
 #define ADDR_SIZE sizeof(addr)
+
+// OK/ERR
+#define OK 0
+#define ERR -1

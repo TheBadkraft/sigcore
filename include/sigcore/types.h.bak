@@ -21,33 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * ----------------------------------------------
- * File:  internal/collections.h
- * Description: Header file for SigmaCore internal collection functions
+ * File: types.h
+ * Description: Header file for SigmaCore type definitions
  */
 #pragma once
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#include "sigcore/collections.h"
-#include "sigcore/parray.h"
+typedef void *object;
+typedef uintptr_t addr;
+typedef int64_t integer;
+typedef char *string;
+typedef size_t usize;
 
-/* Collection structure                                        */
-/* ============================================================ */
-struct sc_collection {
-   struct {
-      void *buffer;
-      void *end;
-   } array;
-   usize stride;
-   usize length;
-};
+// empty addr
+#define ADDR_EMPTY ((addr)0)
+// size of addr
+#define ADDR_SIZE sizeof(addr)
 
-// array internal functions
-addr array_get_bucket_start(parray arr);
-addr array_get_bucket_end(parray arr);
-addr *array_get_bucket(parray arr);
-
-// collection internal functions
-collection collection_new(usize capacity, usize stride);
-void collection_dispose(collection coll);
-int collection_add(collection coll, object ptr);
-int collection_grow(collection coll);
-void collection_clear(collection coll);
+// OK/ERR
+#define OK 0
+#define ERR (-1)

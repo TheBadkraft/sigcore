@@ -12,57 +12,57 @@
  *  where these functions determine a higher-level behavior.
  */
 
-#include "sigcore/array.h"
+#include "sigcore/parray.h"
 #include <sigtest/sigtest.h>
 #include <stdio.h>
 #include <string.h>
 
 //  configure test set
 static void set_config(FILE **log_stream) {
-   *log_stream = fopen("logs/test_array.log", "w");
+   *log_stream = fopen("logs/test_parray.log", "w");
 }
 
 //  basic initialization, disposal, and properties
 static void test_array_new(void) {
    int initial_capacity = 10;
-   array arr = Array.new(initial_capacity);
-   Assert.isNotNull(arr, "Array creation failed");
+   parray arr = PArray.new(initial_capacity);
+   Assert.isNotNull(arr, "Array creation ERRed");
 
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 static void test_array_init_from_null(void) {
    //  initialize &arr with capacity
-   array arr = NULL;
-   Array.init(&arr, 10);
-   Assert.isNotNull(arr, "Array initialization failed");
+   parray arr = NULL;
+   PArray.init(&arr, 10);
+   Assert.isNotNull(arr, "Array initialization ERRed");
 
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 static void test_array_init_existing(void) {
    //  create array first
-   array arr = Array.new(5);
-   Assert.isNotNull(arr, "Array creation failed");
+   parray arr = PArray.new(5);
+   Assert.isNotNull(arr, "Array creation ERRed");
 
    //  re-initialize with new capacity
-   Array.init(&arr, 15);
-   Assert.isNotNull(arr, "Array re-initialization failed");
+   PArray.init(&arr, 15);
+   Assert.isNotNull(arr, "Array re-initialization ERRed");
 
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 static void test_array_get_capacity(void) {
    int exp_capacity = 20;
-   array arr = Array.new(exp_capacity);
-   Assert.isNotNull(arr, "Array creation failed");
-   int act_capacity = Array.capacity(arr);
+   parray arr = PArray.new(exp_capacity);
+   Assert.isNotNull(arr, "Array creation ERRed");
+   int act_capacity = PArray.capacity(arr);
    Assert.areEqual(&exp_capacity, &act_capacity, INT, "Array capacity mismatch");
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 
 //  data manipulation tests
 static void test_array_clear(void) {
    int initial_capacity = 10;
-   array arr = Array.new(initial_capacity);
-   Assert.isNotNull(arr, "Array creation failed");
+   parray arr = PArray.new(initial_capacity);
+   Assert.isNotNull(arr, "Array creation ERRed");
 
    // Spoof the array to inject test values
    struct spoofed_array {
@@ -83,7 +83,7 @@ static void test_array_clear(void) {
    }
 
    // Now clear the array
-   Array.clear(arr);
+   PArray.clear(arr);
 
    // Verify all values are cleared to NULL (ADDR_EMPTY is 0)
    for (int i = 0; i < initial_capacity; i++) {
@@ -91,16 +91,16 @@ static void test_array_clear(void) {
       Assert.isNull((object)cleared_value, "Post-clear value not NULL at index %d", i);
    }
 
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 static void test_array_set_value(void) {
    int initial_capacity = 10;
-   array arr = Array.new(initial_capacity);
+   parray arr = PArray.new(initial_capacity);
    // create sample int array
    int values[] = {1, 2, 3, 4, 5};
    // set values in array
    for (int i = 0; i < 5; i++) {
-      Assert.areEqual(&(int){0}, &(int){Array.set(arr, i, (addr)values[i])}, INT, "Array set failed at index %d", i);
+      Assert.areEqual(&(int){0}, &(int){PArray.set(arr, i, (addr)values[i])}, INT, "Array set ERRed at index %d", i);
    }
    // we can spoof the array here with an anonymous struct
    struct spoofed_array {
@@ -114,38 +114,38 @@ static void test_array_set_value(void) {
       Assert.areEqual(&values[i], &stored_value, INT, "Array set value mismatch at index %d", i);
    }
 
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 static void test_array_get_value(void) {
    int initial_capacity = 10;
-   array arr = Array.new(initial_capacity);
+   parray arr = PArray.new(initial_capacity);
    // create sample int array
    int values[] = {10, 20, 30, 40, 50};
    // set values in array
    for (int i = 0; i < 5; i++) {
-      Array.set(arr, i, (addr)values[i]);
+      PArray.set(arr, i, (addr)values[i]);
    }
 
    for (int i = 0; i < 5; i++) {
       addr element = ADDR_EMPTY;
-      Assert.isTrue(Array.get(arr, i, &element) == 0, "Array get failed at index %d", i);
+      Assert.isTrue(PArray.get(arr, i, &element) == 0, "Array get ERRed at index %d", i);
       writelnf("\tRetrieved value at index %d: exp: %d  act: %d", i, values[i], element);
       Assert.areEqual(&values[i], &element, INT, "Array get value mismatch at index %d", i);
    }
 
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 static void test_array_remove_at(void) {
    int initial_capacity = 5;
-   array arr = Array.new(initial_capacity);
+   parray arr = PArray.new(initial_capacity);
    // Set initial values: 10, 20, 30, 40, 50
    int initial_values[] = {10, 20, 30, 40, 50};
    for (int i = 0; i < 5; i++) {
-      Array.set(arr, i, (addr)initial_values[i]);
+      PArray.set(arr, i, (addr)initial_values[i]);
    }
 
    // Remove at index 2 (removes 30) -- array should not shift left
-   Assert.areEqual(&(int){0}, &(int){Array.remove(arr, 2)}, INT, "Array remove failed at index 2");
+   Assert.areEqual(&(int){0}, &(int){PArray.remove(arr, 2)}, INT, "Array remove ERRed at index 2");
 
    // Expected after removal: 10, 20, ADDR_EMPTY, 40, 50
    int expected_values[] = {10, 20, ADDR_EMPTY, 40, 50};
@@ -159,33 +159,33 @@ static void test_array_remove_at(void) {
       Assert.areEqual(&expected_values[i], &actual_value, INT, "Array remove_at mismatch at index %d", i);
    }
 
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 
 //  negative test cases
 static void test_array_set_out_of_bounds(void) {
-   array arr = Array.new(5);
-   int result = Array.set(arr, 10, (addr)999);
+   parray arr = PArray.new(5);
+   int result = PArray.set(arr, 10, (addr)999);
    Assert.areEqual(&result, &((int){-1}), INT, "set out of bounds should return -1");
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 static void test_array_get_out_of_bounds(void) {
-   array arr = Array.new(5);
+   parray arr = PArray.new(5);
    addr value = 0;
-   int result = Array.get(arr, 10, &value);
+   int result = PArray.get(arr, 10, &value);
    Assert.areEqual(&result, &((int){-1}), INT, "get out of bounds should return -1");
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 static void test_array_remove_out_of_bounds(void) {
-   array arr = Array.new(5);
-   int result = Array.remove(arr, 10);
+   parray arr = PArray.new(5);
+   int result = PArray.remove(arr, 10);
    Assert.areEqual(&result, &((int){-1}), INT, "remove out of bounds should return -1");
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 
 //  register test cases
 __attribute__((constructor)) void init_array_tests(void) {
-   testset("core_array_set", set_config, NULL);
+   testset("core_pointer_array_set", set_config, NULL);
 
    testcase("array_creation", test_array_new);
    testcase("array_init_from_null", test_array_init_from_null);

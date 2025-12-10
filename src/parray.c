@@ -29,43 +29,43 @@
  *        and share common functionality defined here. This means that the
  *        Iterator mechanism can be uniformly applied across all collection types.
  */
-#include "sigcore/array.h"
+#include "sigcore/parray.h"
 #include "sigcore/internal/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
 
-//  declare the Array struct: the collection with attitude
-struct sc_array {
+//  declare the PointerArray struct: the collection with attitude
+struct sc_pointer_array {
    addr *bucket; // pointer to first element (array of addr)
    addr end;     // one past allocated memory (as raw addr)
 };
 
 // forward declarations of internal functions
-static array array_new(usize);
-static void array_dispose(array);
+static parray array_new(usize);
+static void array_dispose(parray);
 
 // create a new array with the specified initial capacity
-static array array_new(usize capacity) {
+static parray array_new(usize capacity) {
    //  allocate memory for the array structure
-   struct sc_array *arr = Memory.alloc(sizeof(struct sc_array));
+   struct sc_pointer_array *arr = Memory.alloc(sizeof(struct sc_pointer_array));
    if (!arr) {
-      return NULL; // allocation failed
+      return NULL; // allocation ERRed
    }
 
    //  allocate memory for the bucket
    arr->bucket = Memory.alloc(sizeof(addr) * capacity);
    if (!arr->bucket) {
       Memory.free(arr);
-      return NULL; // allocation failed
+      return NULL; // allocation ERRed
    }
 
    arr->end = (addr)(arr->bucket + capacity); // set end to the allocated size
-   Array.clear((array)arr);
+   PArray.clear((parray)arr);
 
-   return (array)arr;
+   return (parray)arr;
 }
 // initialize array with the specified capacity
-static void array_init(array *arr, usize capacity) {
+static void array_init(parray *arr, usize capacity) {
    // we expect the arr to be uninitialized
    if (!*arr) {
       // allocate memory for the array structure
@@ -78,14 +78,14 @@ static void array_init(array *arr, usize capacity) {
       }
       (*arr)->bucket = Memory.alloc(sizeof(addr) * capacity);
       if (!(*arr)->bucket) {
-         // allocation failed, handle error as needed
+         // allocation ERRed, handle error as needed
          return;
       }
       (*arr)->end = (addr)((*arr)->bucket + capacity);
    }
 }
 // dispose of the array and free associated resources
-static void array_dispose(array arr) {
+static void array_dispose(parray arr) {
    if (!arr) {
       return; // nothing to dispose
    }
@@ -96,14 +96,14 @@ static void array_dispose(array arr) {
 }
 
 // get the current capacity of the array
-static int array_capacity(array arr) {
+static int array_capacity(parray arr) {
    if (!arr || !arr->bucket) {
       return 0; // invalid array
    }
    return (int)((arr->end - (addr)(arr->bucket)) / sizeof(addr));
 }
 // clear the contents of the array
-static void array_clear(array arr) {
+static void array_clear(parray arr) {
    if (!arr) {
       return; // invalid array
    }
@@ -113,31 +113,31 @@ static void array_clear(array arr) {
 }
 
 // set the value at the specified index in the array
-static int array_set_at(array arr, usize index, addr value) {
+static int array_set_at(parray arr, usize index, addr value) {
    if (!arr || !arr->bucket) {
-      return -1; // invalid array
+      return ERR; // invalid array
    }
    usize cap = array_capacity(arr);
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    arr->bucket[index] = value;
-   return 0; // success
+   return OK; // OK
 }
 // get the value at the specified index in the array
-static int array_get_at(array arr, usize index, addr *out_value) {
+static int array_get_at(parray arr, usize index, addr *out_value) {
    if (!arr || !arr->bucket || !out_value) {
-      return -1; // invalid parameters
+      return ERR; // invalid parameters
    }
    usize cap = array_capacity(arr);
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    *out_value = arr->bucket[index];
-   return 0; // success
+   return OK; // OK
 }
 // remove the element at the specified index
-static int array_remove_at(array arr, usize index) {
+static int array_remove_at(parray arr, usize index) {
    /*
       The reason array does not shift elements left upon removal is to maintain
       consistent performance characteristics and to maintain consitency with
@@ -146,37 +146,37 @@ static int array_remove_at(array arr, usize index) {
       shift elements left upon removal to maintain contiguous data for iteration.
     */
    if (!arr || !arr->bucket) {
-      return -1; // invalid array
+      return ERR; // invalid array
    }
    usize cap = array_capacity(arr);
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    // we do not shift elements, just set to ADDR_EMPTY
    arr->bucket[index] = ADDR_EMPTY;
 
-   return 0; // success
+   return OK; // OK
 }
 
 // Internal function
-addr array_get_bucket_start(array arr) {
+addr array_get_bucket_start(parray arr) {
    if (!arr)
       return (addr)0;
    return (addr)arr->bucket;
 }
-addr array_get_bucket_end(array arr) {
+addr array_get_bucket_end(parray arr) {
    if (!arr)
       return (addr)0;
    return arr->end;
 }
-addr *array_get_bucket(array arr) {
+addr *array_get_bucket(parray arr) {
    if (!arr)
       return NULL;
    return arr->bucket;
 }
 
 //  public interface implementation
-const sc_array_i Array = {
+const sc_parray_i PArray = {
     .new = array_new,
     .init = array_init,
     .dispose = array_dispose,

@@ -33,7 +33,7 @@
  */
 #pragma once
 
-#include "sigcore/array.h"
+#include "sigcore/farray.h"
 struct sc_slotarray;
 typedef struct sc_slotarray *slotarray;
 
@@ -43,7 +43,7 @@ typedef struct sc_slotarray_i {
    /**
     * @brief Create a new SlotArray with the specified initial capacity.
     * @param capacity The initial number of slots to allocate.
-    * @return A pointer to the newly created SlotArray, or NULL on failure.
+    * @return A pointer to the newly created SlotArray, or NULL on ERRure.
     */
    slotarray (*new)(usize);
    /**
@@ -63,14 +63,14 @@ typedef struct sc_slotarray_i {
     * @param sa The SlotArray to retrieve the value from.
     * @param index The index (handle) of the value to retrieve.
     * @param out_value Pointer to store the retrieved value.
-    * @return 0 on success; otherwise non-zero
+    * @return 0 on OK; otherwise non-zero
     */
    int (*get_at)(slotarray, usize, object *);
    /**
     * @brief Remove the element at the specified index (handle) from the SlotArray.
     * @param sa The SlotArray to remove the element from.
     * @param index The index (handle) of the element to remove.
-    * @return 0 on success; otherwise non-zero
+    * @return 0 on OK; otherwise non-zero
     */
    int (*remove_at)(slotarray, usize);
 

@@ -15,12 +15,12 @@ static void set_config(FILE **log_stream) {
 void test_memory_alloc_free(void) {
    usize size = 128;
    void *ptr = Memory.alloc(size);
-   Assert.isTrue(ptr != NULL, "Memory allocation failed");
+   Assert.isTrue(ptr != NULL, "Memory allocation ERRed");
 
    Memory.free(ptr);
    // Note: In C, we cannot directly test if memory has been freed.
-   // We assume that if no crash occurs, the free operation was successful.
-   Assert.isTrue(1, "Memory freed successfully");
+   // We assume that if no crash occurs, the free operation was OKful.
+   Assert.isTrue(1, "Memory freed OKfully");
 }
 
 //  register test cases

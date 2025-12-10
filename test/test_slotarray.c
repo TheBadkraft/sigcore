@@ -3,6 +3,7 @@
  *  Description: Test cases for SigmaCore array interfaces
  */
 
+#include "sigcore/farray.h"
 #include "sigcore/memory.h"
 #include "sigcore/slotarray.h"
 #include <sigtest/sigtest.h>
@@ -19,30 +20,28 @@ static void set_config(FILE **log_stream) {
 static void test_slotarray_new(void) {
    int initial_capacity = 10;
    slotarray sa = SlotArray.new(initial_capacity);
-   Assert.isNotNull(sa, "SlotArray creation failed");
+   Assert.isNotNull(sa, "SlotArray creation ERRed");
    SlotArray.dispose(sa);
 }
 static void test_slotarray_dispose(void) {
    int initial_capacity = 10;
    slotarray sa = SlotArray.new(initial_capacity);
-   Assert.isNotNull(sa, "SlotArray creation failed");
+   Assert.isNotNull(sa, "SlotArray creation ERRed");
 
-   object allocated_bucket = NULL;
-   // spoof the slotarray to access underlying array
+   // spoof the slotarray to access underlying buffer
    struct sc_slotarray {
-      array bucket;
+      struct {
+         void *buffer;
+         void *end;
+      } array;
+      usize stride;
    } *spoofed = (struct sc_slotarray *)sa;
-   // now spoof the underlying array to check disposal
-   struct sc_array {
-      addr *bucket;
-      addr end;
-   } *bucket = (struct sc_array *)spoofed->bucket;
-   allocated_bucket = (object)bucket->bucket;
+   object allocated_buffer = spoofed->array.buffer;
 
    SlotArray.dispose(sa);
-   // after disposal, the allocated bucket should be freed
-   Assert.isFalse(Memory.has(allocated_bucket), "SlotArray disposal failed to free underlying array");
-   Assert.isFalse(Memory.has(sa), "SlotArray disposal failed to free slotarray structure");
+   // after disposal, the allocated buffer should be freed
+   Assert.isFalse(Memory.has(allocated_buffer), "SlotArray disposal ERRed to free underlying buffer");
+   Assert.isFalse(Memory.has(sa), "SlotArray disposal ERRed to free slotarray structure");
 }
 
 // data manipulation tests
@@ -53,18 +52,18 @@ static void test_slotarray_add_value(void) {
    *p1 = 42;
    // add to slotarray
    int handle = SlotArray.add(sa, p1);
-   Assert.isTrue(handle >= 0, "SlotArray add failed");
+   Assert.isTrue(handle >= 0, "SlotArray add ERRed");
 
-   // spoof the slotarray to access underlying array
+   // spoof the slotarray to access underlying buffer
    struct sc_slotarray {
-      array bucket;
+      struct {
+         void *buffer;
+         void *end;
+      } array;
+      usize stride;
    } *spoofed = (struct sc_slotarray *)sa;
-   // now spoof the underlying array to check added value
-   struct sc_array {
-      addr *bucket;
-      addr end;
-   } *bucket = (struct sc_array *)spoofed->bucket;
-   int *actValue = (int *)bucket->bucket[handle];
+   addr *bucket = (addr *)spoofed->array.buffer;
+   int *actValue = (int *)bucket[handle];
    // just check for value equality
    Assert.areEqual(p1, actValue, PTR, "SlotArray add pointer mismatch");
 
@@ -76,12 +75,12 @@ static void test_slotarray_get_value(void) {
    int *expValue = Memory.alloc(sizeof(int));
    *expValue = 99;
    int handle = SlotArray.add(sa, expValue);
-   Assert.isTrue(handle >= 0, "SlotArray add failed");
+   Assert.isTrue(handle >= 0, "SlotArray add ERRed");
 
    // retrieve value at handle
    object retrieved = NULL;
    int result = SlotArray.get_at(sa, handle, &retrieved);
-   Assert.areEqual(&(int){0}, &result, INT, "SlotArray get_at failed at handle %d", handle);
+   Assert.areEqual(&(int){0}, &result, INT, "SlotArray get_at ERRed at handle %d", handle);
    Assert.isNotNull(retrieved, "SlotArray get_at returned NULL at handle %d", handle);
    //  the pointers should match
    Assert.areEqual(expValue, retrieved, PTR, "SlotArray get_at pointer mismatch");
@@ -98,16 +97,16 @@ static void test_slotarray_remove_at(void) {
    int *expValue = Memory.alloc(sizeof(int));
    *expValue = 123;
    int handle = SlotArray.add(sa, expValue);
-   Assert.isTrue(handle >= 0, "SlotArray add failed");
+   Assert.isTrue(handle >= 0, "SlotArray add ERRed");
 
    // remove at handle
    int result = SlotArray.remove_at(sa, handle);
-   Assert.areEqual(&(int){0}, &result, INT, "SlotArray remove_at failed at handle %d", handle);
+   Assert.areEqual(&(int){0}, &result, INT, "SlotArray remove_at ERRed at handle %d", handle);
 
-   // try to get value at handle, should fail
+   // try to get value at handle, should ERR
    object retrieved = NULL;
    result = SlotArray.get_at(sa, handle, &retrieved);
-   Assert.areEqual(&(int){-1}, &result, INT, "SlotArray get_at should fail after remove at handle %d", handle);
+   Assert.areEqual(&(int){-1}, &result, INT, "SlotArray get_at should ERR after remove at handle %d", handle);
 
    Memory.free(expValue);
    SlotArray.dispose(sa);
@@ -132,10 +131,10 @@ static void test_slotarray_growth(void) {
    int h3 = SlotArray.add(sa, p3);
    int h4 = SlotArray.add(sa, p4); // This should trigger growth
 
-   Assert.isTrue(h1 >= 0, "First add failed");
-   Assert.isTrue(h2 >= 0, "Second add failed");
-   Assert.isTrue(h3 >= 0, "Third add failed");
-   Assert.isTrue(h4 >= 0, "Fourth add (growth) failed");
+   Assert.isTrue(h1 >= 0, "First add ERRed");
+   Assert.isTrue(h2 >= 0, "Second add ERRed");
+   Assert.isTrue(h3 >= 0, "Third add ERRed");
+   Assert.isTrue(h4 >= 0, "Fourth add (growth) ERRed");
 
    // Verify capacity grew
    usize capacity = SlotArray.capacity(sa);
@@ -143,16 +142,16 @@ static void test_slotarray_growth(void) {
 
    // Verify all values are accessible
    object retrieved;
-   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h1, &retrieved)}, INT, "Get h1 failed");
+   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h1, &retrieved)}, INT, "Get h1 ERRed");
    Assert.areEqual(p1, retrieved, PTR, "h1 value mismatch");
 
-   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h2, &retrieved)}, INT, "Get h2 failed");
+   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h2, &retrieved)}, INT, "Get h2 ERRed");
    Assert.areEqual(p2, retrieved, PTR, "h2 value mismatch");
 
-   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h3, &retrieved)}, INT, "Get h3 failed");
+   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h3, &retrieved)}, INT, "Get h3 ERRed");
    Assert.areEqual(p3, retrieved, PTR, "h3 value mismatch");
 
-   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h4, &retrieved)}, INT, "Get h4 failed");
+   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h4, &retrieved)}, INT, "Get h4 ERRed");
    Assert.areEqual(p4, retrieved, PTR, "h4 value mismatch");
 
    Memory.free(p1);
@@ -172,7 +171,7 @@ static void test_slotarray_is_empty_slot(void) {
    int *p = Memory.alloc(sizeof(int));
    *p = 42;
    int handle = SlotArray.add(sa, p);
-   Assert.isTrue(handle >= 0, "Add failed");
+   Assert.isTrue(handle >= 0, "Add ERRed");
 
    // The added slot should not be empty
    Assert.isFalse(SlotArray.is_empty_slot(sa, handle), "Added slot should not be empty");
@@ -229,15 +228,15 @@ static void test_slotarray_clear(void) {
 
    // Verify they're there
    object retrieved;
-   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h1, &retrieved)}, INT, "Get h1 failed before clear");
-   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h2, &retrieved)}, INT, "Get h2 failed before clear");
+   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h1, &retrieved)}, INT, "Get h1 ERRed before clear");
+   Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h2, &retrieved)}, INT, "Get h2 ERRed before clear");
 
    // Clear
    SlotArray.clear(sa);
 
    // Now they should be gone
-   Assert.areEqual(&(int){-1}, &(int){SlotArray.get_at(sa, h1, &retrieved)}, INT, "Get h1 should fail after clear");
-   Assert.areEqual(&(int){-1}, &(int){SlotArray.get_at(sa, h2, &retrieved)}, INT, "Get h2 should fail after clear");
+   Assert.areEqual(&(int){-1}, &(int){SlotArray.get_at(sa, h1, &retrieved)}, INT, "Get h1 should ERR after clear");
+   Assert.areEqual(&(int){-1}, &(int){SlotArray.get_at(sa, h2, &retrieved)}, INT, "Get h2 should ERR after clear");
 
    // All slots should be empty
    for (usize i = 0; i < SlotArray.capacity(sa); i++) {
@@ -264,7 +263,7 @@ static void test_slotarray_stress(void) {
       *values[i] = (int)i;
       valid[i] = true;
       handles[i] = SlotArray.add(sa, values[i]);
-      Assert.isTrue(handles[i] >= 0, "Add %zu failed", i);
+      Assert.isTrue(handles[i] >= 0, "Add %zu ERRed", i);
    }
 
    // Verify capacity grew
@@ -274,7 +273,7 @@ static void test_slotarray_stress(void) {
    // Phase 2: Remove every other item (create holes)
    for (usize i = 0; i < 20; i += 2) {
       int result = SlotArray.remove_at(sa, (usize)handles[i]);
-      Assert.areEqual(&(int){0}, &result, INT, "Remove %zu failed", i);
+      Assert.areEqual(&(int){0}, &result, INT, "Remove %zu ERRed", i);
       Memory.free(values[i]); // Free the actual memory
       valid[i] = false;       // Mark as freed
    }
@@ -285,7 +284,7 @@ static void test_slotarray_stress(void) {
       *values[i] = (int)i;
       valid[i] = true;
       handles[i] = SlotArray.add(sa, values[i]);
-      Assert.isTrue(handles[i] >= 0, "Reuse add %zu failed", i);
+      Assert.isTrue(handles[i] >= 0, "Reuse add %zu ERRed", i);
    }
 
    // Phase 4: Verify all remaining items are accessible
@@ -293,7 +292,7 @@ static void test_slotarray_stress(void) {
       if (valid[i]) {
          object retrieved;
          int result = SlotArray.get_at(sa, (usize)handles[i], &retrieved);
-         Assert.areEqual(&(int){0}, &result, INT, "Get remaining item %zu failed", i);
+         Assert.areEqual(&(int){0}, &result, INT, "Get remaining item %zu ERRed", i);
          Assert.areEqual(values[i], retrieved, PTR, "Retrieved value %zu mismatch", i);
          Assert.areEqual(&(int){i}, (int *)retrieved, INT, "Retrieved value content %zu mismatch", i);
       }
@@ -303,7 +302,7 @@ static void test_slotarray_stress(void) {
    for (usize i = 1; i < 40; i += 2) {
       if (valid[i]) {
          int result = SlotArray.remove_at(sa, (usize)handles[i]);
-         Assert.areEqual(&(int){0}, &result, INT, "Final remove %zu failed", i);
+         Assert.areEqual(&(int){0}, &result, INT, "Final remove %zu ERRed", i);
          Memory.free(values[i]);
          valid[i] = false;
       }
@@ -315,10 +314,10 @@ static void test_slotarray_stress(void) {
       *values[i] = (int)(i + 100);
       valid[i] = true;
       handles[i] = SlotArray.add(sa, values[i]);
-      Assert.isTrue(handles[i] >= 0, "Final reuse add %zu failed", i);
+      Assert.isTrue(handles[i] >= 0, "Final reuse add %zu ERRed", i);
 
       object retrieved;
-      Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, (usize)handles[i], &retrieved)}, INT, "Final get %zu failed", i);
+      Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, (usize)handles[i], &retrieved)}, INT, "Final get %zu ERRed", i);
       Assert.areEqual(values[i], retrieved, PTR, "Final retrieved value %zu mismatch", i);
    }
 

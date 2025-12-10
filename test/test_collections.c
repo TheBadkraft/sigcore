@@ -3,9 +3,9 @@
  *  Description: Test cases for SigmaCore collections interfaces
  */
 
-#include "sigcore/array.h"
 #include "sigcore/collections.h"
 #include "sigcore/memory.h"
+#include "sigcore/parray.h"
 #include "sigcore/types.h"
 #include <sigtest/sigtest.h>
 #include <stdio.h>
@@ -20,8 +20,8 @@ static void set_config(FILE **log_stream) {
 //  test compact function
 static void test_collections_compact(void) {
    // create an array with capacity 5
-   array arr = Array.new(5);
-   Assert.isNotNull(arr, "Array creation failed");
+   parray arr = PArray.new(5);
+   Assert.isNotNull(arr, "Array creation ERRed");
 
    // allocate some dummy objects
    object obj1 = Memory.alloc(1); // dummy object 1
@@ -29,11 +29,11 @@ static void test_collections_compact(void) {
    object obj3 = Memory.alloc(1); // dummy object 3
 
    // set entries: [obj1, NULL, obj2, NULL, obj3]
-   Array.set(arr, 0, (addr)obj1);
-   Array.set(arr, 1, ADDR_EMPTY);
-   Array.set(arr, 2, (addr)obj2);
-   Array.set(arr, 3, ADDR_EMPTY);
-   Array.set(arr, 4, (addr)obj3);
+   PArray.set(arr, 0, (addr)obj1);
+   PArray.set(arr, 1, ADDR_EMPTY);
+   PArray.set(arr, 2, (addr)obj2);
+   PArray.set(arr, 3, ADDR_EMPTY);
+   PArray.set(arr, 4, (addr)obj3);
 
    // compact the array
    usize compacted_count = Collections.compact(arr);
@@ -41,11 +41,11 @@ static void test_collections_compact(void) {
 
    // check that non-empty entries are compacted to front
    addr entry0, entry1, entry2, entry3, entry4;
-   Array.get(arr, 0, &entry0);
-   Array.get(arr, 1, &entry1);
-   Array.get(arr, 2, &entry2);
-   Array.get(arr, 3, &entry3);
-   Array.get(arr, 4, &entry4);
+   PArray.get(arr, 0, &entry0);
+   PArray.get(arr, 1, &entry1);
+   PArray.get(arr, 2, &entry2);
+   PArray.get(arr, 3, &entry3);
+   PArray.get(arr, 4, &entry4);
 
    Assert.areEqual((object)obj1, (object)entry0, PTR, "Entry 0 mismatch after compact");
    Assert.areEqual((object)obj2, (object)entry1, PTR, "Entry 1 mismatch after compact");
@@ -54,14 +54,14 @@ static void test_collections_compact(void) {
    Assert.areEqual((object)ADDR_EMPTY, (object)entry4, PTR, "Entry 4 should be empty after compact");
 
    // capacity should remain the same
-   int cap = Array.capacity(arr);
+   int cap = PArray.capacity(arr);
    Assert.areEqual(&(int){5}, &cap, INT, "Capacity changed after condense");
 
    // free resources
    Memory.free(obj1);
    Memory.free(obj2);
    Memory.free(obj3);
-   Array.dispose(arr);
+   PArray.dispose(arr);
 }
 
 //  register test cases

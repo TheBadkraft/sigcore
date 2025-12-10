@@ -1,0 +1,32 @@
+[1] core_farray_set          :  11 :         2025-12-09  17:27:24
+=================================================================
+Running: farray_creation                         2.151 us  [PASS]
+Running: farray_init_from_null                   0.369 us  [PASS]
+Running: farray_init_from_existing               0.374 us  [PASS]
+Running: farray_get_capacity                     0.382 us  [PASS]
+Running: farray_clear                            0.587 us  [PASS]
+	Stored value at index 0: exp: 1  act: 1
+	Stored value at index 1: exp: 2  act: 2
+	Stored value at index 2: exp: 3  act: 3
+	Stored value at index 3: exp: 4  act: 4
+	Stored value at index 4: exp: 5  act: 5
+Running: farray_set_value                        9.635 us  [PASS]
+	Retrieved value at index 0: exp: 10  act: 10
+	Retrieved value at index 1: exp: 20  act: 20
+	Retrieved value at index 2: exp: 30  act: 30
+	Retrieved value at index 3: exp: 40  act: 40
+	Retrieved value at index 4: exp: 50  act: 50
+Running: farray_get_value                       15.363 us  [PASS]
+Running: farray_remove_at                        1.126 us  [PASS]
+Running: farray_set_out_of_bounds                0.251 us  [PASS]
+Running: farray_get_out_of_bounds                0.199 us  [PASS]
+Running: farray_remove_out_of_bounds             0.202 us  [PASS]
+=================================================================
+[1]     TESTS= 11        PASS= 11        ERR=  0        SKIP=  0
+
+===== Memory Allocations Report =================================
+Memory clean — all 23 allocations freed.
+
+
+  Total mallocs:                23
+  Total frees:                  23
