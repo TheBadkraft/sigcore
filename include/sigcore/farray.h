@@ -78,7 +78,7 @@ typedef struct sc_farray_i {
     * @param index Index at which to set the value
     * @param stride Size of each element in the array
     * @param value Pointer to the value to set (must be at least stride bytes)
-    * @return 0 on success; otherwise non-zero
+    * @return 0 on OK; otherwise non-zero
     */
    int (*set)(farray, usize, usize, object);
    /**
@@ -87,7 +87,7 @@ typedef struct sc_farray_i {
     * @param index Index from which to get the value
     * @param stride Size of each element in the array
     * @param out_value Pointer to store the retrieved value (must be at least stride bytes)
-    * @return 0 on success; otherwise non-zero
+    * @return 0 on OK; otherwise non-zero
     */
    int (*get)(farray, usize, usize, void *);
    /**
@@ -95,7 +95,7 @@ typedef struct sc_farray_i {
     * @param arr The array to modify
     * @param index Index of the element to remove
     * @param stride Size of each element in the array
-    * @return 0 on success; otherwise non-zero
+    * @return 0 on OK; otherwise non-zero
     */
    int (*remove)(farray, usize, usize);
 } sc_farray_i;

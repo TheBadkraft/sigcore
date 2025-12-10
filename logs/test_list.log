@@ -24,7 +24,7 @@ Running: list_get_empty_list                     0.342 us  [PASS]
 Running: list_remove_empty_list                  0.365 us  [PASS]
 Running: list_append_null_value                  0.377 us  [PASS]
 =================================================================
-[1]     TESTS= 23        PASS= 21        FAIL=  0        SKIP=  2
+[1]     TESTS= 23        PASS= 21        ERR=  0        SKIP=  2
 
 ===== Memory Allocations Report =================================
 Memory clean — all 92 allocations freed.

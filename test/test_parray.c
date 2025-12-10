@@ -26,7 +26,7 @@ static void set_config(FILE **log_stream) {
 static void test_array_new(void) {
    int initial_capacity = 10;
    parray arr = PArray.new(initial_capacity);
-   Assert.isNotNull(arr, "Array creation failed");
+   Assert.isNotNull(arr, "Array creation ERRed");
 
    PArray.dispose(arr);
 }
@@ -34,25 +34,25 @@ static void test_array_init_from_null(void) {
    //  initialize &arr with capacity
    parray arr = NULL;
    PArray.init(&arr, 10);
-   Assert.isNotNull(arr, "Array initialization failed");
+   Assert.isNotNull(arr, "Array initialization ERRed");
 
    PArray.dispose(arr);
 }
 static void test_array_init_existing(void) {
    //  create array first
    parray arr = PArray.new(5);
-   Assert.isNotNull(arr, "Array creation failed");
+   Assert.isNotNull(arr, "Array creation ERRed");
 
    //  re-initialize with new capacity
    PArray.init(&arr, 15);
-   Assert.isNotNull(arr, "Array re-initialization failed");
+   Assert.isNotNull(arr, "Array re-initialization ERRed");
 
    PArray.dispose(arr);
 }
 static void test_array_get_capacity(void) {
    int exp_capacity = 20;
    parray arr = PArray.new(exp_capacity);
-   Assert.isNotNull(arr, "Array creation failed");
+   Assert.isNotNull(arr, "Array creation ERRed");
    int act_capacity = PArray.capacity(arr);
    Assert.areEqual(&exp_capacity, &act_capacity, INT, "Array capacity mismatch");
    PArray.dispose(arr);
@@ -62,7 +62,7 @@ static void test_array_get_capacity(void) {
 static void test_array_clear(void) {
    int initial_capacity = 10;
    parray arr = PArray.new(initial_capacity);
-   Assert.isNotNull(arr, "Array creation failed");
+   Assert.isNotNull(arr, "Array creation ERRed");
 
    // Spoof the array to inject test values
    struct spoofed_array {
@@ -100,7 +100,7 @@ static void test_array_set_value(void) {
    int values[] = {1, 2, 3, 4, 5};
    // set values in array
    for (int i = 0; i < 5; i++) {
-      Assert.areEqual(&(int){0}, &(int){PArray.set(arr, i, (addr)values[i])}, INT, "Array set failed at index %d", i);
+      Assert.areEqual(&(int){0}, &(int){PArray.set(arr, i, (addr)values[i])}, INT, "Array set ERRed at index %d", i);
    }
    // we can spoof the array here with an anonymous struct
    struct spoofed_array {
@@ -128,7 +128,7 @@ static void test_array_get_value(void) {
 
    for (int i = 0; i < 5; i++) {
       addr element = ADDR_EMPTY;
-      Assert.isTrue(PArray.get(arr, i, &element) == 0, "Array get failed at index %d", i);
+      Assert.isTrue(PArray.get(arr, i, &element) == 0, "Array get ERRed at index %d", i);
       writelnf("\tRetrieved value at index %d: exp: %d  act: %d", i, values[i], element);
       Assert.areEqual(&values[i], &element, INT, "Array get value mismatch at index %d", i);
    }
@@ -145,7 +145,7 @@ static void test_array_remove_at(void) {
    }
 
    // Remove at index 2 (removes 30) -- array should not shift left
-   Assert.areEqual(&(int){0}, &(int){PArray.remove(arr, 2)}, INT, "Array remove failed at index 2");
+   Assert.areEqual(&(int){0}, &(int){PArray.remove(arr, 2)}, INT, "Array remove ERRed at index 2");
 
    // Expected after removal: 10, 20, ADDR_EMPTY, 40, 50
    int expected_values[] = {10, 20, ADDR_EMPTY, 40, 50};

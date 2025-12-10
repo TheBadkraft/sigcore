@@ -21,7 +21,7 @@ static void set_config(FILE **log_stream) {
 static void test_collections_compact(void) {
    // create an array with capacity 5
    parray arr = PArray.new(5);
-   Assert.isNotNull(arr, "Array creation failed");
+   Assert.isNotNull(arr, "Array creation ERRed");
 
    // allocate some dummy objects
    object obj1 = Memory.alloc(1); // dummy object 1

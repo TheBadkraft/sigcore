@@ -42,4 +42,4 @@ typedef size_t usize;
 
 // OK/ERR
 #define OK 0
-#define ERR -1
+#define ERR (-1)

@@ -55,14 +55,14 @@ static farray farray_new(usize capacity, usize stride) {
    //  allocate memory for the farray structure
    struct sc_flex_array *arr = Memory.alloc(sizeof(struct sc_flex_array));
    if (!arr) {
-      return NULL; // allocation failed
+      return NULL; // allocation ERRed
    }
 
    //  allocate memory for the bucket
    arr->bucket = Memory.alloc(stride * capacity);
    if (!arr->bucket) {
       Memory.free(arr);
-      return NULL; // allocation failed
+      return NULL; // allocation ERRed
    }
 
    arr->end = (char *)arr->bucket + stride * capacity; // set end to the allocated size
@@ -85,7 +85,7 @@ static void farray_init(farray *arr, usize capacity, usize stride) {
       }
       (*arr)->bucket = Memory.alloc(stride * capacity);
       if (!(*arr)->bucket) {
-         // allocation failed, handle error as needed
+         // allocation ERRed, handle error as needed
          return;
       }
       (*arr)->end = (char *)((*arr)->bucket) + stride * capacity;
@@ -114,28 +114,28 @@ static void farray_clear(farray arr, usize stride) {
 // set the value at the specified index in the farray
 static int farray_set_at(farray arr, usize index, usize stride, object value) {
    if (!arr || !arr->bucket || !value) {
-      return -1; // invalid parameters
+      return ERR; // invalid parameters
    }
    usize cap = farray_capacity(arr, stride);
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    void *dest = (char *)arr->bucket + index * stride;
    memcpy(dest, value, stride);
-   return 0; // success
+   return OK; // OK
 }
 // get the value at the specified index in the farray
 static int farray_get_at(farray arr, usize index, usize stride, void *out_value) {
    if (!arr || !arr->bucket || !out_value) {
-      return -1; // invalid parameters
+      return ERR; // invalid parameters
    }
    usize cap = farray_capacity(arr, stride);
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    void *src = (char *)arr->bucket + index * stride;
    memcpy(out_value, src, stride);
-   return 0; // success
+   return OK; // OK
 }
 // remove the element at the specified index
 static int farray_remove_at(farray arr, usize index, usize stride) {
@@ -147,17 +147,17 @@ static int farray_remove_at(farray arr, usize index, usize stride) {
       shift elements left upon removal to maintain contiguous data for iteration.
     */
    if (!arr || !arr->bucket) {
-      return -1; // invalid farray
+      return ERR; // invalid farray
    }
    usize cap = farray_capacity(arr, stride);
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    // we do not shift elements, just set to zero
    void *dest = (char *)arr->bucket + index * stride;
    memset(dest, 0, stride);
 
-   return 0; // success
+   return OK; // OK
 }
 
 // Internal functions

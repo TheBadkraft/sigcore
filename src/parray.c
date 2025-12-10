@@ -49,14 +49,14 @@ static parray array_new(usize capacity) {
    //  allocate memory for the array structure
    struct sc_pointer_array *arr = Memory.alloc(sizeof(struct sc_pointer_array));
    if (!arr) {
-      return NULL; // allocation failed
+      return NULL; // allocation ERRed
    }
 
    //  allocate memory for the bucket
    arr->bucket = Memory.alloc(sizeof(addr) * capacity);
    if (!arr->bucket) {
       Memory.free(arr);
-      return NULL; // allocation failed
+      return NULL; // allocation ERRed
    }
 
    arr->end = (addr)(arr->bucket + capacity); // set end to the allocated size
@@ -78,7 +78,7 @@ static void array_init(parray *arr, usize capacity) {
       }
       (*arr)->bucket = Memory.alloc(sizeof(addr) * capacity);
       if (!(*arr)->bucket) {
-         // allocation failed, handle error as needed
+         // allocation ERRed, handle error as needed
          return;
       }
       (*arr)->end = (addr)((*arr)->bucket + capacity);
@@ -115,26 +115,26 @@ static void array_clear(parray arr) {
 // set the value at the specified index in the array
 static int array_set_at(parray arr, usize index, addr value) {
    if (!arr || !arr->bucket) {
-      return -1; // invalid array
+      return ERR; // invalid array
    }
    usize cap = array_capacity(arr);
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    arr->bucket[index] = value;
-   return 0; // success
+   return OK; // OK
 }
 // get the value at the specified index in the array
 static int array_get_at(parray arr, usize index, addr *out_value) {
    if (!arr || !arr->bucket || !out_value) {
-      return -1; // invalid parameters
+      return ERR; // invalid parameters
    }
    usize cap = array_capacity(arr);
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    *out_value = arr->bucket[index];
-   return 0; // success
+   return OK; // OK
 }
 // remove the element at the specified index
 static int array_remove_at(parray arr, usize index) {
@@ -146,16 +146,16 @@ static int array_remove_at(parray arr, usize index) {
       shift elements left upon removal to maintain contiguous data for iteration.
     */
    if (!arr || !arr->bucket) {
-      return -1; // invalid array
+      return ERR; // invalid array
    }
    usize cap = array_capacity(arr);
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    // we do not shift elements, just set to ADDR_EMPTY
    arr->bucket[index] = ADDR_EMPTY;
 
-   return 0; // success
+   return OK; // OK
 }
 
 // Internal function

@@ -22,7 +22,7 @@ Running: farray_set_out_of_bounds                0.251 us  [PASS]
 Running: farray_get_out_of_bounds                0.199 us  [PASS]
 Running: farray_remove_out_of_bounds             0.202 us  [PASS]
 =================================================================
-[1]     TESTS= 11        PASS= 11        FAIL=  0        SKIP=  0
+[1]     TESTS= 11        PASS= 11        ERR=  0        SKIP=  0
 
 ===== Memory Allocations Report =================================
 Memory clean — all 23 allocations freed.

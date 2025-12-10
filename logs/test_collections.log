@@ -2,7 +2,7 @@
 =================================================================
 Running: collections_compact                     2.558 us  [PASS]
 =================================================================
-[1]     TESTS=  1        PASS=  1        FAIL=  0        SKIP=  0
+[1]     TESTS=  1        PASS=  1        ERR=  0        SKIP=  0
 
 ===== Memory Allocations Report =================================
 Memory clean — all 5 allocations freed.

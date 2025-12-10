@@ -23,7 +23,7 @@ static void test_farray_new(void) {
    int initial_capacity = 10;
    usize element_size = sizeof(int);
    farray arr = FArray.new(initial_capacity, element_size);
-   Assert.isNotNull(arr, "FArray creation failed");
+   Assert.isNotNull(arr, "FArray creation ERRed");
 
    FArray.dispose(arr);
 }
@@ -32,7 +32,7 @@ static void test_farray_init_from_null(void) {
    farray arr = NULL;
    usize element_size = sizeof(int);
    FArray.init(&arr, 10, element_size);
-   Assert.isNotNull(arr, "FArray initialization failed");
+   Assert.isNotNull(arr, "FArray initialization ERRed");
 
    FArray.dispose(arr);
 }
@@ -40,11 +40,11 @@ static void test_farray_init_existing(void) {
    //  create farray first
    usize element_size = sizeof(int);
    farray arr = FArray.new(5, element_size);
-   Assert.isNotNull(arr, "FArray creation failed");
+   Assert.isNotNull(arr, "FArray creation ERRed");
 
    //  re-initialize with new capacity
    FArray.init(&arr, 15, element_size);
-   Assert.isNotNull(arr, "FArray re-initialization failed");
+   Assert.isNotNull(arr, "FArray re-initialization ERRed");
 
    FArray.dispose(arr);
 }
@@ -52,7 +52,7 @@ static void test_farray_get_capacity(void) {
    int exp_capacity = 20;
    usize element_size = sizeof(int);
    farray arr = FArray.new(exp_capacity, element_size);
-   Assert.isNotNull(arr, "FArray creation failed");
+   Assert.isNotNull(arr, "FArray creation ERRed");
    int act_capacity = FArray.capacity(arr, element_size);
    Assert.areEqual(&exp_capacity, &act_capacity, INT, "FArray capacity mismatch");
    FArray.dispose(arr);
@@ -63,7 +63,7 @@ static void test_farray_clear(void) {
    int initial_capacity = 10;
    usize element_size = sizeof(int);
    farray arr = FArray.new(initial_capacity, element_size);
-   Assert.isNotNull(arr, "FArray creation failed");
+   Assert.isNotNull(arr, "FArray creation ERRed");
 
    // Spoof the farray to inject test values
    struct spoofed_farray {
@@ -104,7 +104,7 @@ static void test_farray_set_value(void) {
    int values[] = {1, 2, 3, 4, 5};
    // set values in farray
    for (int i = 0; i < 5; i++) {
-      Assert.areEqual(&(int){0}, &(int){FArray.set(arr, i, element_size, &values[i])}, INT, "FArray set failed at index %d", i);
+      Assert.areEqual(&(int){0}, &(int){FArray.set(arr, i, element_size, &values[i])}, INT, "FArray set ERRed at index %d", i);
    }
    // we can spoof the farray here with an anonymous struct
    struct spoofed_farray {
@@ -134,7 +134,7 @@ static void test_farray_get_value(void) {
 
    for (int i = 0; i < 5; i++) {
       int element = 0;
-      Assert.isTrue(FArray.get(arr, i, element_size, &element) == 0, "FArray get failed at index %d", i);
+      Assert.isTrue(FArray.get(arr, i, element_size, &element) == 0, "FArray get ERRed at index %d", i);
       writelnf("\tRetrieved value at index %d: exp: %d  act: %d", i, values[i], element);
       Assert.areEqual(&values[i], &element, INT, "FArray get value mismatch at index %d", i);
    }
@@ -152,7 +152,7 @@ static void test_farray_remove_at(void) {
    }
 
    // Remove at index 2 (removes 30) -- farray should not shift left
-   Assert.areEqual(&(int){0}, &(int){FArray.remove(arr, 2, element_size)}, INT, "FArray remove failed at index 2");
+   Assert.areEqual(&(int){0}, &(int){FArray.remove(arr, 2, element_size)}, INT, "FArray remove ERRed at index 2");
 
    // Expected after removal: 10, 20, 0, 40, 50
    int expected_values[] = {10, 20, 0, 40, 50};

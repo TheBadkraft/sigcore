@@ -44,14 +44,14 @@ static list list_new(usize capacity) {
    //  allocate memory for the list structure
    struct sc_list *lst = Memory.alloc(sizeof(struct sc_list));
    if (!lst) {
-      return NULL; // allocation failed
+      return NULL; // allocation ERRed
    }
 
    //  create the underlying collection with stride for addr
    lst->coll = collection_new(capacity, sizeof(addr));
    if (!lst->coll) {
       Memory.free(lst);
-      return NULL; // allocation failed
+      return NULL; // allocation ERRed
    }
 
    return lst;
@@ -86,30 +86,30 @@ static usize list_size(list lst) {
 //  append a value to the end of the list
 static int list_append(list lst, object value) {
    if (!lst || !value) {
-      return -1; // invalid parameters
+      return ERR; // invalid parameters
    }
    return collection_add(lst->coll, &value);
 }
 //  get the value at the specified index in the list
 static int list_get_at(list lst, usize index, object *out_value) {
    if (!lst || !out_value) {
-      return -1; // invalid parameters
+      return ERR; // invalid parameters
    }
    if (index >= lst->coll->length) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    void *src = (char *)lst->coll->array.buffer + index * lst->coll->stride;
    memcpy(out_value, src, lst->coll->stride);
-   return 0;
+   return OK;
 }
 //  remove the element at the specified index from the list
 static int list_remove_at(list lst, usize index) {
    if (!lst) {
-      return -1; // invalid list
+      return ERR; // invalid list
    }
    usize size = lst->coll->length;
    if (index >= size) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    // Shift left from index to end-1
    for (usize i = index; i < size - 1; ++i) {
@@ -122,34 +122,34 @@ static int list_remove_at(list lst, usize index) {
    void *last = (char *)lst->coll->array.buffer + (size - 1) * lst->coll->stride;
    memcpy(last, &zero, lst->coll->stride);
    lst->coll->length--;
-   return 0;
+   return OK;
 }
 // set the value at the specified index in the list
 static int list_set_at(list lst, usize index, object value) {
    if (!lst) {
-      return -1; // invalid parameters
+      return ERR; // invalid parameters
    }
    usize size = lst->coll->length;
    if (index >= size) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    void *dst = (char *)lst->coll->array.buffer + index * lst->coll->stride;
    memcpy(dst, &value, lst->coll->stride);
-   return 0;
+   return OK;
 }
 static int list_insert_at(list lst, usize index, object value) {
    // NULLs are allowed ... not my call, that's on the user
    if (!lst) {
-      return -1; // invalid parameters
+      return ERR; // invalid parameters
    }
    usize size = lst->coll->length;
    if (index > size) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    usize capacity = ((char *)lst->coll->array.end - (char *)lst->coll->array.buffer) / lst->coll->stride;
    if (size >= capacity) {
       if (collection_grow(lst->coll) != 0) {
-         return -1; // growth failed
+         return ERR; // growth ERRed
       }
    }
    // Shift right from index to end
@@ -162,12 +162,12 @@ static int list_insert_at(list lst, usize index, object value) {
    void *ins = (char *)lst->coll->array.buffer + index * lst->coll->stride;
    memcpy(ins, &value, lst->coll->stride);
    lst->coll->length++;
-   return 0;
+   return OK;
 }
 // prepend a value to the start of the list
 static int list_prepend(list lst, object value) {
    if (!lst || !value) {
-      return -1; // invalid parameters
+      return ERR; // invalid parameters
    }
    return list_insert_at(lst, 0, value);
 }

@@ -65,7 +65,7 @@ typedef struct sc_list_i {
     * @brief Append a value to the end of the list.
     * @param lst The list to append to
     * @param value The value to append
-    * @return 0 on success; otherwise, non-zero
+    * @return 0 on OK; otherwise, non-zero
     */
    int (*append)(list, object);
    /**
@@ -73,14 +73,14 @@ typedef struct sc_list_i {
     * @param lst The list to query
     * @param index Index of the value to retrieve
     * @param out_value Pointer to store the retrieved value
-    * @return 0 on success; otherwise, non-zero
+    * @return 0 on OK; otherwise, non-zero
     */
    int (*get)(list, usize, object *);
    /**
     * @brief Remove the element at the specified index from the list.
     * @param lst The list to modify
     * @param index Index of the element to remove
-    * @return 0 on success; otherwise, non-zero
+    * @return 0 on OK; otherwise, non-zero
     */
    int (*remove)(list, usize);
    /**
@@ -88,7 +88,7 @@ typedef struct sc_list_i {
     * @param lst The list to modify
     * @param index Index at which to set the value
     * @param value Value to set
-    * @return 0 on success; otherwise, non-zero
+    * @return 0 on OK; otherwise, non-zero
     */
    int (*set)(list, usize, object);
    /**
@@ -96,14 +96,14 @@ typedef struct sc_list_i {
     * @param lst The list to modify
     * @param index Index at which to insert the value
     * @param value Value to insert
-    * @return 0 on success; otherwise, non-zero
+    * @return 0 on OK; otherwise, non-zero
     */
    int (*insert)(list, usize, object);
    /**
     * @brief Prepend a value to the start of the list.
     * @param lst The list to modify
     * @param value Value to prepend
-    * @return 0 on success; otherwise, non-zero
+    * @return 0 on OK; otherwise, non-zero
     */
    int (*prepend)(list, object);
    /**

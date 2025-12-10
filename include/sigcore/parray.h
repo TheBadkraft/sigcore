@@ -72,7 +72,7 @@ typedef struct sc_parray_i {
     * @param arr The array to modify
     * @param index Index at which to set the value
     * @param value Value to set
-    * @return 0 on success; otherwise non-zero
+    * @return 0 on OK; otherwise non-zero
     */
    int (*set)(parray, usize, addr);
    /**
@@ -80,14 +80,14 @@ typedef struct sc_parray_i {
     * @param arr The array to query
     * @param index Index from which to get the value
     * @param out_value Pointer to store the retrieved value
-    * @return 0 on success; otherwise non-zero
+    * @return 0 on OK; otherwise non-zero
     */
    int (*get)(parray, usize, addr *);
    /**
     * @brief Remove the element at the specified index, setting it to empty without shifting.
     * @param arr The array to modify
     * @param index Index of the element to remove
-    * @return 0 on success; otherwise non-zero
+    * @return 0 on OK; otherwise non-zero
     */
    int (*remove)(parray, usize);
 } sc_parray_i;

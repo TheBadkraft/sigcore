@@ -83,44 +83,44 @@ usize collection_count(collection coll) {
 // grow the collection
 int collection_grow(collection coll) {
    if (!coll) {
-      return -1;
+      return ERR;
    }
    usize current_capacity = ((char *)coll->array.end - (char *)coll->array.buffer) / coll->stride;
    usize new_capacity = current_capacity * 2;
    void *new_buffer = Memory.alloc(coll->stride * new_capacity);
    if (!new_buffer) {
-      return -1;
+      return ERR;
    }
 
    memcpy(new_buffer, coll->array.buffer, coll->stride * current_capacity);
    Memory.free(coll->array.buffer);
    coll->array.buffer = new_buffer;
    coll->array.end = (char *)new_buffer + coll->stride * new_capacity;
-   return 0;
+   return OK;
 }
 
 // add an element to the collection
 int collection_add(collection coll, object ptr) {
    if (!coll || !ptr) {
-      return -1;
+      return ERR;
    }
 
    usize capacity = ((char *)coll->array.end - (char *)coll->array.buffer) / coll->stride;
    if (coll->length >= capacity) {
       if (collection_grow(coll) != 0) {
-         return -1;
+         return ERR;
       }
    }
 
    void *dest = (char *)coll->array.buffer + coll->length * coll->stride;
    memcpy(dest, ptr, coll->stride);
    coll->length++;
-   return 0;
+   return OK;
 }
 // remove an element from the collection
 int collection_remove(collection coll, object ptr) {
    if (!coll || !ptr) {
-      return -1;
+      return ERR;
    }
 
    for (usize i = 0; i < coll->length; ++i) {
@@ -135,10 +135,10 @@ int collection_remove(collection coll, object ptr) {
          // Zero the last
          memset((char *)coll->array.buffer + (coll->length - 1) * coll->stride, 0, coll->stride);
          coll->length--;
-         return 0;
+         return OK;
       }
    }
-   return -1; // not found
+   return ERR; // not found
 }
 // clear the collection
 void collection_clear(collection coll) {

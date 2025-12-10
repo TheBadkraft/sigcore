@@ -22,7 +22,7 @@ Running: array_set_out_of_bounds                 0.342 us  [PASS]
 Running: array_get_out_of_bounds                 0.341 us  [PASS]
 Running: array_remove_out_of_bounds              0.343 us  [PASS]
 =================================================================
-[1]     TESTS= 11        PASS= 11        FAIL=  0        SKIP=  0
+[1]     TESTS= 11        PASS= 11        ERR=  0        SKIP=  0
 
 ===== Memory Allocations Report =================================
 Memory clean — all 23 allocations freed.

@@ -53,14 +53,14 @@ static slotarray slotarray_new(usize capacity) {
    //  allocate memory for the slotarray structure
    slotarray sa = Memory.alloc(sizeof(struct sc_slotarray));
    if (!sa) {
-      return NULL; // allocation failed
+      return NULL; // allocation ERRed
    }
    // Initialize the buffer with the specified capacity
    usize total_size = capacity * sizeof(addr);
    sa->array.buffer = Memory.alloc(total_size);
    if (!sa->array.buffer) {
       Memory.free(sa);
-      return NULL; // allocation failed
+      return NULL; // allocation ERRed
    }
    sa->array.end = (char *)sa->array.buffer + total_size;
    sa->stride = sizeof(addr);
@@ -82,7 +82,7 @@ static void slotarray_dispose(slotarray sa) {
 // add a value to the slotarray, reusing empty slots if available
 static int slotarray_add(slotarray sa, object value) {
    if (!sa) {
-      return -1; // invalid slotarray
+      return ERR; // invalid slotarray
    }
    // try to find an empty slot
    usize next_slot = find_next_empty_slot(sa);
@@ -98,7 +98,7 @@ static int slotarray_add(slotarray sa, object value) {
       usize new_total_size = new_capacity * sa->stride;
       void *new_buffer = Memory.alloc(new_total_size);
       if (!new_buffer) {
-         return -1; // allocation failed
+         return ERR; // allocation ERRed
       }
       memcpy(new_buffer, sa->array.buffer, current_capacity * sa->stride);
       Memory.free(sa->array.buffer);
@@ -133,32 +133,32 @@ static usize find_next_empty_slot(slotarray sa) {
 // get the value at the specified index in the slotarray
 static int slotarray_get_at(slotarray sa, usize index, object *out_value) {
    if (!sa || !out_value) {
-      return -1; // invalid parameters
+      return ERR; // invalid parameters
    }
    usize cap = ((char *)sa->array.end - (char *)sa->array.buffer) / sa->stride;
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    addr *ptr = (addr *)((char *)sa->array.buffer + index * sa->stride);
    if (*ptr == ADDR_EMPTY) {
-      return -1; // slot is empty
+      return ERR; // slot is empty
    }
    *out_value = (object)*ptr;
-   return 0;
+   return OK;
 }
 // remove the element at the specified index from the slotarray
 static int slotarray_remove_at(slotarray sa, usize index) {
    if (!sa) {
-      return -1; // invalid slotarray
+      return ERR; // invalid slotarray
    }
    usize cap = ((char *)sa->array.end - (char *)sa->array.buffer) / sa->stride;
    if (index >= cap) {
-      return -1; // index out of bounds
+      return ERR; // index out of bounds
    }
    // set the slot to ADDR_EMPTY to mark it as empty
    addr *ptr = (addr *)((char *)sa->array.buffer + index * sa->stride);
    *ptr = ADDR_EMPTY;
-   return 0;
+   return OK;
 }
 // check if a slot is empty
 static bool slotarray_is_empty_slot(slotarray sa, usize index) {

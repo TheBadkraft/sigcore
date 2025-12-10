@@ -11,7 +11,7 @@ Running: slotarray_get_capacity                  0.914 us  [PASS]
 Running: slotarray_clear                         1.505 us  [PASS]
 Running: slotarray_stress                       15.338 us  [PASS]
 =================================================================
-[1]     TESTS= 10        PASS= 10        FAIL=  0        SKIP=  0
+[1]     TESTS= 10        PASS= 10        ERR=  0        SKIP=  0
 
 ===== Memory Allocations Report =================================
 Memory clean — all 80 allocations freed.
