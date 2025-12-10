@@ -30,7 +30,12 @@
  */
 #pragma once
 
-#include "sigcore/array.h"
+#include "sigcore/farray.h"
+#include "sigcore/parray.h"
+
+// forward declaration of the collection structure
+struct sc_collection;
+typedef struct sc_collection *collection;
 
 /* Public interface for collections operations                */
 /* ============================================================ */
@@ -40,6 +45,45 @@ typedef struct sc_collections_i {
     * @param arr The array to compact
     * @return The number of non-empty elements after compacting
     */
-   usize (*compact)(array);
+   usize (*compact)(parray);
+   /**
+    * @brief Add an element to the collection.
+    * @param coll The collection to add to
+    * @param ptr Pointer to the element to add
+    * @return 0 on success; otherwise non-zero
+    */
+   int (*add)(collection, object);
+   /**
+    * @brief Remove an element from the collection.
+    * @param coll The collection to remove from
+    * @param ptr Pointer to the element to remove
+    * @return 0 on success; otherwise non-zero
+    */
+   int (*remove)(collection, object);
+   /**
+    * @brief Clear all elements from the collection.
+    * @param coll The collection to clear
+    */
+   void (*clear)(collection);
+   /**
+    * @brief Get the number of elements in the collection.
+    * @param coll The collection to query
+    * @return Number of elements
+    */
+   usize (*count)(collection);
+   /**
+    * @brief Create a non-owning collection view of an array.
+    * @param arr The array to view
+    * @param stride Element size
+    * @return A collection view, or NULL on failure
+    */
+   collection (*as_collection)(farray, usize);
+   /**
+    * @brief Create an owning collection copy of an array.
+    * @param arr The array to copy
+    * @param stride Element size
+    * @return A collection copy, or NULL on failure
+    */
+   collection (*to_collection)(farray, usize);
 } sc_collections_i;
 extern const sc_collections_i Collections;

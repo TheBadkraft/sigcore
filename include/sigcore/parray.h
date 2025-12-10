@@ -21,52 +21,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * ----------------------------------------------
- * File: array.h
- * Description: Header file for SigmaCore array definitions and interfaces
+ * File: parray.h
+ * Description: Header file for SigmaCore pointer-array definitions and interfaces
  *
- * Array: The core collection structure used to unify all collection types
- *        within SigmaCore. List, SlotArray, and Map are all derived from Array
- *        and share common functionality defined here. This means that the
- *        Iterator mechanism can be uniformly applied across all collection types.
+ * Array: One of the two core collection structures used to abstract and unify all
+ *        collection types within SigmaCore. The pointer-array (parray) allows
+ *        storing pointers (addresses) to objects, enabling dynamic collections
+ *        of arbitrary objects via pointer indirection.
  */
 #pragma once
 
 #include "sigcore/types.h"
 
 // forward declaration of the array structure
-struct sc_array;
-typedef struct sc_array *array;
+struct sc_pointer_array;
+typedef struct sc_pointer_array *parray;
 
 /* Public interface for array operations                        */
 /* ============================================================ */
-typedef struct sc_array_i {
+typedef struct sc_parray_i {
    /**
     * @brief Initialize a new array with the specified initial capacity.
     * @param capacity Initial array capacity
     */
-   array (*new)(usize);
+   parray (*new)(usize);
    /**
     * @brief Initialize an array with the specified capacity.
     * @param arr The array to initialize
     * @param capacity Initial array capacity
     */
-   void (*init)(array *, usize);
+   void (*init)(parray *, usize);
    /**
     * @brief Dispose of the array and free associated resources.
     * @param arr The array to dispose of
     */
-   void (*dispose)(array);
+   void (*dispose)(parray);
    /**
     * @brief Get the current capacity of the array.
     * @param arr The array to query
     * @return Current capacity of the array
     */
-   int (*capacity)(array);
+   int (*capacity)(parray);
    /**
     * @brief Clear the contents of the array.
     * @param arr The array to clear
     */
-   void (*clear)(array);
+   void (*clear)(parray);
    /**
     * @brief Set the value at the specified index in the array.
     * @param arr The array to modify
@@ -74,7 +74,7 @@ typedef struct sc_array_i {
     * @param value Value to set
     * @return 0 on success; otherwise non-zero
     */
-   int (*set)(array, usize, addr);
+   int (*set)(parray, usize, addr);
    /**
     * @brief Get the value at the specified index in the array.
     * @param arr The array to query
@@ -82,13 +82,13 @@ typedef struct sc_array_i {
     * @param out_value Pointer to store the retrieved value
     * @return 0 on success; otherwise non-zero
     */
-   int (*get)(array, usize, addr *);
+   int (*get)(parray, usize, addr *);
    /**
-    * @brief Remove the element at the specified index, shifting remaining elements left.
+    * @brief Remove the element at the specified index, setting it to empty without shifting.
     * @param arr The array to modify
     * @param index Index of the element to remove
     * @return 0 on success; otherwise non-zero
     */
-   int (*remove)(array, usize);
-} sc_array_i;
-extern const sc_array_i Array;
+   int (*remove)(parray, usize);
+} sc_parray_i;
+extern const sc_parray_i PArray;

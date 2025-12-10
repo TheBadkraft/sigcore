@@ -26,9 +26,28 @@
  */
 #pragma once
 
-#include "sigcore/array.h"
+#include "sigcore/collections.h"
+#include "sigcore/parray.h"
+
+/* Collection structure                                        */
+/* ============================================================ */
+struct sc_collection {
+   struct {
+      void *buffer;
+      void *end;
+   } array;
+   usize stride;
+   usize length;
+};
 
 // array internal functions
-addr array_get_bucket_start(array arr);
-addr array_get_bucket_end(array arr);
-addr *array_get_bucket(array arr);
+addr array_get_bucket_start(parray arr);
+addr array_get_bucket_end(parray arr);
+addr *array_get_bucket(parray arr);
+
+// collection internal functions
+collection collection_new(usize capacity, usize stride);
+void collection_dispose(collection coll);
+int collection_add(collection coll, object ptr);
+int collection_grow(collection coll);
+void collection_clear(collection coll);
