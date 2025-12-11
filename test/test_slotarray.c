@@ -5,6 +5,7 @@
 
 #include "sigcore/farray.h"
 #include "sigcore/memory.h"
+#include "sigcore/parray.h"
 #include "sigcore/slotarray.h"
 #include <sigtest/sigtest.h>
 #include <stdio.h>
@@ -331,6 +332,58 @@ static void test_slotarray_stress(void) {
    SlotArray.dispose(sa);
 }
 
+// test creating slotarray from parray
+static void test_slotarray_from_pointer_array(void) {
+   parray arr = PArray.new(5);
+   int values[] = {10, 20, 30, 40, 50};
+   for (int i = 0; i < 5; i++) {
+      PArray.set(arr, i, (addr)values[i]);
+   }
+
+   slotarray sa = SlotArray.from_pointer_array(arr);
+   Assert.isNotNull(sa, "SlotArray from_pointer_array ERRed");
+
+   // check that values are copied
+   object retrieved;
+   for (int i = 0; i < 5; i++) {
+      Assert.areEqual(&(int){OK}, &(int){SlotArray.get_at(sa, i, &retrieved)}, INT, "SlotArray get_at ERRed");
+      Assert.areEqual((object)(addr)values[i], retrieved, PTR, "SlotArray value mismatch");
+   }
+
+   SlotArray.dispose(sa);
+   PArray.dispose(arr);
+}
+
+// test creating slotarray from farray
+static void test_slotarray_from_value_array(void) {
+   usize element_size = sizeof(int);
+   farray arr = FArray.new(5, element_size);
+   int values[] = {10, 20, 30, 40, 50};
+   for (int i = 0; i < 5; i++) {
+      FArray.set(arr, i, element_size, &values[i]);
+   }
+
+   slotarray sa = SlotArray.from_value_array(arr, element_size);
+   Assert.isNotNull(sa, "SlotArray from_value_array ERRed");
+
+   // check that values are copied
+   object retrieved;
+   for (int i = 0; i < 5; i++) {
+      Assert.areEqual(&(int){OK}, &(int){SlotArray.get_at(sa, i, &retrieved)}, INT, "SlotArray get_at ERRed");
+      Assert.areEqual(&(int){values[i]}, (int *)retrieved, INT, "SlotArray value mismatch");
+   }
+
+   // free the allocated objects
+   for (int i = 0; i < 5; i++) {
+      if (SlotArray.get_at(sa, i, &retrieved) == OK) {
+         free(retrieved);
+      }
+   }
+
+   SlotArray.dispose(sa);
+   FArray.dispose(arr);
+}
+
 //  register test cases
 __attribute__((constructor)) void init_slotarray_tests(void) {
    testset("core_slotarray_set", set_config, NULL);
@@ -349,4 +402,6 @@ __attribute__((constructor)) void init_slotarray_tests(void) {
    testcase("slotarray_get_capacity", test_slotarray_capacity);
    testcase("slotarray_clear", test_slotarray_clear);
    testcase("slotarray_stress", test_slotarray_stress);
+   testcase("slotarray_from_pointer_array", test_slotarray_from_pointer_array);
+   testcase("slotarray_from_value_array", test_slotarray_from_value_array);
 }

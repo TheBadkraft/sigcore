@@ -33,6 +33,10 @@
 
 #include "sigcore/types.h"
 
+// forward declaration of the collection structure
+struct sc_collection;
+typedef struct sc_collection *collection;
+
 // forward declaration of the array structure
 struct sc_pointer_array;
 typedef struct sc_pointer_array *parray;
@@ -90,5 +94,17 @@ typedef struct sc_parray_i {
     * @return 0 on OK; otherwise non-zero
     */
    int (*remove)(parray, usize);
+   /**
+    * @brief Create a non-owning collection view of the array.
+    * @param arr The array to view
+    * @return A collection view, or NULL on failure
+    */
+   collection (*as_collection)(parray);
+   /**
+    * @brief Create an owning collection copy of the array.
+    * @param arr The array to copy
+    * @return A collection copy, or NULL on failure
+    */
+   collection (*to_collection)(parray);
 } sc_parray_i;
 extern const sc_parray_i PArray;

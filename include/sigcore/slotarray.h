@@ -74,6 +74,21 @@ typedef struct sc_slotarray_i {
     */
    int (*remove_at)(slotarray, usize);
 
+   /**
+    * @brief Create a SlotArray from a pointer array, copying all non-empty elements.
+    * @param arr The pointer array to copy from.
+    * @return A new SlotArray with the elements, or NULL on failure.
+    */
+   slotarray (*from_pointer_array)(parray);
+
+   /**
+    * @brief Create a SlotArray from a value array, copying all elements.
+    * @param arr The value array to copy from.
+    * @param stride The size of each element.
+    * @return A new SlotArray with the elements, or NULL on failure.
+    */
+   slotarray (*from_value_array)(farray, usize);
+
    // Introspection
    bool (*is_empty_slot)(slotarray, usize); // Check if slot is empty
    usize (*capacity)(slotarray);            // Total slots

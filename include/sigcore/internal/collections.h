@@ -38,7 +38,8 @@ struct sc_collection {
    } array;
    usize stride;
    usize length;
-};
+   bool owns_buffer;
+};;
 
 // array internal functions
 addr array_get_bucket_start(parray arr);

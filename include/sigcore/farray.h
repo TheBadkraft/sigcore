@@ -34,6 +34,10 @@
 
 #include "sigcore/types.h"
 
+// forward declaration of the collection structure
+struct sc_collection;
+typedef struct sc_collection *collection;
+
 // forward declaration of the array structure
 struct sc_flex_array;
 typedef struct sc_flex_array *farray;
@@ -98,6 +102,20 @@ typedef struct sc_farray_i {
     * @return 0 on OK; otherwise non-zero
     */
    int (*remove)(farray, usize, usize);
+   /**
+    * @brief Create a non-owning collection view of the array.
+    * @param arr The array to view
+    * @param stride Size of each element in the array
+    * @return A collection view, or NULL on failure
+    */
+   collection (*as_collection)(farray, usize);
+   /**
+    * @brief Create an owning collection copy of the array.
+    * @param arr The array to copy
+    * @param stride Size of each element in the array
+    * @return A collection copy, or NULL on failure
+    */
+   collection (*to_collection)(farray, usize);
 } sc_farray_i;
 extern const sc_farray_i FArray;
 

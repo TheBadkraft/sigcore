@@ -12,6 +12,7 @@
  *  where these functions determine a higher-level behavior.
  */
 
+#include "sigcore/collections.h"
 #include "sigcore/parray.h"
 #include <sigtest/sigtest.h>
 #include <stdio.h>
@@ -161,6 +162,36 @@ static void test_array_remove_at(void) {
 
    PArray.dispose(arr);
 }
+static void test_array_as_collection(void) {
+   parray arr = PArray.new(5);
+   int values[] = {10, 20, 30, 40, 50};
+   for (int i = 0; i < 5; i++) {
+      PArray.set(arr, i, (addr)values[i]);
+   }
+
+   collection coll = PArray.as_collection(arr);
+   Assert.isNotNull(coll, "PArray as_collection ERRed");
+
+   usize count = Collections.count(coll);
+   Assert.areEqual(&(int){5}, &(int){count}, INT, "Collection count mismatch");
+   Collections.dispose(coll);
+   PArray.dispose(arr);
+}
+static void test_array_to_collection(void) {
+   parray arr = PArray.new(5);
+   int values[] = {10, 20, 30, 40, 50};
+   for (int i = 0; i < 5; i++) {
+      PArray.set(arr, i, (addr)values[i]);
+   }
+
+   collection coll = PArray.to_collection(arr);
+   Assert.isNotNull(coll, "PArray to_collection ERRed");
+
+   usize count = Collections.count(coll);
+   Assert.areEqual(&(int){5}, &(int){count}, INT, "Collection count mismatch");
+   Collections.dispose(coll);
+   PArray.dispose(arr);
+}
 
 //  negative test cases
 static void test_array_set_out_of_bounds(void) {
@@ -196,6 +227,9 @@ __attribute__((constructor)) void init_array_tests(void) {
    testcase("array_set_value", test_array_set_value);
    testcase("array_get_value", test_array_get_value);
    testcase("array_remove_at", test_array_remove_at);
+
+   testcase("array_as_collection", test_array_as_collection);
+   testcase("array_to_collection", test_array_to_collection);
 
    testcase("array_set_out_of_bounds", test_array_set_out_of_bounds);
    testcase("array_get_out_of_bounds", test_array_get_out_of_bounds);

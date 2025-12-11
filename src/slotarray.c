@@ -34,6 +34,7 @@
 #include "sigcore/slotarray.h"
 #include "sigcore/internal/collections.h"
 #include "sigcore/memory.h"
+#include <stdlib.h>
 #include <string.h>
 
 //  declare the SlotArray struct: with anonymous struct internals
@@ -191,6 +192,50 @@ static void slotarray_clear(slotarray sa) {
    }
 }
 
+// create a slotarray from a parray
+static slotarray slotarray_from_pointer_array(parray arr) {
+   if (!arr) {
+      return NULL;
+   }
+   usize cap = PArray.capacity(arr);
+   slotarray sa = SlotArray.new(cap);
+   if (!sa) {
+      return NULL;
+   }
+   for (usize i = 0; i < cap; i++) {
+      addr value;
+      if (PArray.get(arr, i, &value) == OK && value != ADDR_EMPTY) {
+         SlotArray.add(sa, (object)value);
+      }
+   }
+   return sa;
+}
+
+// create a slotarray from a farray
+static slotarray slotarray_from_value_array(farray arr, usize stride) {
+   if (!arr) {
+      return NULL;
+   }
+   usize cap = FArray.capacity(arr, stride);
+   slotarray sa = SlotArray.new(cap);
+   if (!sa) {
+      return NULL;
+   }
+   for (usize i = 0; i < cap; i++) {
+      void *value = malloc(stride);
+      if (!value) {
+         SlotArray.dispose(sa);
+         return NULL;
+      }
+      if (FArray.get(arr, i, stride, value) == OK) {
+         SlotArray.add(sa, value);
+      } else {
+         free(value);
+      }
+   }
+   return sa;
+}
+
 // public interface implementation
 const sc_slotarray_i SlotArray = {
     .new = slotarray_new,
@@ -198,6 +243,8 @@ const sc_slotarray_i SlotArray = {
     .add = slotarray_add,
     .get_at = slotarray_get_at,
     .remove_at = slotarray_remove_at,
+    .from_pointer_array = slotarray_from_pointer_array,
+    .from_value_array = slotarray_from_value_array,
     .is_empty_slot = slotarray_is_empty_slot,
     .capacity = slotarray_capacity,
     .clear = slotarray_clear,

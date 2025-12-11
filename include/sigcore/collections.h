@@ -72,18 +72,9 @@ typedef struct sc_collections_i {
     */
    usize (*count)(collection);
    /**
-    * @brief Create a non-owning collection view of an array.
-    * @param arr The array to view
-    * @param stride Element size
-    * @return A collection view, or NULL on ERRure
+    * @brief Dispose of the collection and free its resources.
+    * @param coll The collection to dispose
     */
-   collection (*as_collection)(farray, usize);
-   /**
-    * @brief Create an owning collection copy of an array.
-    * @param arr The array to copy
-    * @param stride Element size
-    * @return A collection copy, or NULL on ERRure
-    */
-   collection (*to_collection)(farray, usize);
+   void (*dispose)(collection);
 } sc_collections_i;
 extern const sc_collections_i Collections;
