@@ -1,5 +1,5 @@
 /*
- * Sigma-Test
+ * SigmaCore
  * Copyright (c) 2025 David Boarman (BadKraft) and contributors
  * QuantumOverride [Q|]
  * ----------------------------------------------
@@ -25,6 +25,7 @@
  * Description: Header file for SigmaCore type definitions
  */
 #pragma once
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

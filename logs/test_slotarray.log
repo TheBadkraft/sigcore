@@ -1,17 +1,17 @@
-[1] core_slotarray_set       :  12 :         2025-12-10  18:34:20
+[1] core_slotarray_set       :  12 :         2025-12-10  20:44:13
 =================================================================
-Running: slotarray_creation                      2.717 us  [PASS]
-Running: slotarray_dispose                       0.772 us  [PASS]
-Running: slotarray_set_add                       0.644 us  [PASS]
-Running: slotarray_try_get_value                 0.459 us  [PASS]
-Running: slotarray_remove_at                     0.380 us  [PASS]
-Running: slotarray_growth                        1.088 us  [PASS]
-Running: slotarray_is_valid_index                0.644 us  [PASS]
-Running: slotarray_get_capacity                  0.413 us  [PASS]
-Running: slotarray_clear                         0.722 us  [PASS]
-Running: slotarray_stress                        7.243 us  [PASS]
-Running: slotarray_from_pointer_array            1.003 us  [PASS]
-Running: slotarray_from_value_array              1.559 us  [PASS]
+Running: slotarray_creation                      1.700 us  [PASS]
+Running: slotarray_dispose                       0.490 us  [PASS]
+Running: slotarray_set_add                       0.587 us  [PASS]
+Running: slotarray_try_get_value                 0.551 us  [PASS]
+Running: slotarray_remove_at                     0.413 us  [PASS]
+Running: slotarray_growth                        1.348 us  [PASS]
+Running: slotarray_is_valid_index                0.720 us  [PASS]
+Running: slotarray_get_capacity                  0.516 us  [PASS]
+Running: slotarray_clear                         0.813 us  [PASS]
+Running: slotarray_stress                        8.613 us  [PASS]
+Running: slotarray_from_pointer_array            1.273 us  [PASS]
+Running: slotarray_from_value_array              1.718 us  [PASS]
 =================================================================
 [1]     TESTS= 12        PASS= 12        FAIL=  0        SKIP=  0
 

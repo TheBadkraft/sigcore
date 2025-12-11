@@ -1,5 +1,5 @@
 /*
- * Sigma-Test
+ * SigmaCore
  * Copyright (c) 2025 David Boarman (BadKraft) and contributors
  * QuantumOverride [Q|]
  * ----------------------------------------------
@@ -21,25 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * ----------------------------------------------
- * File: types.h
- * Description: Header file for SigmaCore type definitions
+ * File: arrays.c
+ * Description: Common array operations implementation
  */
-#pragma once
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "sigcore/internal/arrays.h"
+#include "sigcore/memory.h"
+#include <string.h>
 
-typedef void *object;
-typedef uintptr_t addr;
-typedef int64_t integer;
-typedef char *string;
-typedef size_t usize;
+// allocate memory for an array bucket
+object array_alloc_bucket(size_t element_size, usize capacity) {
+   return Memory.alloc(element_size * capacity);
+}
 
-// empty addr
-#define ADDR_EMPTY ((addr)0)
-// size of addr
-#define ADDR_SIZE sizeof(addr)
-
-// OK/ERR
-#define OK 0
-#define ERR (-1)
+// free array resources (bucket and struct)
+void array_free_resources(void *bucket, void *struct_ptr) {
+   if (bucket) {
+      Memory.free(bucket);
+   }
+   if (struct_ptr) {
+      Memory.free(struct_ptr);
+   }
+}

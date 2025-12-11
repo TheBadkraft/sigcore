@@ -1,6 +1,6 @@
-[1] core_memory_set          :   1 :         2025-12-10  18:34:20
+[1] core_memory_set          :   1 :         2025-12-10  20:44:13
 =================================================================
-Running: memory_alloc_free                       1.589 us  [PASS]
+Running: memory_alloc_free                       1.899 us  [PASS]
 =================================================================
 [1]     TESTS=  1        PASS=  1        FAIL=  0        SKIP=  0
 

@@ -1,5 +1,5 @@
 /*
- * Sigma-Test
+ * SigmaCore
  * Copyright (c) 2025 David Boarman (BadKraft) and contributors
  * QuantumOverride [Q|]
  * ----------------------------------------------
@@ -25,19 +25,22 @@
  * Description: Header file for SigmaCore flex-array definitions and interfaces
  *
  * Array: One of the two core collection structures used to abstract and unify all
- *        collection types within SigmaCore. The flex-array (farray) allows storing
- *        elements of arbitrary size directly, without the overhead of pointer
- *        indirection. This is useful for small types like integers or structs
- *        where memory efficiency is important.
+ *        collection types within SigmaCore. The flex-array (farray) stores elements
+ *        of uniform size directly in contiguous memory, eliminating pointer indirection
+ *        overhead. Ideal for collections of small, fixed-size types like integers,
+ *        coordinates, or simple structs where memory efficiency and cache performance
+ *        are priorities.
+ *
+ * Flex-Array: A contiguous memory collection that stores elements of uniform size
+ *             directly, providing optimal memory efficiency and cache performance for
+ *             small data types. Best suited for homogeneous collections of primitives,
+ *             small structs, or any fixed-size data where copying elements is cheap
+ *             and pointer indirection would be wasteful.
  */
 #pragma once
 
 #include "sigcore/collection.h"
 #include "sigcore/types.h"
-
-// forward declaration of the collection structure
-// struct sc_collection;  // moved to collection.h
-// typedef struct sc_collection *collection;  // moved to collection.h
 
 // forward declaration of the array structure
 struct sc_flex_array;
@@ -94,7 +97,7 @@ typedef struct sc_farray_i {
     * @param out_value Pointer to store the retrieved value (must be at least stride bytes)
     * @return 0 on OK; otherwise non-zero
     */
-   int (*get)(farray, usize, usize, void *);
+   int (*get)(farray, usize, usize, object);
    /**
     * @brief Remove the element at the specified index, setting it to empty without shifting.
     * @param arr The array to modify
@@ -119,8 +122,3 @@ typedef struct sc_farray_i {
    collection (*to_collection)(farray, usize);
 } sc_farray_i;
 extern const sc_farray_i FArray;
-
-// Internal access functions (for collections)
-void *farray_get_bucket(farray arr);
-void *farray_get_bucket_end(farray arr);
-int farray_capacity(farray arr, usize stride);

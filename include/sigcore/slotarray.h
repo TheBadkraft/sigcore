@@ -1,5 +1,5 @@
 /*
- * Sigma-Test
+ * SigmaCore
  * Copyright (c) 2025 David Boarman (BadKraft) and contributors
  * QuantumOverride [Q|]
  * ----------------------------------------------
@@ -34,6 +34,7 @@
 #pragma once
 
 #include "sigcore/farray.h"
+#include "sigcore/parray.h"
 struct sc_slotarray;
 typedef struct sc_slotarray *slotarray;
 

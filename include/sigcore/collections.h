@@ -1,5 +1,5 @@
 /*
- * Sigma-Test
+ * SigmaCore
  * Copyright (c) 2025 David Boarman (BadKraft) and contributors
  * QuantumOverride [Q|]
  * ----------------------------------------------
@@ -32,21 +32,12 @@
 
 #include "sigcore/collection.h"
 #include "sigcore/farray.h"
+#include "sigcore/list.h"
 #include "sigcore/parray.h"
-
-// forward declaration of the collection structure
-// struct sc_collection;  // moved to collection.h
-// typedef struct sc_collection *collection;  // moved to collection.h
 
 /* Public interface for collections operations                */
 /* ============================================================ */
 typedef struct sc_collections_i {
-   /**
-    * @brief Compact an array by removing empty entries and moving non-empty entries to the front.
-    * @param arr The array to compact
-    * @return The number of non-empty elements after compacting
-    */
-   usize (*compact)(parray);
    /**
     * @brief Add an element to the collection.
     * @param coll The collection to add to

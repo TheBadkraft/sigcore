@@ -1,5 +1,5 @@
 /*
- * Sigma-Test
+ * SigmaCore
  * Copyright (c) 2025 David Boarman (BadKraft) and contributors
  * QuantumOverride [Q|]
  * ----------------------------------------------
@@ -74,14 +74,14 @@ static usize list_capacity(list lst) {
    if (!lst) {
       return 0; // invalid list
    }
-   return ((char *)lst->coll->array.end - (char *)lst->coll->array.buffer) / lst->coll->stride;
+   return ((char *)collection_get_end(lst->coll) - (char *)collection_get_buffer(lst->coll)) / collection_get_stride(lst->coll);
 }
 //  get the current size of the list
 static usize list_size(list lst) {
    if (!lst) {
       return 0; // invalid list
    }
-   return lst->coll->length;
+   return collection_get_length(lst->coll);
 }
 //  append a value to the end of the list
 static int list_append(list lst, object value) {
@@ -95,11 +95,11 @@ static int list_get_at(list lst, usize index, object *out_value) {
    if (!lst || !out_value) {
       return ERR; // invalid parameters
    }
-   if (index >= lst->coll->length) {
+   if (index >= collection_get_length(lst->coll)) {
       return ERR; // index out of bounds
    }
-   void *src = (char *)lst->coll->array.buffer + index * lst->coll->stride;
-   memcpy(out_value, src, lst->coll->stride);
+   void *src = (char *)collection_get_buffer(lst->coll) + index * collection_get_stride(lst->coll);
+   memcpy(out_value, src, collection_get_stride(lst->coll));
    return OK;
 }
 //  remove the element at the specified index from the list
@@ -107,21 +107,21 @@ static int list_remove_at(list lst, usize index) {
    if (!lst) {
       return ERR; // invalid list
    }
-   usize size = lst->coll->length;
+   usize size = collection_get_length(lst->coll);
    if (index >= size) {
       return ERR; // index out of bounds
    }
    // Shift left from index to end-1
    for (usize i = index; i < size - 1; ++i) {
-      void *src = (char *)lst->coll->array.buffer + (i + 1) * lst->coll->stride;
-      void *dst = (char *)lst->coll->array.buffer + i * lst->coll->stride;
-      memcpy(dst, src, lst->coll->stride);
+      void *src = (char *)collection_get_buffer(lst->coll) + (i + 1) * collection_get_stride(lst->coll);
+      void *dst = (char *)collection_get_buffer(lst->coll) + i * collection_get_stride(lst->coll);
+      memcpy(dst, src, collection_get_stride(lst->coll));
    }
    // Zero the last
    object zero = NULL;
-   void *last = (char *)lst->coll->array.buffer + (size - 1) * lst->coll->stride;
-   memcpy(last, &zero, lst->coll->stride);
-   lst->coll->length--;
+   void *last = (char *)collection_get_buffer(lst->coll) + (size - 1) * collection_get_stride(lst->coll);
+   memcpy(last, &zero, collection_get_stride(lst->coll));
+   collection_set_length(lst->coll, size - 1);
    return OK;
 }
 // set the value at the specified index in the list
@@ -129,12 +129,12 @@ static int list_set_at(list lst, usize index, object value) {
    if (!lst) {
       return ERR; // invalid parameters
    }
-   usize size = lst->coll->length;
+   usize size = collection_get_length(lst->coll);
    if (index >= size) {
       return ERR; // index out of bounds
    }
-   void *dst = (char *)lst->coll->array.buffer + index * lst->coll->stride;
-   memcpy(dst, &value, lst->coll->stride);
+   void *dst = (char *)collection_get_buffer(lst->coll) + index * collection_get_stride(lst->coll);
+   memcpy(dst, &value, collection_get_stride(lst->coll));
    return OK;
 }
 static int list_insert_at(list lst, usize index, object value) {
@@ -142,11 +142,11 @@ static int list_insert_at(list lst, usize index, object value) {
    if (!lst) {
       return ERR; // invalid parameters
    }
-   usize size = lst->coll->length;
+   usize size = collection_get_length(lst->coll);
    if (index > size) {
       return ERR; // index out of bounds
    }
-   usize capacity = ((char *)lst->coll->array.end - (char *)lst->coll->array.buffer) / lst->coll->stride;
+   usize capacity = ((char *)collection_get_end(lst->coll) - (char *)collection_get_buffer(lst->coll)) / collection_get_stride(lst->coll);
    if (size >= capacity) {
       if (collection_grow(lst->coll) != 0) {
          return ERR; // growth ERRed
@@ -154,14 +154,14 @@ static int list_insert_at(list lst, usize index, object value) {
    }
    // Shift right from index to end
    for (usize i = size; i > index; --i) {
-      void *src = (char *)lst->coll->array.buffer + (i - 1) * lst->coll->stride;
-      void *dst = (char *)lst->coll->array.buffer + i * lst->coll->stride;
-      memcpy(dst, src, lst->coll->stride);
+      void *src = (char *)collection_get_buffer(lst->coll) + (i - 1) * collection_get_stride(lst->coll);
+      void *dst = (char *)collection_get_buffer(lst->coll) + i * collection_get_stride(lst->coll);
+      memcpy(dst, src, collection_get_stride(lst->coll));
    }
    // Insert the new value
-   void *ins = (char *)lst->coll->array.buffer + index * lst->coll->stride;
-   memcpy(ins, &value, lst->coll->stride);
-   lst->coll->length++;
+   void *ins = (char *)collection_get_buffer(lst->coll) + index * collection_get_stride(lst->coll);
+   memcpy(ins, &value, collection_get_stride(lst->coll));
+   collection_set_length(lst->coll, collection_get_length(lst->coll) + 1);
    return OK;
 }
 // prepend a value to the start of the list
