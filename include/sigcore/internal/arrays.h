@@ -21,34 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * ----------------------------------------------
- * File:  internal/collections.h
- * Description: Header file for SigmaCore internal collection functions
+ * File:  internal/arrays.h
+ * Description: Common array operations and helpers
  */
 #pragma once
 
 #include "sigcore/collections.h"
 #include "sigcore/farray.h"
 #include "sigcore/parray.h"
+#include "sigcore/types.h"
 
-// array internal functions
-addr array_get_bucket_start(parray arr);
-addr array_get_bucket_end(parray arr);
-addr *array_get_bucket(parray arr);
+// Internal array operations (for derived structures like list)
+usize farray_compact(farray arr, usize stride);
+usize parray_compact(parray arr);
 
-// collection internal functions
-collection collection_new(usize capacity, usize stride);
-void collection_dispose(collection coll);
-int collection_add(collection coll, object ptr);
-int collection_grow(collection coll);
-void collection_clear(collection coll);
-void collection_set_data(collection coll, void *data, usize count);
+// Common memory management helpers
+object array_alloc_bucket(size_t element_size, usize capacity);
+void array_free_resources(void *bucket, void *struct_ptr);
 
-// collection accessor functions
-void *collection_get_buffer(collection coll);
-void *collection_get_end(collection coll);
-usize collection_get_stride(collection coll);
-usize collection_get_length(collection coll);
-void collection_set_length(collection coll, usize length);
-
-// array collection helpers
-collection array_create_collection_view(void *buffer, void *end, usize stride, usize length, bool owns_buffer);
+// Common collection interface helpers

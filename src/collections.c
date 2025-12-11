@@ -1,5 +1,5 @@
 /*
- * Sigma-Test
+ * SigmaCore
  * Copyright (c) 2025 David Boarman (BadKraft) and contributors
  * QuantumOverride [Q|]
  * ----------------------------------------------
@@ -31,6 +31,67 @@
 #include "sigcore/internal/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
+
+/* Collection structure                                        */
+/* ============================================================ */
+struct sc_collection {
+   struct {
+      void *buffer;
+      void *end;
+   } array;
+   usize stride;
+   usize length;
+   bool owns_buffer;
+};
+
+// create a collection view of array data
+collection array_create_collection_view(void *buffer, void *end, usize stride, usize length, bool owns_buffer) {
+   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection));
+   if (!coll) {
+      return NULL;
+   }
+
+   coll->array.buffer = buffer;
+   coll->array.end = end;
+   coll->stride = stride;
+   coll->length = length;
+   coll->owns_buffer = owns_buffer;
+
+   return coll;
+}
+
+// set collection data from a buffer
+void collection_set_data(collection coll, void *data, usize count) {
+   if (!coll || !data) {
+      return;
+   }
+
+   memcpy(coll->array.buffer, data, count * coll->stride);
+   coll->length = count;
+}
+
+// collection accessor functions
+inline void *collection_get_buffer(collection coll) {
+   return coll ? coll->array.buffer : NULL;
+}
+
+inline void *collection_get_end(collection coll) {
+   return coll ? coll->array.end : NULL;
+}
+
+inline usize collection_get_stride(collection coll) {
+   return coll ? coll->stride : 0;
+}
+
+inline usize collection_get_length(collection coll) {
+   return coll ? coll->length : 0;
+}
+
+inline void collection_set_length(collection coll, usize length) {
+   if (coll) {
+      coll->length = length;
+   }
+}
 
 // forward declarations of internal functions
 collection collection_new(usize capacity, usize stride);
@@ -155,32 +216,8 @@ usize collection_get_count(collection coll) {
    return collection_count(coll);
 }
 
-// compact a parray by shifting non-empty elements to the front
-static usize collections_compact(parray arr) {
-   if (!arr) {
-      return 0;
-   }
-
-   usize capacity = PArray.capacity(arr);
-   usize write_index = 0;
-
-   for (usize read_index = 0; read_index < capacity; ++read_index) {
-      addr value;
-      if (PArray.get(arr, read_index, &value) == 0 && value != ADDR_EMPTY) {
-         if (write_index != read_index) {
-            PArray.set(arr, write_index, value);
-            PArray.set(arr, read_index, ADDR_EMPTY);
-         }
-         ++write_index;
-      }
-   }
-
-   return write_index;
-}
-
 //  public interface implementation
 const sc_collections_i Collections = {
-    .compact = collections_compact,
     .add = collection_add,
     .remove = collection_remove,
     .clear = collection_clear,

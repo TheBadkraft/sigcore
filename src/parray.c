@@ -1,5 +1,5 @@
 /*
- * Sigma-Test
+ * SigmaCore
  * Copyright (c) 2025 David Boarman (BadKraft) and contributors
  * QuantumOverride [Q|]
  * ----------------------------------------------
@@ -30,6 +30,7 @@
  *        Iterator mechanism can be uniformly applied across all collection types.
  */
 #include "sigcore/parray.h"
+#include "sigcore/internal/arrays.h"
 #include "sigcore/internal/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
@@ -53,7 +54,7 @@ static parray array_new(usize capacity) {
    }
 
    //  allocate memory for the bucket
-   arr->bucket = Memory.alloc(sizeof(addr) * capacity);
+   arr->bucket = array_alloc_bucket(sizeof(addr), capacity);
    if (!arr->bucket) {
       Memory.free(arr);
       return NULL; // allocation ERRed
@@ -91,8 +92,7 @@ static void array_dispose(parray arr) {
    }
 
    //  free the bucket and the array structure itself
-   Memory.free(arr->bucket);
-   Memory.free(arr);
+   array_free_resources(arr->bucket, arr);
 }
 
 // get the current capacity of the array
@@ -158,6 +158,29 @@ static int array_remove_at(parray arr, usize index) {
    return OK; // OK
 }
 
+// compact the array by shifting non-empty elements to the front
+usize parray_compact(parray arr) {
+   if (!arr) {
+      return 0;
+   }
+
+   usize capacity = PArray.capacity(arr);
+   usize write_index = 0;
+
+   for (usize read_index = 0; read_index < capacity; ++read_index) {
+      addr value;
+      if (PArray.get(arr, read_index, &value) == 0 && value != ADDR_EMPTY) {
+         if (write_index != read_index) {
+            PArray.set(arr, write_index, value);
+            PArray.set(arr, read_index, ADDR_EMPTY);
+         }
+         ++write_index;
+      }
+   }
+
+   return write_index;
+}
+
 // Internal function
 addr array_get_bucket_start(parray arr) {
    if (!arr)
@@ -181,18 +204,8 @@ static collection parray_as_collection(parray arr) {
       return NULL;
    }
 
-   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection));
-   if (!coll) {
-      return NULL;
-   }
-
-   coll->array.buffer = arr->bucket;
-   coll->array.end = (void *)arr->end;
-   coll->stride = sizeof(addr);
-   coll->length = PArray.capacity(arr);
-   coll->owns_buffer = false;
-
-   return coll;
+   usize length = PArray.capacity(arr);
+   return array_create_collection_view(arr->bucket, (void *)arr->end, sizeof(addr), length, false);
 }
 
 // create an owning collection copy of the parray
@@ -208,8 +221,7 @@ static collection parray_to_collection(parray arr) {
    }
 
    // Copy data
-   memcpy(coll->array.buffer, arr->bucket, capacity * sizeof(addr));
-   coll->length = capacity;
+   collection_set_data(coll, arr->bucket, capacity);
 
    return coll;
 }

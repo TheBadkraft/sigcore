@@ -1,5 +1,5 @@
 /*
- * Sigma-Test
+ * SigmaCore
  * Copyright (c) 2025 David Boarman (BadKraft) and contributors
  * QuantumOverride [Q|]
  * ----------------------------------------------
@@ -22,6 +22,18 @@
  * SOFTWARE.
  * ----------------------------------------------
  * File: core.h
- * Description: Header file for SigmaCore core definitions and interfaces
+ * Description: All-inclusive header for SigmaCore - includes everything
  */
 #pragma once
+
+// Core types and definitions
+#include "sigcore/types.h"
+
+// Memory management
+#include "sigcore/memory.h"
+
+// Collections (includes collection, farray, parray, list)
+#include "sigcore/collections.h"
+
+// Specialized collections
+#include "sigcore/slotarray.h"

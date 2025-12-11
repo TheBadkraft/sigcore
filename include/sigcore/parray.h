@@ -1,5 +1,5 @@
 /*
- * Sigma-Test
+ * SigmaCore
  * Copyright (c) 2025 David Boarman (BadKraft) and contributors
  * QuantumOverride [Q|]
  * ----------------------------------------------
@@ -25,18 +25,21 @@
  * Description: Header file for SigmaCore pointer-array definitions and interfaces
  *
  * Array: One of the two core collection structures used to abstract and unify all
- *        collection types within SigmaCore. The pointer-array (parray) allows
- *        storing pointers (addresses) to objects, enabling dynamic collections
- *        of arbitrary objects via pointer indirection.
+ *        collection types within SigmaCore. The pointer-array (parray) stores pointers
+ *        to objects, enabling dynamic collections of heterogeneous or large objects
+ *        through pointer indirection. Essential for polymorphism, large objects, or
+ *        when reference semantics are required.
+ *
+ * Pointer-Array: A collection that stores pointers to objects, providing flexibility
+ *                for heterogeneous collections and large objects. Ideal for storing
+ *                objects of varying types, large structures, or when you need reference
+ *                semantics rather than value semantics. The pointer indirection allows
+ *                for polymorphism and avoids expensive copying of large objects.
  */
 #pragma once
 
 #include "sigcore/collection.h"
 #include "sigcore/types.h"
-
-// forward declaration of the collection structure
-// struct sc_collection;  // moved to collection.h
-// typedef struct sc_collection *collection;  // moved to collection.h
 
 // forward declaration of the array structure
 struct sc_pointer_array;
