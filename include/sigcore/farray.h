@@ -32,11 +32,12 @@
  */
 #pragma once
 
+#include "sigcore/collection.h"
 #include "sigcore/types.h"
 
 // forward declaration of the collection structure
-struct sc_collection;
-typedef struct sc_collection *collection;
+// struct sc_collection;  // moved to collection.h
+// typedef struct sc_collection *collection;  // moved to collection.h
 
 // forward declaration of the array structure
 struct sc_flex_array;

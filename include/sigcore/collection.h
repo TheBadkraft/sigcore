@@ -21,35 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * ----------------------------------------------
- * File:  internal/collections.h
- * Description: Header file for SigmaCore internal collection functions
+ * File: collection.h
+ * Description: Forward declaration for the generic collection type
  */
 #pragma once
 
-#include "sigcore/collections.h"
-#include "sigcore/parray.h"
-
-/* Collection structure                                        */
-/* ============================================================ */
-struct sc_collection {
-   struct {
-      void *buffer;
-      void *end;
-   } array;
-   usize stride;
-   usize length;
-   bool owns_buffer;
-};
-;
-
-// array internal functions
-addr array_get_bucket_start(parray arr);
-addr array_get_bucket_end(parray arr);
-addr *array_get_bucket(parray arr);
-
-// collection internal functions
-collection collection_new(usize capacity, usize stride);
-void collection_dispose(collection coll);
-int collection_add(collection coll, object ptr);
-int collection_grow(collection coll);
-void collection_clear(collection coll);
+// forward declaration of the collection structure
+struct sc_collection;
+typedef struct sc_collection *collection;
