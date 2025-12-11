@@ -175,6 +175,45 @@ addr *array_get_bucket(parray arr) {
    return arr->bucket;
 }
 
+// create a non-owning collection view of the parray
+static collection parray_as_collection(parray arr) {
+   if (!arr) {
+      return NULL;
+   }
+
+   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection));
+   if (!coll) {
+      return NULL;
+   }
+
+   coll->array.buffer = arr->bucket;
+   coll->array.end = (void *)arr->end;
+   coll->stride = sizeof(addr);
+   coll->length = PArray.capacity(arr);
+   coll->owns_buffer = false;
+
+   return coll;
+}
+
+// create an owning collection copy of the parray
+static collection parray_to_collection(parray arr) {
+   if (!arr) {
+      return NULL;
+   }
+
+   usize capacity = PArray.capacity(arr);
+   collection coll = collection_new(capacity, sizeof(addr));
+   if (!coll) {
+      return NULL;
+   }
+
+   // Copy data
+   memcpy(coll->array.buffer, arr->bucket, capacity * sizeof(addr));
+   coll->length = capacity;
+
+   return coll;
+}
+
 //  public interface implementation
 const sc_parray_i PArray = {
     .new = array_new,
@@ -185,4 +224,6 @@ const sc_parray_i PArray = {
     .set = array_set_at,
     .get = array_get_at,
     .remove = array_remove_at,
+    .as_collection = parray_as_collection,
+    .to_collection = parray_to_collection,
 };

@@ -1,21 +1,23 @@
-[1] core_slotarray_set       :  10 :         2025-12-09  17:27:24
+[1] core_slotarray_set       :  12 :         2025-12-10  18:05:56
 =================================================================
-Running: slotarray_creation                      2.544 us  [PASS]
-Running: slotarray_dispose                       0.758 us  [PASS]
-Running: slotarray_set_add                       0.739 us  [PASS]
-Running: slotarray_try_get_value                 0.655 us  [PASS]
-Running: slotarray_remove_at                     0.564 us  [PASS]
-Running: slotarray_growth                        1.601 us  [PASS]
-Running: slotarray_is_valid_index                1.246 us  [PASS]
-Running: slotarray_get_capacity                  0.914 us  [PASS]
-Running: slotarray_clear                         1.505 us  [PASS]
-Running: slotarray_stress                       15.338 us  [PASS]
+Running: slotarray_creation                      1.563 us  [PASS]
+Running: slotarray_dispose                       0.480 us  [PASS]
+Running: slotarray_set_add                       0.591 us  [PASS]
+Running: slotarray_try_get_value                 0.446 us  [PASS]
+Running: slotarray_remove_at                     0.392 us  [PASS]
+Running: slotarray_growth                        1.087 us  [PASS]
+Running: slotarray_is_valid_index                0.609 us  [PASS]
+Running: slotarray_get_capacity                  0.398 us  [PASS]
+Running: slotarray_clear                         0.685 us  [PASS]
+Running: slotarray_stress                        7.109 us  [PASS]
+Running: slotarray_from_pointer_array            1.028 us  [PASS]
+Running: slotarray_from_value_array              1.422 us  [PASS]
 =================================================================
-[1]     TESTS= 10        PASS= 10        ERR=  0        SKIP=  0
+[1]     TESTS= 12        PASS= 12        FAIL=  0        SKIP=  0
 
 ===== Memory Allocations Report =================================
-Memory clean — all 80 allocations freed.
+Memory clean — all 93 allocations freed.
 
 
-  Total mallocs:                80
-  Total frees:                  80
+  Total mallocs:                93
+  Total frees:                  93

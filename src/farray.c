@@ -183,6 +183,46 @@ int farray_capacity(farray arr, usize stride) {
    return (int)(((char *)arr->end - (char *)arr->bucket) / stride);
 }
 
+// create a non-owning collection view of the farray
+static collection farray_as_collection(farray arr, usize stride) {
+   if (!arr) {
+      return NULL;
+   }
+
+   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection));
+   if (!coll) {
+      return NULL;
+   }
+
+   coll->array.buffer = farray_get_bucket(arr);
+   coll->array.end = farray_get_bucket_end(arr);
+   coll->stride = stride;
+   coll->length = FArray.capacity(arr, stride);
+   coll->owns_buffer = false;
+
+   return coll;
+}
+
+// create an owning collection copy of the farray
+static collection farray_to_collection(farray arr, usize stride) {
+   if (!arr) {
+      return NULL;
+   }
+
+   usize capacity = FArray.capacity(arr, stride);
+   collection coll = collection_new(capacity, stride);
+   if (!coll) {
+      return NULL;
+   }
+
+   // Copy data
+   void *src = farray_get_bucket(arr);
+   memcpy(coll->array.buffer, src, capacity * stride);
+   coll->length = capacity;
+
+   return coll;
+}
+
 //  public interface implementation
 const sc_farray_i FArray = {
     .new = farray_new,
@@ -193,4 +233,6 @@ const sc_farray_i FArray = {
     .set = farray_set_at,
     .get = farray_get_at,
     .remove = farray_remove_at,
+    .as_collection = farray_as_collection,
+    .to_collection = farray_to_collection,
 };

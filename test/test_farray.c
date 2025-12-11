@@ -8,6 +8,7 @@
  *  where memory efficiency is important.
  */
 
+#include "sigcore/collections.h"
 #include "sigcore/farray.h"
 #include <sigtest/sigtest.h>
 #include <stdio.h>
@@ -169,6 +170,40 @@ static void test_farray_remove_at(void) {
 
    FArray.dispose(arr);
 }
+static void test_farray_as_collection(void) {
+   usize element_size = sizeof(int);
+   farray arr = FArray.new(5, element_size);
+   int values[] = {10, 20, 30, 40, 50};
+   for (int i = 0; i < 5; i++) {
+      FArray.set(arr, i, element_size, &values[i]);
+   }
+
+   collection coll = FArray.as_collection(arr, element_size);
+   Assert.isNotNull(coll, "FArray as_collection ERRed");
+
+   usize count = Collections.count(coll);
+   Assert.areEqual(&(int){5}, &(int){count}, INT, "Collection count mismatch");
+
+   Collections.dispose(coll);
+   FArray.dispose(arr);
+}
+static void test_farray_to_collection(void) {
+   usize element_size = sizeof(int);
+   farray arr = FArray.new(5, element_size);
+   int values[] = {10, 20, 30, 40, 50};
+   for (int i = 0; i < 5; i++) {
+      FArray.set(arr, i, element_size, &values[i]);
+   }
+
+   collection coll = FArray.to_collection(arr, element_size);
+   Assert.isNotNull(coll, "FArray to_collection ERRed");
+
+   usize count = Collections.count(coll);
+   Assert.areEqual(&(int){5}, &(int){count}, INT, "Collection count mismatch");
+
+   Collections.dispose(coll);
+   FArray.dispose(arr);
+}
 
 //  negative test cases
 static void test_farray_set_out_of_bounds(void) {
@@ -208,6 +243,9 @@ __attribute__((constructor)) void init_farray_tests(void) {
    testcase("farray_set_value", test_farray_set_value);
    testcase("farray_get_value", test_farray_get_value);
    testcase("farray_remove_at", test_farray_remove_at);
+
+   testcase("farray_as_collection", test_farray_as_collection);
+   testcase("farray_to_collection", test_farray_to_collection);
 
    testcase("farray_set_out_of_bounds", test_farray_set_out_of_bounds);
    testcase("farray_get_out_of_bounds", test_farray_get_out_of_bounds);

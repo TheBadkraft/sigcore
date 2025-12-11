@@ -60,6 +60,7 @@ collection collection_new(usize capacity, usize stride) {
    coll->array.end = (char *)coll->array.buffer + stride * capacity;
    coll->stride = stride;
    coll->length = 0;
+   coll->owns_buffer = true;
    return coll;
 }
 // dispose of the collection
@@ -68,7 +69,7 @@ void collection_dispose(collection coll) {
       return;
    }
 
-   if (coll->array.buffer) {
+   if (coll->owns_buffer && coll->array.buffer) {
       Memory.free(coll->array.buffer);
    }
    Memory.free(coll);
@@ -153,43 +154,6 @@ void collection_clear(collection coll) {
 usize collection_get_count(collection coll) {
    return collection_count(coll);
 }
-// create a non-owning collection view
-collection collection_as_collection(farray arr, usize stride) {
-   if (!arr) {
-      return NULL;
-   }
-
-   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection));
-   if (!coll) {
-      return NULL;
-   }
-
-   coll->array.buffer = farray_get_bucket(arr);
-   coll->array.end = farray_get_bucket_end(arr);
-   coll->stride = stride;
-   coll->length = FArray.capacity(arr, stride); // Assume full
-
-   return coll;
-}
-// create an owning collection copy
-collection collection_to_collection(farray arr, usize stride) {
-   if (!arr) {
-      return NULL;
-   }
-
-   usize capacity = FArray.capacity(arr, stride);
-   collection coll = collection_new(capacity, stride);
-   if (!coll) {
-      return NULL;
-   }
-
-   // Copy data
-   void *src = farray_get_bucket(arr);
-   memcpy(coll->array.buffer, src, capacity * stride);
-   coll->length = capacity;
-
-   return coll;
-}
 
 // compact a parray by shifting non-empty elements to the front
 static usize collections_compact(parray arr) {
@@ -221,6 +185,5 @@ const sc_collections_i Collections = {
     .remove = collection_remove,
     .clear = collection_clear,
     .count = collection_get_count,
-    .as_collection = collection_as_collection,
-    .to_collection = collection_to_collection,
+    .dispose = collection_dispose,
 };
