@@ -30,12 +30,13 @@
  */
 #pragma once
 
+#include "sigcore/collection.h"
 #include "sigcore/farray.h"
 #include "sigcore/parray.h"
 
 // forward declaration of the collection structure
-struct sc_collection;
-typedef struct sc_collection *collection;
+// struct sc_collection;  // moved to collection.h
+// typedef struct sc_collection *collection;  // moved to collection.h
 
 /* Public interface for collections operations                */
 /* ============================================================ */
