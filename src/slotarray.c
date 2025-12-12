@@ -44,6 +44,7 @@ struct sc_slotarray {
       void *end;
    } array;
    usize stride;
+   bool can_grow;
 };
 
 // forward declaration of internal functions
@@ -52,19 +53,20 @@ static usize find_next_empty_slot(slotarray sa);
 // create new slotarray with specified initial capacity
 static slotarray slotarray_new(usize capacity) {
    //  allocate memory for the slotarray structure
-   slotarray sa = Memory.alloc(sizeof(struct sc_slotarray));
+   slotarray sa = Memory.alloc(sizeof(struct sc_slotarray), false);
    if (!sa) {
       return NULL; // allocation ERRed
    }
    // Initialize the buffer with the specified capacity
    usize total_size = capacity * sizeof(addr);
-   sa->array.buffer = Memory.alloc(total_size);
+   sa->array.buffer = Memory.alloc(total_size, false);
    if (!sa->array.buffer) {
-      Memory.free(sa);
+      Memory.dispose(sa);
       return NULL; // allocation ERRed
    }
    sa->array.end = (char *)sa->array.buffer + total_size;
    sa->stride = sizeof(addr);
+   sa->can_grow = true;
    // initialize all to ADDR_EMPTY
    for (usize i = 0; i < capacity; ++i) {
       addr *ptr = (addr *)((char *)sa->array.buffer + i * sa->stride);
@@ -77,8 +79,8 @@ static void slotarray_dispose(slotarray sa) {
    if (!sa) {
       return; // nothing to dispose
    }
-   Memory.free(sa->array.buffer);
-   Memory.free(sa);
+   Memory.dispose(sa->array.buffer);
+   Memory.dispose(sa);
 }
 // add a value to the slotarray, reusing empty slots if available
 static int slotarray_add(slotarray sa, object value) {
@@ -94,15 +96,18 @@ static int slotarray_add(slotarray sa, object value) {
       return (int)next_slot; // return the index where value was added
    } else {
       // no empty slot found, need to grow the array
+      if (!sa->can_grow) {
+         return ERR; // cannot grow static buffer
+      }
       usize current_capacity = ((char *)sa->array.end - (char *)sa->array.buffer) / sa->stride;
       usize new_capacity = current_capacity * 2; // double the capacity
       usize new_total_size = new_capacity * sa->stride;
-      void *new_buffer = Memory.alloc(new_total_size);
+      void *new_buffer = Memory.alloc(new_total_size, false);
       if (!new_buffer) {
          return ERR; // allocation ERRed
       }
       memcpy(new_buffer, sa->array.buffer, current_capacity * sa->stride);
-      Memory.free(sa->array.buffer);
+      Memory.dispose(sa->array.buffer);
       sa->array.buffer = new_buffer;
       sa->array.end = (char *)new_buffer + new_total_size;
       // initialize new slots to ADDR_EMPTY

@@ -10,6 +10,7 @@
 
 #include "sigcore/collections.h"
 #include "sigcore/farray.h"
+#include "sigcore/memory.h"
 #include <sigtest/sigtest.h>
 #include <stdio.h>
 #include <string.h>

@@ -1,12 +1,23 @@
-[1] core_memory_set          :   1 :         2025-12-10  20:44:13
+[1] core_memory_set          :  14 :         2025-12-12  07:24:18
 =================================================================
-Running: memory_alloc_free                       1.899 us  [PASS]
+Running: Constructor initializes state           0.903 us  [PASS]
+Running: Tracker page exists after init          0.145 us  [PASS]
+Running: Tracker SlotArray valid                 1.537 us  [PASS]
+Running: Memory avoids self-tracking            66.527 us  [PASS]
+Running: Memory ready after init                 0.206 us  [PASS]
+Running: Bootstrap allocs tracked                0.817 us  [PASS]
+Running: has() false for garbage                62.657 us  [PASS]
+Running: Alloc/dispose tracks correctly         64.129 us  [PASS]
+Running: Alloc with zero initializes            66.557 us  [PASS]
+Running: Alloc without zero no init             63.649 us  [PASS]
+Running: Track/untrack external pointers        131.703 us  [PASS]
+Running: Realloc basic cases                    197.549 us  [PASS]
+Running: Init/teardown basics                    0.253 us  [PASS]
+Running: Multi-page creation                    381308.531 us  [PASS]
 =================================================================
-[1]     TESTS=  1        PASS=  1        FAIL=  0        SKIP=  0
+[1]     TESTS= 14        PASS= 14        FAIL=  0        SKIP=  0
 
 ===== Memory Allocations Report =================================
-Memory clean — all 1 allocations freed.
-
-
-  Total mallocs:                1
-  Total frees:                  1
+WARNING: MEMORY LEAK — 2 unfreed allocation(s)
+  Total mallocs:                5023
+  Total frees:                  5021

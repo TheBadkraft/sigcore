@@ -73,7 +73,7 @@ static void test_list_append_value(void) {
    // append value to list and check size increases
    list lst = List.new(5);
    // create a data record
-   Person *p1 = Memory.alloc(sizeof(Person));
+   Person *p1 = Memory.alloc(sizeof(Person), false);
    p1->id = 1;
    strcpy(p1->name, "Alice");
    p1->age = 30;
@@ -104,12 +104,12 @@ static void test_list_append_value(void) {
    // // just check for pointer equality
    // Assert.areEqual(p1, actPerson, PTR, "List append pointer mismatch");
 
-   Memory.free(p1);
+   Memory.dispose(p1);
    List.dispose(lst);
 }
 static void test_list_get_value(void) {
    list lst = List.new(5);
-   Person *expPerson = Memory.alloc(sizeof(Person));
+   Person *expPerson = Memory.alloc(sizeof(Person), false);
    expPerson->id = 1;
    strcpy(expPerson->name, "Alice");
    expPerson->age = 30;
@@ -130,12 +130,12 @@ static void test_list_get_value(void) {
    Assert.isTrue(strcmp(expPerson->name, actPerson->name) == 0, "List get name mismatch");
    Assert.areEqual(&expPerson->age, &actPerson->age, INT, "List get age mismatch");
 
-   Memory.free(expPerson);
+   Memory.dispose(expPerson);
    List.dispose(lst);
 }
 static void test_list_remove_at(void) {
    list lst = List.new(5);
-   Person *expPerson = Memory.alloc(sizeof(Person));
+   Person *expPerson = Memory.alloc(sizeof(Person), false);
    expPerson->id = 1;
    strcpy(expPerson->name, "Alice");
    expPerson->age = 30;
@@ -153,16 +153,16 @@ static void test_list_remove_at(void) {
    result = List.get(lst, index, &retrieved);
    Assert.areEqual(&(int){-1}, &result, INT, "List get should ERR after remove at index %d", index);
 
-   Memory.free(expPerson);
+   Memory.dispose(expPerson);
    List.dispose(lst);
 }
 static void test_list_set_value(void) {
    list lst = List.new(5);
-   Person *expP1 = Memory.alloc(sizeof(Person));
+   Person *expP1 = Memory.alloc(sizeof(Person), false);
    expP1->id = 1;
    strcpy(expP1->name, "Alice");
    expP1->age = 30;
-   Person *expP2 = Memory.alloc(sizeof(Person));
+   Person *expP2 = Memory.alloc(sizeof(Person), false);
    expP2->id = 2;
    strcpy(expP2->name, "Bob");
    expP2->age = 25;
@@ -179,17 +179,17 @@ static void test_list_set_value(void) {
    Assert.areEqual(&(int){0}, &result, INT, "List get ERRed at index %d", index);
    Assert.areEqual(expP2, retrieved, PTR, "List set pointer mismatch at index %d", index);
 
-   Memory.free(expP1);
-   Memory.free(expP2);
+   Memory.dispose(expP1);
+   Memory.dispose(expP2);
    List.dispose(lst);
 }
 static void test_list_insert_value(void) {
    list lst = List.new(5);
-   Person *expP1 = Memory.alloc(sizeof(Person));
+   Person *expP1 = Memory.alloc(sizeof(Person), false);
    expP1->id = 1;
    strcpy(expP1->name, "Alice");
    expP1->age = 30;
-   Person *expP2 = Memory.alloc(sizeof(Person));
+   Person *expP2 = Memory.alloc(sizeof(Person), false);
    expP2->id = 2;
    strcpy(expP2->name, "Bob");
    expP2->age = 25;
@@ -212,30 +212,30 @@ static void test_list_insert_value(void) {
    Assert.areEqual(&(int){0}, &result, INT, "List get ERRed at index %d", index);
    Assert.areEqual(expP1, retrieved, PTR, "List insert shift pointer mismatch at index %d", index);
 
-   Memory.free(expP1);
-   Memory.free(expP2);
+   Memory.dispose(expP1);
+   Memory.dispose(expP2);
    List.dispose(lst);
 }
 static void test_list_prepend_value(void) {
    // just a convenience wrapper around insert at 0
    list lst = List.new(5);
-   Person *expP1 = Memory.alloc(sizeof(Person));
+   Person *expP1 = Memory.alloc(sizeof(Person), false);
    expP1->id = 1;
    strcpy(expP1->name, "Alice");
    expP1->age = 30;
-   Person *expP2 = Memory.alloc(sizeof(Person));
+   Person *expP2 = Memory.alloc(sizeof(Person), false);
    expP2->id = 2;
    strcpy(expP2->name, "Bob");
    expP2->age = 25;
-   Person *expP3 = Memory.alloc(sizeof(Person));
+   Person *expP3 = Memory.alloc(sizeof(Person), false);
    expP3->id = 3;
    strcpy(expP3->name, "Charlie");
    expP3->age = 28;
-   Person *expP4 = Memory.alloc(sizeof(Person));
+   Person *expP4 = Memory.alloc(sizeof(Person), false);
    expP4->id = 4;
    strcpy(expP4->name, "Diana");
    expP4->age = 32;
-   Person *expP5 = Memory.alloc(sizeof(Person));
+   Person *expP5 = Memory.alloc(sizeof(Person), false);
    expP5->id = 5;
    strcpy(expP5->name, "Ethan");
    expP5->age = 27;
@@ -257,11 +257,11 @@ static void test_list_prepend_value(void) {
    Assert.areEqual(&(int){0}, &result, INT, "List get ERRed at index 4");
    Assert.areEqual(expP4, retrieved, PTR, "List prepend pointer mismatch at index 4");
 
-   Memory.free(expP1);
-   Memory.free(expP2);
-   Memory.free(expP3);
-   Memory.free(expP4);
-   Memory.free(expP5);
+   Memory.dispose(expP1);
+   Memory.dispose(expP2);
+   Memory.dispose(expP3);
+   Memory.dispose(expP4);
+   Memory.dispose(expP5);
    List.dispose(lst);
 }
 static void test_list_clear(void) {
@@ -283,7 +283,7 @@ static void test_list_growth(void) {
    list lst;
    load_person_list(&lst);
    // loaded with 5 persons, now append 1 more to test growth (what is our growth factor?)
-   Person *expP6 = Memory.alloc(sizeof(Person));
+   Person *expP6 = Memory.alloc(sizeof(Person), false);
    expP6->id = 6;
    strcpy(expP6->name, "Fiona");
    expP6->age = 29;
@@ -310,7 +310,7 @@ static void test_list_add_from_array(void) {
 //  negative & edge test cases
 static void test_list_set_out_of_bounds(void) {
    list lst = List.new(5);
-   Person *p = Memory.alloc(sizeof(Person));
+   Person *p = Memory.alloc(sizeof(Person), false);
    p->id = 1;
    strcpy(p->name, "Test");
    p->age = 25;
@@ -319,7 +319,7 @@ static void test_list_set_out_of_bounds(void) {
    List.append(lst, p);
 
    // Try to set at invalid indices
-   Person *p2 = Memory.alloc(sizeof(Person));
+   Person *p2 = Memory.alloc(sizeof(Person), false);
    p2->id = 2;
    strcpy(p2->name, "Invalid");
    p2->age = 30;
@@ -336,13 +336,13 @@ static void test_list_set_out_of_bounds(void) {
    result = List.set(lst, 5, p2);
    Assert.areEqual(&(int){-1}, &result, INT, "List set should ERR for large invalid index");
 
-   Memory.free(p);
-   Memory.free(p2);
+   Memory.dispose(p);
+   Memory.dispose(p2);
    List.dispose(lst);
 }
 static void test_list_get_out_of_bounds(void) {
    list lst = List.new(5);
-   Person *p = Memory.alloc(sizeof(Person));
+   Person *p = Memory.alloc(sizeof(Person), false);
    p->id = 1;
    strcpy(p->name, "Test");
    p->age = 25;
@@ -365,12 +365,12 @@ static void test_list_get_out_of_bounds(void) {
    result = List.get(lst, 10, &retrieved);
    Assert.areEqual(&(int){-1}, &result, INT, "List get should ERR for large invalid index");
 
-   Memory.free(p);
+   Memory.dispose(p);
    List.dispose(lst);
 }
 static void test_list_remove_out_of_bounds(void) {
    list lst = List.new(5);
-   Person *p = Memory.alloc(sizeof(Person));
+   Person *p = Memory.alloc(sizeof(Person), false);
    p->id = 1;
    strcpy(p->name, "Test");
    p->age = 25;
@@ -395,7 +395,7 @@ static void test_list_remove_out_of_bounds(void) {
    int size = List.size(lst);
    Assert.areEqual(&(int){1}, &size, INT, "List size should remain 1 after ERRed removes");
 
-   Memory.free(p);
+   Memory.dispose(p);
    List.dispose(lst);
 }
 static void test_list_append_null(void) {
@@ -428,7 +428,7 @@ static void test_list_set_empty_list(void) {
    list lst = List.new(5);
 
    // Try to set at any index on empty list
-   Person *p = Memory.alloc(sizeof(Person));
+   Person *p = Memory.alloc(sizeof(Person), false);
    p->id = 1;
    strcpy(p->name, "Test");
    p->age = 25;
@@ -441,7 +441,7 @@ static void test_list_set_empty_list(void) {
    result = List.set(lst, -1, p);
    Assert.areEqual(&(int){-1}, &result, INT, "List set should ERR for negative index on empty list");
 
-   Memory.free(p);
+   Memory.dispose(p);
    List.dispose(lst);
 }
 static void test_list_get_empty_list(void) {
@@ -521,27 +521,27 @@ __attribute__((constructor)) void init_list_tests(void) {
 
 static void load_person_list(list *lst) {
    *lst = List.new(5);
-   Person *expP1 = Memory.alloc(sizeof(Person));
+   Person *expP1 = Memory.alloc(sizeof(Person), false);
    expP1->id = 1;
    strcpy(expP1->name, "Alice");
    expP1->age = 30;
    List.append(*lst, expP1);
-   Person *expP2 = Memory.alloc(sizeof(Person));
+   Person *expP2 = Memory.alloc(sizeof(Person), false);
    expP2->id = 2;
    strcpy(expP2->name, "Bob");
    expP2->age = 25;
    List.append(*lst, expP2);
-   Person *expP3 = Memory.alloc(sizeof(Person));
+   Person *expP3 = Memory.alloc(sizeof(Person), false);
    expP3->id = 3;
    strcpy(expP3->name, "Charlie");
    expP3->age = 28;
    List.append(*lst, expP3);
-   Person *expP4 = Memory.alloc(sizeof(Person));
+   Person *expP4 = Memory.alloc(sizeof(Person), false);
    expP4->id = 4;
    strcpy(expP4->name, "Diana");
    expP4->age = 32;
    List.append(*lst, expP4);
-   Person *expP5 = Memory.alloc(sizeof(Person));
+   Person *expP5 = Memory.alloc(sizeof(Person), false);
    expP5->id = 5;
    strcpy(expP5->name, "Ethan");
    expP5->age = 27;
@@ -552,6 +552,6 @@ static void dispose_persons(list lst) {
    for (usize i = 0; i < List.size(lst); i++) {
       List.get(lst, i, &p);
       // writelnf("Disposing person id: %d, name: %s", ((Person *)p)->id, ((Person *)p)->name);
-      Memory.free(p);
+      Memory.dispose(p);
    }
 }

@@ -48,7 +48,7 @@ static void array_dispose(parray);
 // create a new array with the specified initial capacity
 static parray array_new(usize capacity) {
    //  allocate memory for the array structure
-   struct sc_pointer_array *arr = Memory.alloc(sizeof(struct sc_pointer_array));
+   struct sc_pointer_array *arr = Memory.alloc(sizeof(struct sc_pointer_array), false);
    if (!arr) {
       return NULL; // allocation ERRed
    }
@@ -56,7 +56,7 @@ static parray array_new(usize capacity) {
    //  allocate memory for the bucket
    arr->bucket = array_alloc_bucket(sizeof(addr), capacity);
    if (!arr->bucket) {
-      Memory.free(arr);
+      Memory.dispose(arr);
       return NULL; // allocation ERRed
    }
 
@@ -75,9 +75,9 @@ static void array_init(parray *arr, usize capacity) {
       // what to do about an array that's already initialized?
       // for now, we just reallocate the bucket
       if ((*arr)->bucket) {
-         Memory.free((*arr)->bucket);
+         Memory.dispose((*arr)->bucket);
       }
-      (*arr)->bucket = Memory.alloc(sizeof(addr) * capacity);
+      (*arr)->bucket = Memory.alloc(sizeof(addr) * capacity, false);
       if (!(*arr)->bucket) {
          // allocation ERRed, handle error as needed
          return;

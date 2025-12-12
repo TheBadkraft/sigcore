@@ -42,7 +42,7 @@ struct sc_list {
 //  create new list with specified initial capacity
 static list list_new(usize capacity) {
    //  allocate memory for the list structure
-   struct sc_list *lst = Memory.alloc(sizeof(struct sc_list));
+   struct sc_list *lst = Memory.alloc(sizeof(struct sc_list), false);
    if (!lst) {
       return NULL; // allocation ERRed
    }
@@ -50,7 +50,7 @@ static list list_new(usize capacity) {
    //  create the underlying collection with stride for addr
    lst->coll = collection_new(capacity, sizeof(addr));
    if (!lst->coll) {
-      Memory.free(lst);
+      Memory.dispose(lst);
       return NULL; // allocation ERRed
    }
 
@@ -66,7 +66,7 @@ static void list_dispose(list lst) {
    collection_dispose(lst->coll);
 
    //  free the list structure itself
-   Memory.free(lst);
+   Memory.dispose(lst);
 }
 
 //  get the current capacity of the list
