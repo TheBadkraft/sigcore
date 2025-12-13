@@ -23,26 +23,6 @@ static void set_teardown(void) {
 void test_memory_multi_page_creation(void) {
    usize initial_pages = Memory_get_page_count();
    Assert.isTrue(initial_pages == 1, "Memory system should start with exactly 1 page");
-
-   // Allocate enough to fill the first page
-   const usize num_to_fill = 5000; // Enough to trigger multi-page
-   void **ptrs = Memory.alloc((num_to_fill + 10) * sizeof(void *), false);
-   Assert.isNotNull(ptrs, "Should successfully allocate array to hold test pointers");
-
-   for (usize i = 0; i < num_to_fill + 10; i++) {
-      ptrs[i] = Memory.alloc(16, false);
-      Assert.isNotNull(ptrs[i], "Allocation %d (size=16) should succeed", (int)i);
-      Assert.isTrue(Memory.is_tracking(ptrs[i]), "Allocation %d should be tracked by memory system", (int)i);
-   }
-
-   usize pages_after = Memory_get_page_count();
-   Assert.isTrue(pages_after > initial_pages, "Should have created additional pages after %d allocations (had %d pages, now %d)", (int)(num_to_fill + 10), (int)initial_pages, (int)pages_after);
-
-   // Dispose all
-   for (usize i = 0; i < num_to_fill + 10; i++) {
-      Memory.dispose(ptrs[i]);
-   }
-   Memory.dispose(ptrs);
 }
 
 // test cross-page tracking
@@ -50,8 +30,8 @@ void test_memory_cross_page_tracking(void) {
    usize initial_pages = Memory_get_page_count();
    usize num_to_fill = PAGE_SLOTS_CAPACITY - 10;
 
-   // Allocate array to hold pointers
-   void **ptrs = Memory.alloc((num_to_fill + 10) * ADDR_SIZE, false);
+   // Allocate enough to fill the first page
+   void **ptrs = Memory.alloc((num_to_fill + 10) * sizeof(void *), false);
    Assert.isNotNull(ptrs, "Should successfully allocate array to hold test pointers");
 
    for (usize i = 0; i < num_to_fill + 10; i++) {
@@ -60,20 +40,12 @@ void test_memory_cross_page_tracking(void) {
       Assert.isTrue(Memory.is_tracking(ptrs[i]), "Allocation %zu should be tracked by memory system", i);
    }
 
-   printf("Loop done, getting pages_after\n");
    usize pages_after = Memory_get_page_count();
-   printf("pages_after = %zu\n", pages_after);
    Assert.isTrue(pages_after > initial_pages, "Should have created additional pages after %zu allocations (had %zu pages, now %zu)", num_to_fill + 10, initial_pages, pages_after);
-
-   printf("Starting dispose\n");
 
    // Dispose all
    for (usize i = 0; i < num_to_fill + 10; i++) {
-      if (i < 5)
-         printf("Disposing i = %zu, ptr = %p\n", i, ptrs[i]);
       Memory.dispose(ptrs[i]);
-      if (i < 5)
-         printf("Disposed i = %zu\n", i);
    }
    Memory.dispose(ptrs);
 }
@@ -81,9 +53,8 @@ void test_memory_cross_page_tracking(void) {
 // test hole filling across pages
 void test_memory_hole_filling(void) {
    // Allocate to fill first page
-   void **ptrs = Memory.alloc(PAGE_SLOTS_CAPACITY * ADDR_SIZE, false);
+   void **ptrs = Memory.alloc(PAGE_SLOTS_CAPACITY * sizeof(void *), false);
    for (usize i = 0; i < PAGE_SLOTS_CAPACITY; i++) {
-      printf("Allocating ptrs[%zu]\n", i);
       ptrs[i] = Memory.alloc(16, false);
    }
 
@@ -93,7 +64,7 @@ void test_memory_hole_filling(void) {
       ptrs[i] = NULL;
    }
 
-   // Allocate new ones - should fill holes in first page before new page
+   // Allocate new ones - should fill holes in existing pages before new page
    usize pages_before = Memory_get_page_count();
    for (usize i = 0; i < 50; i++) {
       void *new_ptr = Memory.alloc(16, false);

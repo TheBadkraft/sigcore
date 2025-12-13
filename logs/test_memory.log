@@ -1,18 +1,18 @@
-[1] core_memory_set          :  13 :         2025-12-12  19:53:10
+[1] core_memory_set          :  13 :         2025-12-12  20:25:04
 =================================================================
-Running: Constructor initializes state           0.705 us  [PASS]
-Running: Tracker page exists after init          0.128 us  [PASS]
-Running: Tracker SlotArray valid                 0.969 us  [PASS]
-Running: Memory avoids self-tracking             2.387 us  [PASS]
-Running: Memory ready after init               < 0.1 us  [PASS]
-Running: Bootstrap allocs tracked                0.272 us  [PASS]
-Running: has() false for garbage                 2.292 us  [PASS]
-Running: Alloc/dispose tracks correctly          2.423 us  [PASS]
-Running: Alloc with zero initializes             3.192 us  [PASS]
-Running: Alloc without zero no init              2.352 us  [PASS]
-Running: Track/untrack external pointers         4.608 us  [PASS]
-Running: Realloc basic cases                     7.297 us  [PASS]
-Running: Init/teardown basics                    0.116 us  [PASS]
+Running: Constructor initializes state           2.107 us  [PASS]
+Running: Tracker page exists after init          0.190 us  [PASS]
+Running: Tracker SlotArray valid                 3.154 us  [PASS]
+Running: Memory avoids self-tracking             4.092 us  [PASS]
+Running: Memory ready after init                 0.110 us  [PASS]
+Running: Bootstrap allocs tracked                0.527 us  [PASS]
+Running: has() false for garbage                 3.720 us  [PASS]
+Running: Alloc/dispose tracks correctly          4.286 us  [PASS]
+Running: Alloc with zero initializes             6.454 us  [PASS]
+Running: Alloc without zero no init              4.000 us  [PASS]
+Running: Track/untrack external pointers         7.296 us  [PASS]
+Running: Realloc basic cases                    11.990 us  [PASS]
+Running: Init/teardown basics                    0.155 us  [PASS]
 =================================================================
 [1]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0
 

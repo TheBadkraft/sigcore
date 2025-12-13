@@ -54,7 +54,6 @@ struct index {
 
 struct memory_page {
    slotarray slots;
-   struct index free_head;
    struct memory_page *next;
    struct memory_page *prev;
 };
@@ -68,7 +67,7 @@ static bool memory_ready = false;
 #define TRACKER_CAPACITY 512
 #define PAGE_ARRAY_CAPACITY 16
 #define PAGE_SLOTS_CAPACITY 512
-// #define MAX_PAGES 16
+#define MAX_PAGES 16
 
 // Pre-allocated buffer for the slotarray used as the memory tracker.
 // This avoids dynamic allocation during init, preventing self-tracking issues.
@@ -86,50 +85,52 @@ static struct sc_pointer_array memory_pages_struct = {
     .end = (addr)(page_bucket + PAGE_ARRAY_CAPACITY)};
 
 // Pre-allocated page structures
-// static struct memory_page memory_pages_pool[MAX_PAGES];
+static struct memory_page memory_pages_pool[MAX_PAGES];
 
 // The current memory page, encapsulating the tracker slotarray and free head index.
 static struct memory_page current_page_struct = {
     .slots = &memory_slots_struct,
-    .free_head = {.head = 0, .next = 0},
     .next = NULL,
     .prev = NULL};
 
-// static usize next_page_index = 1; // Next available page in pool
-// static usize page_count = 1;      // Number of active pages
+static usize next_page_index = 1; // Next available page in pool
+static usize page_count = 1;      // Number of active pages
 
 // Create a new memory page with dynamically allocated slotarray buffer
-// static struct memory_page *create_new_page(void) {
-//    if (next_page_index >= MAX_PAGES) {
-//       return NULL; // No more pages available
-//    }
-//    struct memory_page *new_page = &memory_pages_pool[next_page_index++];
-//    page_count++;
-//    // Allocate buffer for slotarray using raw malloc (not tracked)
-//    addr *buffer = malloc(PAGE_SLOTS_CAPACITY * sizeof(addr));
-//    if (!buffer) {
-//       return NULL;
-//    }
-//    // Allocate slotarray struct
-//    struct sc_slotarray *new_slots = malloc(sizeof(struct sc_slotarray));
-//    if (!new_slots) {
-//       free(buffer);
-//       return NULL;
-//    }
-//    new_slots->array.buffer = buffer;
-//    new_slots->array.end = buffer + PAGE_SLOTS_CAPACITY;
-//    new_slots->stride = sizeof(addr);
-//    new_slots->can_grow = true;
-//    // Initialize all to ADDR_EMPTY
-//    for (usize i = 0; i < PAGE_SLOTS_CAPACITY; i++) {
-//       buffer[i] = ADDR_EMPTY;
-//    }
-//    new_page->slots = new_slots;
-//    new_page->free_head = (struct index){0, 0};
-//    new_page->next = NULL;
-//    new_page->prev = current_page;
-//    return new_page;
-// }
+static struct memory_page *create_new_page(void) {
+   if (next_page_index >= MAX_PAGES) {
+      return NULL; // No more pages available
+   }
+   struct memory_page *new_page = &memory_pages_pool[next_page_index++];
+   page_count++;
+
+   // Allocate slot array for the new page
+   struct sc_slotarray *sa = malloc(sizeof(struct sc_slotarray));
+   if (!sa) {
+      return NULL; // allocation failed
+   }
+   sa->array.buffer = malloc(PAGE_SLOTS_CAPACITY * sizeof(addr));
+   if (!sa->array.buffer) {
+      free(sa);
+      return NULL; // allocation failed
+   }
+   sa->array.end = (addr *)sa->array.buffer + PAGE_SLOTS_CAPACITY;
+   sa->stride = sizeof(addr);
+   sa->can_grow = false; // Pages have fixed capacity
+   // Initialize all slots to empty
+   for (usize i = 0; i < PAGE_SLOTS_CAPACITY; ++i) {
+      ((addr *)sa->array.buffer)[i] = ADDR_EMPTY;
+   }
+   new_page->slots = sa;
+
+   new_page->next = NULL;
+   new_page->prev = current_page;
+   // Link the new page to the current page
+   if (current_page) {
+      current_page->next = new_page;
+   }
+   return new_page;
+}
 
 // allocate a block of memory of the specified size
 static object memory_alloc(usize size, bool zee) {
@@ -138,12 +139,36 @@ static object memory_alloc(usize size, bool zee) {
       memset(ptr, 0, size);
    }
    if (memory_ready && current_page) {
-      // Try to track the allocation in the current page
-      int result = SlotArray.add(current_page->slots, ptr);
-      if (result == ERR) {
-         // Current page is full, cannot allocate more
-         free(ptr);
-         return NULL;
+      // Try to find a free slot in any existing page, starting from current
+      struct memory_page *page = current_page;
+      bool added = false;
+      while (page && !added) {
+         int result = SlotArray.add(page->slots, ptr);
+         if (result != ERR) {
+            added = true;
+         } else {
+            page = page->prev;
+         }
+      }
+      if (!added) {
+         // No space in existing pages, create a new page
+         struct memory_page *new_page = create_new_page();
+         if (new_page) {
+            // Switch to new page
+            current_page = new_page;
+            memory_slots = new_page->slots;
+            // Add to the new page
+            int result = SlotArray.add(current_page->slots, ptr);
+            if (result == ERR) {
+               // Even new page is full? Should not happen
+               free(ptr);
+               return NULL;
+            }
+         } else {
+            // No more pages, free and return NULL
+            free(ptr);
+            return NULL;
+         }
       }
    }
    return ptr;
@@ -152,15 +177,20 @@ static object memory_alloc(usize size, bool zee) {
 // dispose of a previously allocated block of memory
 static void memory_dispose(object ptr) {
    if (memory_ready && current_page) {
-      usize cap = SlotArray.capacity(current_page->slots);
-      for (usize i = 0; i < cap; i++) {
-         if (!SlotArray.is_empty_slot(current_page->slots, i)) {
-            object val;
-            if (SlotArray.get_at(current_page->slots, i, &val) == 0 && val == ptr) {
-               SlotArray.remove_at(current_page->slots, i);
-               goto found;
+      // Search all pages for the pointer
+      struct memory_page *page = current_page;
+      while (page) {
+         usize cap = SlotArray.capacity(page->slots);
+         for (usize i = 0; i < cap; i++) {
+            if (!SlotArray.is_empty_slot(page->slots, i)) {
+               object val;
+               if (SlotArray.get_at(page->slots, i, &val) == 0 && val == ptr) {
+                  SlotArray.remove_at(page->slots, i);
+                  goto found;
+               }
             }
          }
+         page = page->prev;
       }
    found:;
    }
@@ -171,13 +201,18 @@ static void memory_dispose(object ptr) {
 static bool memory_is_tracking(object ptr) {
    if (!memory_ready || !current_page)
       return false;
-   usize cap = SlotArray.capacity(current_page->slots);
-   for (usize i = 0; i < cap; i++) {
-      if (!SlotArray.is_empty_slot(current_page->slots, i)) {
-         object val;
-         if (SlotArray.get_at(current_page->slots, i, &val) == 0 && val == ptr)
-            return true;
+   // Search all pages for the pointer
+   struct memory_page *page = current_page;
+   while (page) {
+      usize cap = SlotArray.capacity(page->slots);
+      for (usize i = 0; i < cap; i++) {
+         if (!SlotArray.is_empty_slot(page->slots, i)) {
+            object val;
+            if (SlotArray.get_at(page->slots, i, &val) == 0 && val == ptr)
+               return true;
+         }
       }
+      page = page->prev;
    }
    return false;
 }
@@ -203,26 +238,6 @@ static void memory_untrack(object ptr) {
          }
       }
    }
-}
-
-// internal function to swap tracked pointers (for realloc optimization)
-static bool memory_swap_tracked_pointers(object old_ptr, object new_ptr) {
-   if (!memory_ready || !current_page || !old_ptr || !new_ptr)
-      return false;
-
-   usize cap = SlotArray.capacity(current_page->slots);
-   for (usize i = 0; i < cap; i++) {
-      if (!SlotArray.is_empty_slot(current_page->slots, i)) {
-         object val;
-         if (SlotArray.get_at(current_page->slots, i, &val) == 0 && val == old_ptr) {
-            // Found the old pointer, replace it with new pointer
-            addr *slot = (addr *)((char *)current_page->slots->array.buffer + i * current_page->slots->stride);
-            *slot = (addr)new_ptr;
-            return true;
-         }
-      }
-   }
-   return false; // old_ptr not found
 }
 
 // reallocate memory
@@ -323,5 +338,5 @@ slotarray Memory_get_tracker(void) {
 }
 
 usize Memory_get_page_count(void) {
-   return 1;
+   return page_count;
 }
