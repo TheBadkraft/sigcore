@@ -37,3 +37,6 @@
 
 // Specialized collections
 #include "sigcore/slotarray.h"
+
+// String utilities
+#include "sigcore/strings.h"

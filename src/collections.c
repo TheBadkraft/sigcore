@@ -45,7 +45,7 @@ struct sc_collection {
 };
 
 // create a collection view of array data
-collection array_create_collection_view(void *buffer, void *end, usize stride, usize length, bool owns_buffer) {
+collection collection_create_view(void *buffer, void *end, usize stride, usize length, bool owns_buffer) {
    struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection), false);
    if (!coll) {
       return NULL;
@@ -71,7 +71,7 @@ void collection_set_data(collection coll, void *data, usize count) {
 }
 
 // collection accessor functions
-inline void *collection_get_buffer(collection coll) {
+void *collection_get_buffer(collection coll) {
    return coll ? coll->array.buffer : NULL;
 }
 
@@ -216,11 +216,64 @@ usize collection_get_count(collection coll) {
    return collection_count(coll);
 }
 
+/* New Iterator implementation */
+struct iterator_s {
+   collection coll; /* The collection to iterate over */
+   size_t current;  /* Current index */
+};
+
+/* Create an iterator for a collection */
+iterator collection_create_iterator(collection coll) {
+   if (!coll)
+      return NULL;
+   iterator it = Memory.alloc(sizeof(struct iterator_s), false);
+   if (!it)
+      return NULL;
+   it->coll = coll;
+   it->current = 0;
+   return it;
+}
+
 //  public interface implementation
 const sc_collections_i Collections = {
     .add = collection_add,
     .remove = collection_remove,
     .clear = collection_clear,
     .count = collection_get_count,
+    .create_iterator = collection_create_iterator,
+    .create_view = collection_create_view,
     .dispose = collection_dispose,
 };
+
+/* Advances to next item and returns true if there is one */
+static bool iter_next(iterator it) {
+   if (!it || !it->coll || it->current >= it->coll->length)
+      return false;
+   it->current++;
+   return true;
+}
+
+/* Returns the current item, or NULL if none */
+static object iter_current(iterator it) {
+   if (!it || !it->coll || it->current == 0 || it->current > it->coll->length)
+      return NULL;
+   return (char *)it->coll->array.buffer + (it->current - 1) * it->coll->stride;
+}
+
+/* Resets the iterator to the start */
+static void iter_reset(iterator it) {
+   if (it)
+      it->current = 0;
+}
+
+/* Disposes the iterator */
+static void iter_dispose(iterator it) {
+   if (it)
+      Memory.dispose(it);
+}
+
+const sc_iterator_i Iterator = {
+    .next = iter_next,
+    .current = iter_current,
+    .reset = iter_reset,
+    .dispose = iter_dispose};

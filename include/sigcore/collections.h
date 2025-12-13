@@ -35,6 +35,9 @@
 #include "sigcore/list.h"
 #include "sigcore/parray.h"
 
+/* Forward declarations */
+typedef struct iterator_s *iterator;
+
 /* Public interface for collections operations                */
 /* ============================================================ */
 typedef struct sc_collections_i {
@@ -64,9 +67,36 @@ typedef struct sc_collections_i {
     */
    usize (*count)(collection);
    /**
+    * @brief Create an iterator for the collection.
+    * @param coll The collection to iterate over
+    * @return New iterator instance, or NULL on failure
+    */
+   iterator (*create_iterator)(collection);
+   /**
+    * @brief Create a collection view of array data.
+    * @param buffer Start of the array
+    * @param end End of the array (one past last element)
+    * @param stride Size of each element
+    * @param length Number of elements
+    * @param owns_buffer Whether the collection owns the buffer
+    * @return New collection instance, or NULL on failure
+    */
+   collection (*create_view)(void *buffer, void *end, usize stride, usize length, bool owns_buffer);
+   /**
     * @brief Dispose of the collection and free its resources.
     * @param coll The collection to dispose
     */
    void (*dispose)(collection);
 } sc_collections_i;
 extern const sc_collections_i Collections;
+
+/* New Iterator interface - simplified */
+
+typedef struct sc_iterator_i {
+   bool (*next)(iterator);      /**< Advances to next item and returns true if there is one */
+   object (*current)(iterator); /**< Returns the current item */
+   void (*reset)(iterator);     /**< Resets the iterator to the start */
+   void (*dispose)(iterator);   /**< Disposes the iterator */
+} sc_iterator_i;
+
+extern const sc_iterator_i Iterator;

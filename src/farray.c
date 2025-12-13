@@ -209,7 +209,7 @@ static collection farray_as_collection(farray arr, usize stride) {
    }
 
    usize length = FArray.capacity(arr, stride);
-   return array_create_collection_view(arr->bucket, arr->end, stride, length, false);
+   return Collections.create_view(arr->bucket, arr->end, stride, length, false);
 }
 
 // create an owning collection copy of the farray

@@ -205,7 +205,7 @@ static collection parray_as_collection(parray arr) {
    }
 
    usize length = PArray.capacity(arr);
-   return array_create_collection_view(arr->bucket, (void *)arr->end, sizeof(addr), length, false);
+   return Collections.create_view(arr->bucket, (void *)arr->end, sizeof(addr), length, false);
 }
 
 // create an owning collection copy of the parray
