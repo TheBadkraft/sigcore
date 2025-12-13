@@ -64,13 +64,12 @@ static slotarray slotarray_new(usize capacity) {
       Memory.dispose(sa);
       return NULL; // allocation ERRed
    }
-   sa->array.end = (char *)sa->array.buffer + total_size;
+   sa->array.end = (addr *)sa->array.buffer + capacity;
    sa->stride = sizeof(addr);
    sa->can_grow = true;
    // initialize all to ADDR_EMPTY
    for (usize i = 0; i < capacity; ++i) {
-      addr *ptr = (addr *)((char *)sa->array.buffer + i * sa->stride);
-      *ptr = ADDR_EMPTY;
+      ((addr *)sa->array.buffer)[i] = ADDR_EMPTY;
    }
    return sa;
 }
@@ -91,15 +90,14 @@ static int slotarray_add(slotarray sa, object value) {
    usize next_slot = find_next_empty_slot(sa);
    if (next_slot != (usize)-1) {
       // found an empty slot, set the value there
-      addr *ptr = (addr *)((char *)sa->array.buffer + next_slot * sa->stride);
-      *ptr = (addr)value;
+      ((addr *)sa->array.buffer)[next_slot] = (addr)value;
       return (int)next_slot; // return the index where value was added
    } else {
       // no empty slot found, need to grow the array
       if (!sa->can_grow) {
          return ERR; // cannot grow static buffer
       }
-      usize current_capacity = ((char *)sa->array.end - (char *)sa->array.buffer) / sa->stride;
+      usize current_capacity = (usize)((addr *)sa->array.end - (addr *)sa->array.buffer);
       usize new_capacity = current_capacity * 2; // double the capacity
       usize new_total_size = new_capacity * sa->stride;
       void *new_buffer = Memory.alloc(new_total_size, false);
@@ -109,15 +107,13 @@ static int slotarray_add(slotarray sa, object value) {
       memcpy(new_buffer, sa->array.buffer, current_capacity * sa->stride);
       Memory.dispose(sa->array.buffer);
       sa->array.buffer = new_buffer;
-      sa->array.end = (char *)new_buffer + new_total_size;
+      sa->array.end = (addr *)new_buffer + new_capacity;
       // initialize new slots to ADDR_EMPTY
       for (usize i = current_capacity; i < new_capacity; ++i) {
-         addr *ptr = (addr *)((char *)sa->array.buffer + i * sa->stride);
-         *ptr = ADDR_EMPTY;
+         ((addr *)sa->array.buffer)[i] = ADDR_EMPTY;
       }
       // add the new value at the next available slot
-      addr *ptr = (addr *)((char *)sa->array.buffer + current_capacity * sa->stride);
-      *ptr = (addr)value;
+      ((addr *)sa->array.buffer)[current_capacity] = (addr)value;
       return (int)current_capacity; // return the index where value was added
    }
 }
@@ -127,10 +123,9 @@ static usize find_next_empty_slot(slotarray sa) {
    if (!sa) {
       return (usize)-1; // invalid slotarray
    }
-   usize cap = ((char *)sa->array.end - (char *)sa->array.buffer) / sa->stride;
+   usize cap = (usize)((addr *)sa->array.end - (addr *)sa->array.buffer);
    for (usize i = 0; i < cap; ++i) {
-      addr *entry = (addr *)((char *)sa->array.buffer + i * sa->stride);
-      if (*entry == ADDR_EMPTY) {
+      if (((addr *)sa->array.buffer)[i] == ADDR_EMPTY) {
          return i; // found empty slot
       }
    }
@@ -141,15 +136,15 @@ static int slotarray_get_at(slotarray sa, usize index, object *out_value) {
    if (!sa || !out_value) {
       return ERR; // invalid parameters
    }
-   usize cap = ((char *)sa->array.end - (char *)sa->array.buffer) / sa->stride;
+   usize cap = (usize)((addr *)sa->array.end - (addr *)sa->array.buffer);
    if (index >= cap) {
       return ERR; // index out of bounds
    }
-   addr *ptr = (addr *)((char *)sa->array.buffer + index * sa->stride);
-   if (*ptr == ADDR_EMPTY) {
+   addr value = ((addr *)sa->array.buffer)[index];
+   if (value == ADDR_EMPTY) {
       return ERR; // slot is empty
    }
-   *out_value = (object)*ptr;
+   *out_value = (object)value;
    return OK;
 }
 // remove the element at the specified index from the slotarray
@@ -157,13 +152,12 @@ static int slotarray_remove_at(slotarray sa, usize index) {
    if (!sa) {
       return ERR; // invalid slotarray
    }
-   usize cap = ((char *)sa->array.end - (char *)sa->array.buffer) / sa->stride;
+   usize cap = (usize)((addr *)sa->array.end - (addr *)sa->array.buffer);
    if (index >= cap) {
       return ERR; // index out of bounds
    }
    // set the slot to ADDR_EMPTY to mark it as empty
-   addr *ptr = (addr *)((char *)sa->array.buffer + index * sa->stride);
-   *ptr = ADDR_EMPTY;
+   ((addr *)sa->array.buffer)[index] = ADDR_EMPTY;
    return OK;
 }
 // check if a slot is empty
@@ -171,29 +165,27 @@ static bool slotarray_is_empty_slot(slotarray sa, usize index) {
    if (!sa) {
       return true; // invalid slotarray, consider empty
    }
-   usize cap = ((char *)sa->array.end - (char *)sa->array.buffer) / sa->stride;
+   usize cap = (usize)((addr *)sa->array.end - (addr *)sa->array.buffer);
    if (index >= cap) {
       return true; // out of bounds, consider empty
    }
-   addr *ptr = (addr *)((char *)sa->array.buffer + index * sa->stride);
-   return *ptr == ADDR_EMPTY;
+   return ((addr *)sa->array.buffer)[index] == ADDR_EMPTY;
 }
 // get the capacity of the slotarray
 static usize slotarray_capacity(slotarray sa) {
    if (!sa) {
       return 0; // invalid slotarray
    }
-   return ((char *)sa->array.end - (char *)sa->array.buffer) / sa->stride;
+   return (usize)((addr *)sa->array.end - (addr *)sa->array.buffer);
 }
 // clear all slots in the slotarray
 static void slotarray_clear(slotarray sa) {
    if (!sa) {
       return; // invalid slotarray
    }
-   usize cap = ((char *)sa->array.end - (char *)sa->array.buffer) / sa->stride;
+   usize cap = (usize)((addr *)sa->array.end - (addr *)sa->array.buffer);
    for (usize i = 0; i < cap; ++i) {
-      addr *ptr = (addr *)((char *)sa->array.buffer + i * sa->stride);
-      *ptr = ADDR_EMPTY;
+      ((addr *)sa->array.buffer)[i] = ADDR_EMPTY;
    }
 }
 
