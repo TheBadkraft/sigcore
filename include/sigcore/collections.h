@@ -74,11 +74,11 @@ extern const sc_collections_i Collections;
 /* New Iterator interface - simplified */
 typedef struct iterator_s *iterator;
 
-typedef struct IIterator {
+typedef struct sc_iterator_i {
     object (*next)(iterator);     /**< Advances and returns the next item, or NULL if none */
     object (*current)(iterator);  /**< Returns the current item without advancing, or NULL if none */
     void (*reset)(iterator);      /**< Resets the iterator to the start */
-    void (*free)(iterator);       /**< Frees the iterator */
-} IIterator;
+    void (*dispose)(iterator);    /**< Disposes the iterator */
+} sc_iterator_i;
 
-extern const IIterator Iterator;
+extern const sc_iterator_i Iterator;

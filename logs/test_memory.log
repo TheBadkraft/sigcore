@@ -1,18 +1,18 @@
-[1] core_memory_set          :  13 :         2025-12-12  20:47:46
+[1] core_memory_set          :  13 :         2025-12-12  22:39:42
 =================================================================
-Running: Constructor initializes state           0.742 us  [PASS]
-Running: Tracker page exists after init          0.126 us  [PASS]
-Running: Tracker SlotArray valid                 0.992 us  [PASS]
-Running: Memory avoids self-tracking             2.471 us  [PASS]
+Running: Constructor initializes state           0.968 us  [PASS]
+Running: Tracker page exists after init          0.152 us  [PASS]
+Running: Tracker SlotArray valid                 0.987 us  [PASS]
+Running: Memory avoids self-tracking             2.756 us  [PASS]
 Running: Memory ready after init               < 0.1 us  [PASS]
 Running: Bootstrap allocs tracked                0.284 us  [PASS]
-Running: has() false for garbage                 2.539 us  [PASS]
-Running: Alloc/dispose tracks correctly          2.795 us  [PASS]
-Running: Alloc with zero initializes             3.388 us  [PASS]
-Running: Alloc without zero no init              2.584 us  [PASS]
-Running: Track/untrack external pointers         4.887 us  [PASS]
-Running: Realloc basic cases                     7.919 us  [PASS]
-Running: Init/teardown basics                    0.110 us  [PASS]
+Running: has() false for garbage                 2.427 us  [PASS]
+Running: Alloc/dispose tracks correctly          2.635 us  [PASS]
+Running: Alloc with zero initializes             3.486 us  [PASS]
+Running: Alloc without zero no init              2.674 us  [PASS]
+Running: Track/untrack external pointers         4.916 us  [PASS]
+Running: Realloc basic cases                     7.880 us  [PASS]
+Running: Init/teardown basics                    0.126 us  [PASS]
 =================================================================
 [1]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0
 

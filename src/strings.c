@@ -58,9 +58,7 @@ string str_duplicate(const char* str) {
 
 /* Returns a concatenated string */
 string str_concat(const string str1, const string str2) {
-    if (!str1 && !str2) return NULL;
-    if (!str1) return str_duplicate(str2);
-    if (!str2) return str_duplicate(str1);
+    if (!str1 || !str2) return NULL;
     
     size_t len1 = strlen(str1);
     size_t len2 = strlen(str2);
@@ -96,19 +94,19 @@ string str_format(const string format, ...) {
     return result;
 }
 
-/* Free string from allocated memory */
-void str_free(string str) {
+/* Dispose string from allocated memory */
+void str_dispose(string str) {
     if (str) Memory.dispose(str);
 }
 
-const IString String = {
+const sc_string_i String = {
     .length = str_get_length,
     .copy = str_copy,
     .dupe = str_duplicate,
     .concat = str_concat,
     .compare = str_compare,
     .format = str_format,
-    .free = str_free,
+    .dispose = str_dispose,
 };
 
 /* String Builder Implementation */
@@ -295,14 +293,14 @@ void sb_set_capacity(string_builder sb, size_t new_capacity) {
     sb->end = (addr)new_buffer + new_capacity;
 }
 
-/* Frees the string builder */
-void sb_free(string_builder sb) {
+/* Disposes the string builder */
+void sb_dispose(string_builder sb) {
     if (!sb) return;
     if (sb->buffer) Memory.dispose(sb->buffer);
     Memory.dispose(sb);
 }
 
-const IStringBuilder StringBuilder = {
+const sc_stringbuilder_i StringBuilder = {
     .new = sb_new,
     .snew = sb_from_string,
     .append = sb_append,
@@ -316,5 +314,5 @@ const IStringBuilder StringBuilder = {
     .length = sb_get_length,
     .capacity = sb_get_capacity,
     .setCapacity = sb_set_capacity,
-    .free = sb_free
+    .dispose = sb_dispose
 };

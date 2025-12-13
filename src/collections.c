@@ -232,17 +232,6 @@ struct iterator_s {
     size_t current; /* Current index */
 };
 
-/* Create an iterator for a range */
-static iterator create_iterator(addr *bucket, addr end) {
-    if (!bucket || !end || bucket >= (addr *)end) return NULL;
-    iterator it = Memory.alloc(sizeof(struct iterator_s), false);
-    if (!it) return NULL;
-    it->bucket = bucket;
-    it->end = end;
-    it->current = 0;
-    return it;
-}
-
 /* Advances and returns the next item, or NULL if none */
 static object next(iterator it) {
     if (!it || it->current >= (size_t)((addr *)it->end - it->bucket)) return NULL;
@@ -260,14 +249,14 @@ static void reset(iterator it) {
     if (it) it->current = 0;
 }
 
-/* Frees the iterator */
-static void free_iterator(iterator it) {
+/* Disposes the iterator */
+static void dispose_iterator(iterator it) {
     if (it) Memory.dispose(it);
 }
 
-const IIterator Iterator = {
+const sc_iterator_i Iterator = {
     .next = next,
     .current = current,
     .reset = reset,
-    .free = free_iterator
+    .dispose = dispose_iterator
 };
