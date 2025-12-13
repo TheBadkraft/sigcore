@@ -55,7 +55,7 @@ static int farray_remove_at(farray, usize, usize);
 // create a new farray with the specified initial capacity and stride
 static farray farray_new(usize capacity, usize stride) {
    //  allocate memory for the farray structure
-   struct sc_flex_array *arr = Memory.alloc(sizeof(struct sc_flex_array));
+   struct sc_flex_array *arr = Memory.alloc(sizeof(struct sc_flex_array), false);
    if (!arr) {
       return NULL; // allocation ERRed
    }
@@ -63,7 +63,7 @@ static farray farray_new(usize capacity, usize stride) {
    //  allocate memory for the bucket
    arr->bucket = array_alloc_bucket(stride, capacity);
    if (!arr->bucket) {
-      Memory.free(arr);
+      Memory.dispose(arr);
       return NULL; // allocation ERRed
    }
 
@@ -82,9 +82,9 @@ static void farray_init(farray *arr, usize capacity, usize stride) {
       // what to do about an farray that's already initialized?
       // for now, we just reallocate the bucket
       if ((*arr)->bucket) {
-         Memory.free((*arr)->bucket);
+         Memory.dispose((*arr)->bucket);
       }
-      (*arr)->bucket = Memory.alloc(stride * capacity);
+      (*arr)->bucket = Memory.alloc(stride * capacity, false);
       if (!(*arr)->bucket) {
          // allocation ERRed, handle error as needed
          return;

@@ -35,19 +35,51 @@ typedef struct sc_memory_i {
    /**
     * @brief Allocate a block of memory of the specified size.
     * @param size Size of memory to allocate in bytes
+    * @param zee If true, zero-initialize the memory; otherwise, leave uninitialized
     * @return Pointer to the allocated memory block
     */
-   object (*alloc)(usize);
+   object (*alloc)(usize, bool);
    /**
-    * @brief Free a previously allocated block of memory.
-    * @param ptr Pointer to the memory block to free
+    * @brief Dispose of a previously allocated block of memory.
+    * @param ptr Pointer to the memory block to dispose
     */
-   void (*free)(object);
+   void (*dispose)(object);
    /**
-    * @brief Check if a given memory pointer is currently allocated.
+    * @brief Reallocate a block of memory to a new size.
+    * @param ptr Pointer to the memory block to reallocate
+    * @param new_size New size in bytes
+    * @return Pointer to the reallocated memory block, or NULL on failure
+    * @note Data may not be preserved if reallocation moves the block
+    */
+   object (*realloc)(object, usize);
+   /**
+    * @brief Check if a given memory pointer is currently being tracked.
     * @param ptr Pointer to check
-    * @return true if allocated; otherwise false
+    * @return true if tracked; otherwise false
     */
-   bool (*has)(object);
+   bool (*is_tracking)(object);
+   /**
+    * @brief Track a memory pointer for management.
+    * @param ptr Pointer to track
+    */
+   void (*track)(object);
+   /**
+    * @brief Untrack a previously tracked memory pointer.
+    * @param ptr Pointer to untrack
+    */
+   void (*untrack)(object);
+   /**
+    * @brief Initialize the memory system manually (for non-GCC platforms).
+    */
+   void (*init)(void);
+   /**
+    * @brief Teardown the memory system and free all resources.
+    */
+   void (*teardown)(void);
+   /**
+    * @brief Check if the memory system is ready for use.
+    * @return true if initialized; otherwise false
+    */
+   bool (*is_ready)(void);
 } sc_memory_i;
 extern const sc_memory_i Memory;

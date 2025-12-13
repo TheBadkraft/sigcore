@@ -41,15 +41,15 @@ static void test_slotarray_dispose(void) {
 
    SlotArray.dispose(sa);
    // after disposal, the allocated buffer should be freed
-   Assert.isFalse(Memory.has(allocated_buffer), "SlotArray disposal ERRed to free underlying buffer");
-   Assert.isFalse(Memory.has(sa), "SlotArray disposal ERRed to free slotarray structure");
+   Assert.isFalse(Memory.is_tracking(allocated_buffer), "SlotArray disposal ERRed to free underlying buffer");
+   Assert.isFalse(Memory.is_tracking(sa), "SlotArray disposal ERRed to free slotarray structure");
 }
 
 // data manipulation tests
 static void test_slotarray_add_value(void) {
    slotarray sa = SlotArray.new(5);
    // create a data record
-   int *p1 = Memory.alloc(sizeof(int));
+   int *p1 = Memory.alloc(sizeof(int), false);
    *p1 = 42;
    // add to slotarray
    int handle = SlotArray.add(sa, p1);
@@ -68,12 +68,12 @@ static void test_slotarray_add_value(void) {
    // just check for value equality
    Assert.areEqual(p1, actValue, PTR, "SlotArray add pointer mismatch");
 
-   Memory.free(p1);
+   Memory.dispose(p1);
    SlotArray.dispose(sa);
 }
 static void test_slotarray_get_value(void) {
    slotarray sa = SlotArray.new(5);
-   int *expValue = Memory.alloc(sizeof(int));
+   int *expValue = Memory.alloc(sizeof(int), false);
    *expValue = 99;
    int handle = SlotArray.add(sa, expValue);
    Assert.isTrue(handle >= 0, "SlotArray add ERRed");
@@ -90,12 +90,12 @@ static void test_slotarray_get_value(void) {
    int *actValue = (int *)retrieved;
    Assert.areEqual(&expValue[0], &actValue[0], INT, "SlotArray get_at value mismatch");
 
-   Memory.free(expValue);
+   Memory.dispose(expValue);
    SlotArray.dispose(sa);
 }
 static void test_slotarray_remove_at(void) {
    slotarray sa = SlotArray.new(5);
-   int *expValue = Memory.alloc(sizeof(int));
+   int *expValue = Memory.alloc(sizeof(int), false);
    *expValue = 123;
    int handle = SlotArray.add(sa, expValue);
    Assert.isTrue(handle >= 0, "SlotArray add ERRed");
@@ -109,7 +109,7 @@ static void test_slotarray_remove_at(void) {
    result = SlotArray.get_at(sa, handle, &retrieved);
    Assert.areEqual(&(int){-1}, &result, INT, "SlotArray get_at should ERR after remove at handle %d", handle);
 
-   Memory.free(expValue);
+   Memory.dispose(expValue);
    SlotArray.dispose(sa);
 }
 
@@ -118,13 +118,13 @@ static void test_slotarray_growth(void) {
    slotarray sa = SlotArray.new(3); // Small initial capacity
 
    // Add items until we exceed capacity
-   int *p1 = Memory.alloc(sizeof(int));
+   int *p1 = Memory.alloc(sizeof(int), false);
    *p1 = 1;
-   int *p2 = Memory.alloc(sizeof(int));
+   int *p2 = Memory.alloc(sizeof(int), false);
    *p2 = 2;
-   int *p3 = Memory.alloc(sizeof(int));
+   int *p3 = Memory.alloc(sizeof(int), false);
    *p3 = 3;
-   int *p4 = Memory.alloc(sizeof(int));
+   int *p4 = Memory.alloc(sizeof(int), false);
    *p4 = 4;
 
    int h1 = SlotArray.add(sa, p1);
@@ -155,10 +155,10 @@ static void test_slotarray_growth(void) {
    Assert.areEqual(&(int){0}, &(int){SlotArray.get_at(sa, h4, &retrieved)}, INT, "Get h4 ERRed");
    Assert.areEqual(p4, retrieved, PTR, "h4 value mismatch");
 
-   Memory.free(p1);
-   Memory.free(p2);
-   Memory.free(p3);
-   Memory.free(p4);
+   Memory.dispose(p1);
+   Memory.dispose(p2);
+   Memory.dispose(p3);
+   Memory.dispose(p4);
    SlotArray.dispose(sa);
 }
 static void test_slotarray_is_empty_slot(void) {
@@ -169,7 +169,7 @@ static void test_slotarray_is_empty_slot(void) {
    Assert.isTrue(SlotArray.is_empty_slot(sa, 2), "Slot 2 should be empty initially");
 
    // Add something
-   int *p = Memory.alloc(sizeof(int));
+   int *p = Memory.alloc(sizeof(int), false);
    *p = 42;
    int handle = SlotArray.add(sa, p);
    Assert.isTrue(handle >= 0, "Add ERRed");
@@ -190,7 +190,7 @@ static void test_slotarray_is_empty_slot(void) {
    // Now it should be empty again
    Assert.isTrue(SlotArray.is_empty_slot(sa, handle), "Removed slot should be empty again");
 
-   Memory.free(p);
+   Memory.dispose(p);
    SlotArray.dispose(sa);
 }
 
@@ -201,9 +201,9 @@ static void test_slotarray_capacity(void) {
    Assert.areEqual(&(int){10}, &(int){capacity}, INT, "Initial capacity should be 10");
 
    // Add some items
-   int *p1 = Memory.alloc(sizeof(int));
+   int *p1 = Memory.alloc(sizeof(int), false);
    *p1 = 1;
-   int *p2 = Memory.alloc(sizeof(int));
+   int *p2 = Memory.alloc(sizeof(int), false);
    *p2 = 2;
    SlotArray.add(sa, p1);
    SlotArray.add(sa, p2);
@@ -212,17 +212,17 @@ static void test_slotarray_capacity(void) {
    capacity = SlotArray.capacity(sa);
    Assert.areEqual(&(int){10}, &(int){capacity}, INT, "Capacity should remain 10 after adding 2 items");
 
-   Memory.free(p1);
-   Memory.free(p2);
+   Memory.dispose(p1);
+   Memory.dispose(p2);
    SlotArray.dispose(sa);
 }
 static void test_slotarray_clear(void) {
    slotarray sa = SlotArray.new(5);
 
    // Add some items
-   int *p1 = Memory.alloc(sizeof(int));
+   int *p1 = Memory.alloc(sizeof(int), false);
    *p1 = 1;
-   int *p2 = Memory.alloc(sizeof(int));
+   int *p2 = Memory.alloc(sizeof(int), false);
    *p2 = 2;
    int h1 = SlotArray.add(sa, p1);
    int h2 = SlotArray.add(sa, p2);
@@ -244,8 +244,8 @@ static void test_slotarray_clear(void) {
       Assert.isTrue(SlotArray.is_empty_slot(sa, i), "Slot %zu should be empty after clear", i);
    }
 
-   Memory.free(p1);
-   Memory.free(p2);
+   Memory.dispose(p1);
+   Memory.dispose(p2);
    SlotArray.dispose(sa);
 }
 
@@ -260,7 +260,7 @@ static void test_slotarray_stress(void) {
 
    // Phase 1: Fill to capacity and trigger growth
    for (usize i = 0; i < 20; i++) { // More than initial capacity
-      values[i] = Memory.alloc(sizeof(int));
+      values[i] = Memory.alloc(sizeof(int), false);
       *values[i] = (int)i;
       valid[i] = true;
       handles[i] = SlotArray.add(sa, values[i]);
@@ -275,13 +275,13 @@ static void test_slotarray_stress(void) {
    for (usize i = 0; i < 20; i += 2) {
       int result = SlotArray.remove_at(sa, (usize)handles[i]);
       Assert.areEqual(&(int){0}, &result, INT, "Remove %zu ERRed", i);
-      Memory.free(values[i]); // Free the actual memory
-      valid[i] = false;       // Mark as freed
+      Memory.dispose(values[i]); // Free the actual memory
+      valid[i] = false;          // Mark as freed
    }
 
    // Phase 3: Add new items (should reuse freed slots)
    for (usize i = 20; i < 40; i++) {
-      values[i] = Memory.alloc(sizeof(int));
+      values[i] = Memory.alloc(sizeof(int), false);
       *values[i] = (int)i;
       valid[i] = true;
       handles[i] = SlotArray.add(sa, values[i]);
@@ -304,14 +304,14 @@ static void test_slotarray_stress(void) {
       if (valid[i]) {
          int result = SlotArray.remove_at(sa, (usize)handles[i]);
          Assert.areEqual(&(int){0}, &result, INT, "Final remove %zu ERRed", i);
-         Memory.free(values[i]);
+         Memory.dispose(values[i]);
          valid[i] = false;
       }
    }
 
    // Phase 6: Add a few more to verify slot reuse
    for (usize i = 40; i < 45; i++) {
-      values[i] = Memory.alloc(sizeof(int));
+      values[i] = Memory.alloc(sizeof(int), false);
       *values[i] = (int)(i + 100);
       valid[i] = true;
       handles[i] = SlotArray.add(sa, values[i]);
@@ -325,7 +325,7 @@ static void test_slotarray_stress(void) {
    // Cleanup all remaining valid allocations
    for (usize i = 0; i < 45; i++) {
       if (valid[i]) {
-         Memory.free(values[i]);
+         Memory.dispose(values[i]);
       }
    }
 

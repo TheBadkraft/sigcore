@@ -13,6 +13,7 @@
  */
 
 #include "sigcore/collections.h"
+#include "sigcore/memory.h"
 #include "sigcore/parray.h"
 #include <sigtest/sigtest.h>
 #include <stdio.h>

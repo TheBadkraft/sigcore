@@ -46,7 +46,7 @@ struct sc_collection {
 
 // create a collection view of array data
 collection array_create_collection_view(void *buffer, void *end, usize stride, usize length, bool owns_buffer) {
-   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection));
+   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection), false);
    if (!coll) {
       return NULL;
    }
@@ -107,14 +107,14 @@ collection collection_to_collection(farray arr, usize stride);
 
 // create a new collection with the specified capacity and stride
 collection collection_new(usize capacity, usize stride) {
-   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection));
+   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection), false);
    if (!coll) {
       return NULL;
    }
 
-   coll->array.buffer = Memory.alloc(stride * capacity);
+   coll->array.buffer = Memory.alloc(stride * capacity, false);
    if (!coll->array.buffer) {
-      Memory.free(coll);
+      Memory.dispose(coll);
       return NULL;
    }
 
@@ -131,9 +131,9 @@ void collection_dispose(collection coll) {
    }
 
    if (coll->owns_buffer && coll->array.buffer) {
-      Memory.free(coll->array.buffer);
+      Memory.dispose(coll->array.buffer);
    }
-   Memory.free(coll);
+   Memory.dispose(coll);
 }
 // get the count of elements in the collection
 usize collection_count(collection coll) {
@@ -149,13 +149,13 @@ int collection_grow(collection coll) {
    }
    usize current_capacity = ((char *)coll->array.end - (char *)coll->array.buffer) / coll->stride;
    usize new_capacity = current_capacity * 2;
-   void *new_buffer = Memory.alloc(coll->stride * new_capacity);
+   void *new_buffer = Memory.alloc(coll->stride * new_capacity, false);
    if (!new_buffer) {
       return ERR;
    }
 
    memcpy(new_buffer, coll->array.buffer, coll->stride * current_capacity);
-   Memory.free(coll->array.buffer);
+   Memory.dispose(coll->array.buffer);
    coll->array.buffer = new_buffer;
    coll->array.end = (char *)new_buffer + coll->stride * new_capacity;
    return OK;
