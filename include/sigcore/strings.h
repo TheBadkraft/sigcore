@@ -27,8 +27,8 @@
 
 #pragma once
 
-#include "sigcore/types.h"
 #include "sigcore/collections.h"
+#include "sigcore/types.h"
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -55,31 +55,31 @@ void sb_free(string_builder);
 
 /* IString interface */
 typedef struct sc_string_i {
-    size_t (*length)(string);              /**< Returns the length of a string. */
-    string (*copy)(string);                /**< Creates a copy of a string. */
-    string (*dupe)(const char *);          /**< Duplicates a string. */
-    string (*concat)(string, string);     /**< Returns a concatenated string. */
-    string (*format)(string, ...);        /**< Returns a formatted string. */
-    int (*compare)(string, string);       /**< Compares two strings for equality. */
-    void (*dispose)(string);                /**< Disposes the string allocation. */
+   size_t (*length)(string);         /**< Returns the length of a string. */
+   string (*copy)(string);           /**< Creates a copy of a string. */
+   string (*dupe)(const char *);     /**< Duplicates a string. */
+   string (*concat)(string, string); /**< Returns a concatenated string. */
+   string (*format)(string, ...);    /**< Returns a formatted string. */
+   int (*compare)(string, string);   /**< Compares two strings for equality. */
+   void (*dispose)(string);          /**< Disposes the string allocation. */
 } sc_string_i;
 
 /* IStringBuilder interface */
 typedef struct sc_stringbuilder_i {
-    string_builder (*new)(size_t capacity);                    /**< Initializes with a starting capacity. */
-    string_builder (*snew)(string);                            /**< Initializes a new string builder from char* buffer. */
-    void (*append)(string_builder, string);                    /**< Appends a string to the buffer. */
-    void (*appendf)(string_builder, string, ...);             /**< Appends a formatted string using printf-style specifiers. */
-    void (*appendl)(string_builder, string);                   /**< Appends a string followed by a newline, or just a newline if NULL. */
-    void (*lappends)(string_builder, string);                  /**< Appends a newline followed by the string */
-    void (*lappendf)(string_builder, string, ...);            /**< Appends a newline followed by a formatted string */
-    void (*clear)(string_builder);                             /**< Resets the buffer to empty, clearing content and resetting last */
-    string (*toString)(string_builder);                        /**< Returns a new string with the current content, caller must dispose */
-    void (*toStream)(string_builder, FILE *);                  /**< Writes the buffer contents to the given stream */
-    size_t (*length)(string_builder);                          /**< Returns the current number of characters in the buffer */
-    size_t (*capacity)(string_builder);                        /**< Returns the total number of usable characters in the buffer */
-    void (*setCapacity)(string_builder, size_t);               /**< Adjusts the buffer capacity, preserving current content */
-    void (*dispose)(string_builder);                              /**< Disposes the string builder and its buffer */
+   string_builder (*new)(size_t capacity);        /**< Initializes with a starting capacity. */
+   string_builder (*snew)(string);                /**< Initializes a new string builder from char* buffer. */
+   void (*append)(string_builder, string);        /**< Appends a string to the buffer. */
+   void (*appendf)(string_builder, string, ...);  /**< Appends a formatted string using printf-style specifiers. */
+   void (*appendl)(string_builder, string);       /**< Appends a string followed by a newline, or just a newline if NULL. */
+   void (*lappends)(string_builder, string);      /**< Appends a newline followed by the string */
+   void (*lappendf)(string_builder, string, ...); /**< Appends a newline followed by a formatted string */
+   void (*clear)(string_builder);                 /**< Resets the buffer to empty, clearing content and resetting last */
+   string (*toString)(string_builder);            /**< Returns a new string with the current content, caller must dispose */
+   void (*toStream)(string_builder, FILE *);      /**< Writes the buffer contents to the given stream */
+   size_t (*length)(string_builder);              /**< Returns the current number of characters in the buffer */
+   size_t (*capacity)(string_builder);            /**< Returns the total number of usable characters in the buffer */
+   void (*setCapacity)(string_builder, size_t);   /**< Adjusts the buffer capacity, preserving current content */
+   void (*dispose)(string_builder);               /**< Disposes the string builder and its buffer */
 } sc_stringbuilder_i;
 
 /* Global instances */

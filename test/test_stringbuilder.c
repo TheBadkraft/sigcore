@@ -16,10 +16,10 @@ void test_new_stringbuilder(void) {
    size_t actLength = StringBuilder.length(sb);
    size_t actCapacity = StringBuilder.capacity(sb);
    Assert.areEqual(&expLength, &actLength, LONG, "Initial length should be 0");
-    Assert.areEqual(&expCapacity, &actCapacity, LONG, "Initial capacity should be 16");
-    
-    StringBuilder.dispose(sb);
-}// Test clear stringbuilder
+   Assert.areEqual(&expCapacity, &actCapacity, LONG, "Initial capacity should be 16");
+
+   StringBuilder.dispose(sb);
+} // Test clear stringbuilder
 void test_sb_clear(void) {
    string_builder sb = StringBuilder.snew("Hello");
    size_t expLength = 0;
@@ -27,10 +27,10 @@ void test_sb_clear(void) {
    StringBuilder.clear(sb);
    size_t actLength = StringBuilder.length(sb);
 
-    Assert.areEqual(&expLength, &actLength, LONG, "sb length should be 0");
-    
-    StringBuilder.dispose(sb);
-}// Test stringbuilder to string
+   Assert.areEqual(&expLength, &actLength, LONG, "sb length should be 0");
+
+   StringBuilder.dispose(sb);
+} // Test stringbuilder to string
 void test_sb_tostring(void) {
    string expOutput = "Hello, World";
 
@@ -39,11 +39,11 @@ void test_sb_tostring(void) {
 
    string actOutput = StringBuilder.toString(sb);
    Assert.isNotNull(actOutput, "output is NULL");
-    Assert.areEqual(&(int){0}, &(int){strcmp(expOutput, actOutput)}, INT, "strings are not identical");
-    
-    String.dispose(actOutput);
-    StringBuilder.dispose(sb);
-}// Test append to empty sb
+   Assert.areEqual(&(int){0}, &(int){strcmp(expOutput, actOutput)}, INT, "strings are not identical");
+
+   String.dispose(actOutput);
+   StringBuilder.dispose(sb);
+} // Test append to empty sb
 void test_append_empty_sb(void) {
    size_t expLength = 5; // "Hello"
    string_builder sb = StringBuilder.new(16);
@@ -52,13 +52,14 @@ void test_append_empty_sb(void) {
    StringBuilder.append(sb, hello);
 
    size_t actLength = StringBuilder.length(sb);
-    Assert.areEqual(&expLength, &actLength, LONG, "Length should be 5");
-    
-    StringBuilder.dispose(sb);
-}// Test append formatted string
+   Assert.areEqual(&expLength, &actLength, LONG, "Length should be 5");
+
+   StringBuilder.dispose(sb);
+} // Test append formatted string
 void test_appendf_sb(void) {
-    size_t expLength = 6; // "ID: 42"
-    string expResult = "ID: 42";   string_builder sb = StringBuilder.new(16);
+   size_t expLength = 6; // "ID: 42"
+   string expResult = "ID: 42";
+   string_builder sb = StringBuilder.new(16);
    Assert.isNotNull(sb, "sb new failed");
 
    StringBuilder.appendf(sb, "ID: %d", 42);
@@ -66,11 +67,11 @@ void test_appendf_sb(void) {
    Assert.areEqual(&expLength, &actLength, LONG, "length mismatch");
 
    string actResult = StringBuilder.toString(sb);
-    Assert.areEqual(&(int){0}, &(int){strcmp(actResult, expResult)}, INT, "string mismatch");
-    
-    String.dispose(actResult);
-    StringBuilder.dispose(sb);
-}// Test new sb from string
+   Assert.areEqual(&(int){0}, &(int){strcmp(actResult, expResult)}, INT, "string mismatch");
+
+   String.dispose(actResult);
+   StringBuilder.dispose(sb);
+} // Test new sb from string
 void test_snew_sb(void) {
    string str = "A char* buffer";
    size_t expLength = strlen(str);
@@ -100,7 +101,7 @@ void test_appendl_sb(void) {
 
    String.dispose(actOutput);
    StringBuilder.dispose(sb);
-}// Register tests
+} // Register tests
 __attribute__((constructor)) void init_stringbuilder_tests(void) {
    testset("core_stringbuilder_set", NULL, NULL);
    testcase("New stringbuilder", test_new_stringbuilder);

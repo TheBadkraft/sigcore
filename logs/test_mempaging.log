@@ -1,9 +1,9 @@
-[1] core_mempaging_set       :   4 :         2025-12-12  22:39:42
+[1] core_mempaging_set       :   4 :         2025-12-12  22:57:43
 =================================================================
-Running: Multi-page creation                     1.091 us  [PASS]
-Running: Cross-page tracking                    3667.246 us  [PASS]
-Running: Hole filling across pages              1026.349 us  [PASS]
-Running: Multi-page stress test                 13502.954 us  [PASS]
+Running: Multi-page creation                     0.879 us  [PASS]
+Running: Cross-page tracking                    5018.612 us  [PASS]
+Running: Hole filling across pages              994.296 us  [PASS]
+Running: Multi-page stress test                 12982.423 us  [PASS]
 =================================================================
 [1]     TESTS=  4        PASS=  4        FAIL=  0        SKIP=  0
 

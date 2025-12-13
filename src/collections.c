@@ -45,7 +45,7 @@ struct sc_collection {
 };
 
 // create a collection view of array data
-collection array_create_collection_view(void *buffer, void *end, usize stride, usize length, bool owns_buffer) {
+collection collection_create_view(void *buffer, void *end, usize stride, usize length, bool owns_buffer) {
    struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection), false);
    if (!coll) {
       return NULL;
@@ -216,47 +216,63 @@ usize collection_get_count(collection coll) {
    return collection_count(coll);
 }
 
+/* New Iterator implementation */
+struct iterator_s {
+   collection coll; /* The collection to iterate over */
+   size_t current;  /* Current index */
+};
+
+/* Create an iterator for a collection */
+iterator collection_create_iterator(collection coll) {
+   if (!coll) return NULL;
+   iterator it = Memory.alloc(sizeof(struct iterator_s), false);
+   if (!it) return NULL;
+   it->coll = coll;
+   it->current = 0;
+   return it;
+}
+
 //  public interface implementation
 const sc_collections_i Collections = {
     .add = collection_add,
     .remove = collection_remove,
     .clear = collection_clear,
     .count = collection_get_count,
+    .create_iterator = collection_create_iterator,
+    .create_view = collection_create_view,
     .dispose = collection_dispose,
 };
 
-/* New Iterator implementation */
-struct iterator_s {
-    addr *bucket;  /* Array of address pointers */
-    addr end;      /* End of the array */
-    size_t current; /* Current index */
-};
-
 /* Advances and returns the next item, or NULL if none */
-static object next(iterator it) {
-    if (!it || it->current >= (size_t)((addr *)it->end - it->bucket)) return NULL;
-    return (object)it->bucket[it->current++];
+static object iter_next(iterator it) {
+   if (!it || !it->coll || it->current >= it->coll->length)
+      return NULL;
+   object item = (char *)it->coll->array.buffer + it->current * it->coll->stride;
+   it->current++;
+   return item;
 }
 
 /* Returns the current item without advancing, or NULL if none */
-static object current(iterator it) {
-    if (!it || it->current >= (size_t)((addr *)it->end - it->bucket)) return NULL;
-    return (object)it->bucket[it->current];
+static object iter_current(iterator it) {
+   if (!it || !it->coll || it->current >= it->coll->length)
+      return NULL;
+   return (char *)it->coll->array.buffer + it->current * it->coll->stride;
 }
 
 /* Resets the iterator to the start */
-static void reset(iterator it) {
-    if (it) it->current = 0;
+static void iter_reset(iterator it) {
+   if (it)
+      it->current = 0;
 }
 
 /* Disposes the iterator */
-static void dispose_iterator(iterator it) {
-    if (it) Memory.dispose(it);
+static void iter_dispose(iterator it) {
+   if (it)
+      Memory.dispose(it);
 }
 
 const sc_iterator_i Iterator = {
-    .next = next,
-    .current = current,
-    .reset = reset,
-    .dispose = dispose_iterator
-};
+    .next = iter_next,
+    .current = iter_current,
+    .reset = iter_reset,
+    .dispose = iter_dispose};
