@@ -1,28 +1,28 @@
-[1] core_farray_set          :  13 :         2025-12-12  22:57:43
+[1] core_farray_set          :  13 :         2025-12-12  23:21:26
 =================================================================
-Running: farray_creation                         1.995 us  [PASS]
-Running: farray_init_from_null                   0.456 us  [PASS]
-Running: farray_init_from_existing               0.490 us  [PASS]
-Running: farray_get_capacity                     0.541 us  [PASS]
-Running: farray_clear                            0.839 us  [PASS]
+Running: farray_creation                         3.253 us  [PASS]
+Running: farray_init_from_null                   0.545 us  [PASS]
+Running: farray_init_from_existing               0.511 us  [PASS]
+Running: farray_get_capacity                     0.653 us  [PASS]
+Running: farray_clear                            0.808 us  [PASS]
 	Stored value at index 0: exp: 1  act: 1
 	Stored value at index 1: exp: 2  act: 2
 	Stored value at index 2: exp: 3  act: 3
 	Stored value at index 3: exp: 4  act: 4
 	Stored value at index 4: exp: 5  act: 5
-Running: farray_set_value                       10.434 us  [PASS]
+Running: farray_set_value                       10.762 us  [PASS]
 	Retrieved value at index 0: exp: 10  act: 10
 	Retrieved value at index 1: exp: 20  act: 20
 	Retrieved value at index 2: exp: 30  act: 30
 	Retrieved value at index 3: exp: 40  act: 40
 	Retrieved value at index 4: exp: 50  act: 50
-Running: farray_get_value                       13.026 us  [PASS]
-Running: farray_remove_at                        0.760 us  [PASS]
-Running: farray_as_collection                    0.700 us  [PASS]
-Running: farray_to_collection                    0.786 us  [PASS]
-Running: farray_set_out_of_bounds                0.288 us  [PASS]
-Running: farray_get_out_of_bounds                0.302 us  [PASS]
-Running: farray_remove_out_of_bounds             0.285 us  [PASS]
+Running: farray_get_value                       12.741 us  [PASS]
+Running: farray_remove_at                        0.679 us  [PASS]
+Running: farray_as_collection                    0.981 us  [PASS]
+Running: farray_to_collection                    0.829 us  [PASS]
+Running: farray_set_out_of_bounds                0.316 us  [PASS]
+Running: farray_get_out_of_bounds                0.309 us  [PASS]
+Running: farray_remove_out_of_bounds             0.307 us  [PASS]
 =================================================================
 [1]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0
 

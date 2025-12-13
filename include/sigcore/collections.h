@@ -93,8 +93,8 @@ extern const sc_collections_i Collections;
 /* New Iterator interface - simplified */
 
 typedef struct sc_iterator_i {
-   object (*next)(iterator);    /**< Advances and returns the next item, or NULL if none */
-   object (*current)(iterator); /**< Returns the current item without advancing, or NULL if none */
+   bool (*next)(iterator);      /**< Advances to next item and returns true if there is one */
+   object (*current)(iterator); /**< Returns the current item */
    void (*reset)(iterator);     /**< Resets the iterator to the start */
    void (*dispose)(iterator);   /**< Disposes the iterator */
 } sc_iterator_i;

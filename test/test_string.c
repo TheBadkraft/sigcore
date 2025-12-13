@@ -1,9 +1,14 @@
 /*
  * Test file for string utilities
  */
+#include "sigcore/memory.h"
 #include "sigcore/strings.h"
 #include <sigtest/sigtest.h>
 #include <string.h>
+
+void set_config(FILE **log_stream) {
+   *log_stream = fopen("logs/test_string.log", "w");
+}
 
 // Test string length calculation
 void test_get_length(void) {
@@ -87,13 +92,31 @@ void test_dupe_string(void) {
    String.dispose(dupe);
 }
 
+// Test string to array
+void test_to_array(void) {
+   string original = "Test string";
+   char *arr = String.to_array(original);
+
+   Assert.isNotNull(arr, "to_array failed");
+   Assert.areEqual(&(int){0}, &(int){strcmp(original, arr)}, INT, "to_array should match original");
+   Assert.isFalse(original == arr, "to_array should not be the same pointer");
+
+   // test NULL to_array
+   char *nullArr = String.to_array(NULL);
+   Assert.isNull(nullArr, "to_array of NULL should be NULL");
+
+   Memory.dispose(arr); // to_array returns allocated memory
+}
+
 // Register tests
 __attribute__((constructor)) void init_strings_tests(void) {
-   testset("core_strings_set", NULL, NULL);
+   testset("core_strings_set", set_config, NULL);
+
    testcase("String length", test_get_length);
    testcase("String copy", test_copy_string);
    testcase("String concat", test_concat_string);
    testcase("String compare", test_compare_string);
    testcase("String format", test_format_string);
    testcase("String dupe", test_dupe_string);
+   testcase("String to array", test_to_array);
 }

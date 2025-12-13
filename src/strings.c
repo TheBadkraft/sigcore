@@ -26,6 +26,7 @@
  */
 
 #include "sigcore/strings.h"
+#include "sigcore/internal/collections.h"
 #include "sigcore/memory.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -109,6 +110,17 @@ void str_dispose(string str) {
       Memory.dispose(str);
 }
 
+char *str_to_array(string str) {
+   if (!str)
+      return NULL;
+   size_t len = str_get_length(str);
+   char *arr = Memory.alloc(len + 1, false);
+   if (!arr)
+      return NULL;
+   memcpy(arr, str, len + 1);
+   return arr;
+}
+
 const sc_string_i String = {
     .length = str_get_length,
     .copy = str_copy,
@@ -116,14 +128,16 @@ const sc_string_i String = {
     .concat = str_concat,
     .compare = str_compare,
     .format = str_format,
+    .to_array = str_to_array,
     .dispose = str_dispose,
 };
 
 /* String Builder Implementation */
 struct string_builder_s {
-   char *buffer;
-   addr last;
-   addr end;
+   farray array;    /* The underlying farray for storage */
+   char *buffer;    /* Direct pointer to the buffer for efficiency */
+   size_t capacity; /* Current buffer capacity */
+   size_t length;   /* Current string length (excluding null terminator) */
 };
 
 /* Initializes a string builder with the given capacity */
@@ -134,14 +148,19 @@ string_builder sb_new(size_t capacity) {
    if (!sb)
       return NULL;
 
-   sb->buffer = Memory.alloc(capacity + 1, false);
-   if (!sb->buffer) {
+   sb->array = FArray.new(capacity + 1, 1); /* +1 for null terminator */
+   if (!sb->array) {
       Memory.dispose(sb);
       return NULL;
    }
-   sb->last = (addr)sb->buffer - 1;
-   sb->end = (addr)sb->buffer + capacity;
+
+   /* Get the buffer pointer */
+   collection coll = FArray.as_collection(sb->array, 1);
+   sb->buffer = (char *)collection_get_buffer(coll);
+   sb->capacity = capacity;
+   sb->length = 0;
    sb->buffer[0] = '\0';
+   Collections.dispose(coll);
    return sb;
 }
 
@@ -161,31 +180,29 @@ void sb_append(string_builder sb, string str) {
    if (!sb || !str)
       return;
    size_t len = strlen(str);
-   size_t current_len = sb_get_length(sb);
+   size_t needed_capacity = sb->length + len + 1;
 
-   if (sb->last + len + 1 >= sb->end) {
-      size_t old_capacity = (size_t)(sb->end - (addr)sb->buffer);
-      size_t new_capacity = old_capacity * 2;
-      if (new_capacity < current_len + len)
-         new_capacity = current_len + len;
+   if (needed_capacity > sb->capacity) {
+      size_t new_capacity = needed_capacity;
 
-      char *new_buffer = Memory.alloc(new_capacity + 1, false);
-      if (!new_buffer)
+      farray new_array = FArray.new(new_capacity, 1);
+      if (!new_array)
          return;
 
-      if (current_len > 0)
-         memcpy(new_buffer, sb->buffer, current_len);
-      new_buffer[current_len] = '\0';
+      collection new_coll = FArray.as_collection(new_array, 1);
+      char *new_buffer = (char *)collection_get_buffer(new_coll);
+      memcpy(new_buffer, sb->buffer, sb->length + 1);
+      Collections.dispose(new_coll);
 
-      Memory.dispose(sb->buffer);
-      sb->last = (addr)new_buffer + current_len - 1;
+      FArray.dispose(sb->array);
+      sb->array = new_array;
       sb->buffer = new_buffer;
-      sb->end = (addr)new_buffer + new_capacity;
+      sb->capacity = new_capacity - 1;
    }
 
-   memcpy((char *)sb->last + 1, str, len);
-   sb->last += len;
-   ((char *)sb->last)[1] = '\0';
+   memcpy(sb->buffer + sb->length, str, len);
+   sb->length += len;
+   sb->buffer[sb->length] = '\0';
 }
 
 /* Appends a formatted string */
@@ -204,33 +221,30 @@ void sb_appendf(string_builder sb, string format, ...) {
    }
 
    size_t required_len = (size_t)len;
-   size_t current_len = sb_get_length(sb);
+   size_t needed_capacity = sb->length + required_len + 1;
 
-   if ((addr)sb->last + required_len + 1 >= sb->end) {
-      size_t old_capacity = (size_t)(sb->end - (addr)sb->buffer);
-      size_t new_capacity = old_capacity * 2;
-      if (new_capacity < current_len + required_len)
-         new_capacity = current_len + required_len;
+   if (needed_capacity > sb->capacity) {
+      size_t new_capacity = needed_capacity;
 
-      char *new_buffer = Memory.alloc(new_capacity + 1, false);
-      if (!new_buffer) {
+      farray new_array = FArray.new(new_capacity, 1);
+      if (!new_array) {
          va_end(args);
          return;
       }
 
-      if (current_len > 0)
-         memcpy(new_buffer, sb->buffer, current_len);
-      new_buffer[current_len] = '\0';
+      collection new_coll = FArray.as_collection(new_array, 1);
+      char *new_buffer = (char *)collection_get_buffer(new_coll);
+      memcpy(new_buffer, sb->buffer, sb->length + 1);
+      Collections.dispose(new_coll);
 
-      Memory.dispose(sb->buffer);
-      sb->last = (addr)new_buffer + current_len - 1;
+      FArray.dispose(sb->array);
+      sb->array = new_array;
       sb->buffer = new_buffer;
-      sb->end = (addr)new_buffer + new_capacity;
+      sb->capacity = new_capacity - 1;
    }
 
-   char *write_pos = (char *)sb->last + 1;
-   vsnprintf(write_pos, required_len + 1, format, args);
-   sb->last = (addr)(write_pos + len - 1);
+   vsnprintf(sb->buffer + sb->length, required_len + 1, format, args);
+   sb->length += required_len;
    va_end(args);
 }
 
@@ -270,7 +284,7 @@ void sb_lappendf(string_builder sb, string format, ...) {
 void sb_clear(string_builder sb) {
    if (!sb)
       return;
-   sb->last = (addr)sb->buffer - 1;
+   sb->length = 0;
    sb->buffer[0] = '\0';
 }
 
@@ -296,46 +310,38 @@ void sb_to_stream(string_builder sb, FILE *stream) {
 
 /* Returns the current number of characters */
 size_t sb_get_length(string_builder sb) {
-   if (!sb)
-      return 0;
-   return (size_t)(sb->last - (addr)sb->buffer + 1);
+   return sb ? sb->length : 0;
 }
 
 /* Returns the total capacity */
 size_t sb_get_capacity(string_builder sb) {
    if (!sb)
       return 0;
-   return (size_t)(sb->end - (addr)sb->buffer);
+   return FArray.capacity(sb->array, 1) - 1; /* -1 for null terminator */
 }
 
 /* Adjusts the buffer capacity */
 void sb_set_capacity(string_builder sb, size_t new_capacity) {
-   if (!sb)
-      return;
-   size_t current_len = sb_get_length(sb);
-   if (new_capacity < current_len)
+   if (!sb || new_capacity <= sb->capacity)
       return;
 
-   char *new_buffer = Memory.alloc(new_capacity + 1, false);
-   if (!new_buffer)
-      return;
+   /* Force farray to grow to the new capacity */
+   char dummy = '\0';
+   FArray.set(sb->array, new_capacity, 1, &dummy);
 
-   if (current_len > 0)
-      memcpy(new_buffer, sb->buffer, current_len);
-   new_buffer[current_len] = '\0';
-
-   Memory.dispose(sb->buffer);
-   sb->last = (addr)new_buffer + current_len - 1;
-   sb->buffer = new_buffer;
-   sb->end = (addr)new_buffer + new_capacity;
+   /* Update buffer pointer and capacity */
+   collection coll = FArray.as_collection(sb->array, 1);
+   sb->buffer = (char *)collection_get_buffer(coll);
+   sb->capacity = FArray.capacity(sb->array, 1) - 1;
+   Collections.dispose(coll);
 }
 
 /* Disposes the string builder */
 void sb_dispose(string_builder sb) {
    if (!sb)
       return;
-   if (sb->buffer)
-      Memory.dispose(sb->buffer);
+   if (sb->array)
+      FArray.dispose(sb->array);
    Memory.dispose(sb);
 }
 
@@ -353,4 +359,5 @@ const sc_stringbuilder_i StringBuilder = {
     .length = sb_get_length,
     .capacity = sb_get_capacity,
     .setCapacity = sb_set_capacity,
-    .dispose = sb_dispose};
+    .dispose = sb_dispose,
+};

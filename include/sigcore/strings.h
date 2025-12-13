@@ -61,6 +61,7 @@ typedef struct sc_string_i {
    string (*concat)(string, string); /**< Returns a concatenated string. */
    string (*format)(string, ...);    /**< Returns a formatted string. */
    int (*compare)(string, string);   /**< Compares two strings for equality. */
+   char *(*to_array)(string);        /**< Returns a char array copy of the string. */
    void (*dispose)(string);          /**< Disposes the string allocation. */
 } sc_string_i;
 

@@ -6,6 +6,10 @@
 #include <sigtest/sigtest.h>
 #include <string.h>
 
+static void set_config(FILE **log_stream) {
+   *log_stream = fopen("logs/test_stringbuilder.log", "w");
+}
+
 // Test new stringbuilder
 void test_new_stringbuilder(void) {
    size_t expLength = 0;
@@ -101,9 +105,12 @@ void test_appendl_sb(void) {
 
    String.dispose(actOutput);
    StringBuilder.dispose(sb);
-} // Register tests
+}
+
+// Register tests
 __attribute__((constructor)) void init_stringbuilder_tests(void) {
-   testset("core_stringbuilder_set", NULL, NULL);
+   testset("core_stringbuilder_set", set_config, NULL);
+
    testcase("New stringbuilder", test_new_stringbuilder);
    testcase("Clear stringbuilder", test_sb_clear);
    testcase("To string", test_sb_tostring);

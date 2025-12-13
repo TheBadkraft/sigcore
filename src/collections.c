@@ -71,7 +71,7 @@ void collection_set_data(collection coll, void *data, usize count) {
 }
 
 // collection accessor functions
-inline void *collection_get_buffer(collection coll) {
+void *collection_get_buffer(collection coll) {
    return coll ? coll->array.buffer : NULL;
 }
 
@@ -224,9 +224,11 @@ struct iterator_s {
 
 /* Create an iterator for a collection */
 iterator collection_create_iterator(collection coll) {
-   if (!coll) return NULL;
+   if (!coll)
+      return NULL;
    iterator it = Memory.alloc(sizeof(struct iterator_s), false);
-   if (!it) return NULL;
+   if (!it)
+      return NULL;
    it->coll = coll;
    it->current = 0;
    return it;
@@ -243,20 +245,19 @@ const sc_collections_i Collections = {
     .dispose = collection_dispose,
 };
 
-/* Advances and returns the next item, or NULL if none */
-static object iter_next(iterator it) {
+/* Advances to next item and returns true if there is one */
+static bool iter_next(iterator it) {
    if (!it || !it->coll || it->current >= it->coll->length)
-      return NULL;
-   object item = (char *)it->coll->array.buffer + it->current * it->coll->stride;
+      return false;
    it->current++;
-   return item;
+   return true;
 }
 
-/* Returns the current item without advancing, or NULL if none */
+/* Returns the current item, or NULL if none */
 static object iter_current(iterator it) {
-   if (!it || !it->coll || it->current >= it->coll->length)
+   if (!it || !it->coll || it->current == 0 || it->current > it->coll->length)
       return NULL;
-   return (char *)it->coll->array.buffer + it->current * it->coll->stride;
+   return (char *)it->coll->array.buffer + (it->current - 1) * it->coll->stride;
 }
 
 /* Resets the iterator to the start */
