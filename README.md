@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C Standard](https://img.shields.io/badge/C-C2x-blue.svg)](https://en.wikipedia.org/wiki/C2x)
 [![Tests](https://img.shields.io/badge/tests-93%20passing-green.svg)](#testing)
+[![Version](https://img.shields.io/badge/version-1.0.0--alpha-blue.svg)](https://github.com/TheBadkraft/sigcore/releases/tag/v1.0.0-alpha)
 
 A modern, high-performance C library providing essential utilities for memory management, dynamic collections, and string manipulation. Designed with interface-based architecture for clean, discoverable APIs and optimal performance.
 
@@ -21,7 +22,7 @@ A modern, high-performance C library providing essential utilities for memory ma
 
 ### Quick Start
 ```bash
-git clone https://github.com/TheBadkraft/sigma-core.git
+git clone https://github.com/TheBadkraft/sigcore.git
 cd sigma-core
 make && sudo make install
 ```

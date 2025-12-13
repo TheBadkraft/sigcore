@@ -86,7 +86,8 @@ clean_all: clean
 # =============================================================================
 install: $(LIB_TARGET)
 	sudo install -m 644 $(LIB_TARGET) /usr/lib/
-	sudo cp -r include/sigcore /usr/include/
+	sudo mkdir -p /usr/include/sigcore
+	sudo install -m 644 include/sigcore/*.h /usr/include/sigcore/
 	sudo ldconfig
 
 # =============================================================================
