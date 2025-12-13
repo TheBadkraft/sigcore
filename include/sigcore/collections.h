@@ -70,3 +70,15 @@ typedef struct sc_collections_i {
    void (*dispose)(collection);
 } sc_collections_i;
 extern const sc_collections_i Collections;
+
+/* New Iterator interface - simplified */
+typedef struct iterator_s *iterator;
+
+typedef struct IIterator {
+    object (*next)(iterator);     /**< Advances and returns the next item, or NULL if none */
+    object (*current)(iterator);  /**< Returns the current item without advancing, or NULL if none */
+    void (*reset)(iterator);      /**< Resets the iterator to the start */
+    void (*free)(iterator);       /**< Frees the iterator */
+} IIterator;
+
+extern const IIterator Iterator;

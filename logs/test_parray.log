@@ -1,28 +1,28 @@
-[1] core_pointer_array_set   :  13 :         2025-12-12  07:08:56
+[1] core_pointer_array_set   :  13 :         2025-12-12  20:47:46
 =================================================================
-Running: array_creation                          1.711 us  [PASS]
-Running: array_init_from_null                    0.374 us  [PASS]
-Running: array_init_from_exisiting               0.357 us  [PASS]
-Running: array_get_capacity                      0.466 us  [PASS]
-Running: array_clear                             0.579 us  [PASS]
+Running: array_creation                          2.063 us  [PASS]
+Running: array_init_from_null                    0.391 us  [PASS]
+Running: array_init_from_exisiting               0.393 us  [PASS]
+Running: array_get_capacity                      0.418 us  [PASS]
+Running: array_clear                             0.634 us  [PASS]
 	Stored value at index 0: exp: 1  act: 1
 	Stored value at index 1: exp: 2  act: 2
 	Stored value at index 2: exp: 3  act: 3
 	Stored value at index 3: exp: 4  act: 4
 	Stored value at index 4: exp: 5  act: 5
-Running: array_set_value                         7.375 us  [PASS]
+Running: array_set_value                         8.697 us  [PASS]
 	Retrieved value at index 0: exp: 10  act: 10
 	Retrieved value at index 1: exp: 20  act: 20
 	Retrieved value at index 2: exp: 30  act: 30
 	Retrieved value at index 3: exp: 40  act: 40
 	Retrieved value at index 4: exp: 50  act: 50
-Running: array_get_value                         7.232 us  [PASS]
-Running: array_remove_at                         0.374 us  [PASS]
-Running: array_as_collection                     0.491 us  [PASS]
-Running: array_to_collection                     0.503 us  [PASS]
-Running: array_set_out_of_bounds                 0.241 us  [PASS]
-Running: array_get_out_of_bounds                 0.225 us  [PASS]
-Running: array_remove_out_of_bounds              0.229 us  [PASS]
+Running: array_get_value                         8.352 us  [PASS]
+Running: array_remove_at                         0.418 us  [PASS]
+Running: array_as_collection                     0.557 us  [PASS]
+Running: array_to_collection                     0.586 us  [PASS]
+Running: array_set_out_of_bounds                 0.247 us  [PASS]
+Running: array_get_out_of_bounds                 0.227 us  [PASS]
+Running: array_remove_out_of_bounds              0.208 us  [PASS]
 =================================================================
 [1]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0
 
