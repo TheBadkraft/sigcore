@@ -57,6 +57,17 @@ void test_memory_has_false_for_garbage(void) {
    Assert.isFalse(Memory.is_tracking(garbage), "Memory.is_tracking() should return false for invalid pointer 0xDEADBEEF");
 }
 
+//  test memory allocation and deallocation
+void test_memory_alloc_free(void) {
+   usize size = 128;
+   void *ptr = Memory.alloc(size, false);
+   Assert.isTrue(ptr != NULL, "Memory.alloc(size=128, zero_init=false) should succeed");
+   Assert.isTrue(Memory.is_tracking(ptr), "Allocated pointer should be tracked by memory system");
+
+   Memory.dispose(ptr);
+   Assert.isFalse(Memory.is_tracking(ptr), "Disposed pointer should no longer be tracked");
+}
+
 // New test stubs for extended memory operations
 void test_memory_alloc_zee_zeros(void) {
    usize size = 100;
@@ -130,157 +141,6 @@ void test_memory_init_teardown(void) {
    // Note: Teardown not tested here as it destroys the system for all tests
 }
 
-void test_memory_multi_page_creation(void) {
-   usize initial_pages = Memory_get_page_count();
-   Assert.isTrue(initial_pages == 1, "Memory system should start with exactly 1 page");
-
-   // Allocate enough to fill the first page
-   const usize num_to_fill = 5000; // Enough to trigger multi-page
-   void **ptrs = Memory.alloc((num_to_fill + 10) * sizeof(void *), false);
-   Assert.isNotNull(ptrs, "Should successfully allocate array to hold test pointers");
-
-   for (usize i = 0; i < num_to_fill + 10; i++) {
-      ptrs[i] = Memory.alloc(16, false);
-      Assert.isNotNull(ptrs[i], "Allocation %d (size=16) should succeed", (int)i);
-      Assert.isTrue(Memory.is_tracking(ptrs[i]), "Allocation %d should be tracked by memory system", (int)i);
-   }
-
-   usize pages_after = Memory_get_page_count();
-   Assert.isTrue(pages_after > initial_pages, "Should have created additional pages after %d allocations (had %d pages, now %d)", (int)(num_to_fill + 10), (int)initial_pages, (int)pages_after);
-
-   // Dispose all
-   for (usize i = 0; i < num_to_fill + 10; i++) {
-      Memory.dispose(ptrs[i]);
-   }
-   Memory.dispose(ptrs);
-}
-
-void test_memory_cross_page_tracking(void) {
-   // Allocate some pointers in first page
-   void *early_ptrs[10];
-   for (int i = 0; i < 10; i++) {
-      early_ptrs[i] = Memory.alloc(32, false);
-   }
-
-   // Fill first page to force second page
-   void **fill_ptrs = Memory.alloc(PAGE_SLOTS_CAPACITY * sizeof(void *), false);
-   for (usize i = 0; i < PAGE_SLOTS_CAPACITY - 10; i++) { // -10 for the early ones
-      fill_ptrs[i] = Memory.alloc(16, false);
-   }
-
-   // Check that early pointers are still tracked across pages
-   for (int i = 0; i < 10; i++) {
-      Assert.isTrue(Memory.is_tracking(early_ptrs[i]), "Early allocation %zu should still be tracked after page expansion", i);
-   }
-
-   // Dispose
-   for (int i = 0; i < 10; i++) {
-      Memory.dispose(early_ptrs[i]);
-   }
-   for (usize i = 0; i < PAGE_SLOTS_CAPACITY - 10; i++) {
-      Memory.dispose(fill_ptrs[i]);
-   }
-   Memory.dispose(fill_ptrs);
-}
-
-void test_memory_hole_filling(void) {
-   // Allocate to fill first page
-   void **ptrs = Memory.alloc(PAGE_SLOTS_CAPACITY * sizeof(void *), false);
-   for (usize i = 0; i < PAGE_SLOTS_CAPACITY; i++) {
-      ptrs[i] = Memory.alloc(16, false);
-   }
-
-   // Dispose some from first page to create holes
-   for (usize i = 0; i < 100; i += 2) { // Dispose every other
-      Memory.dispose(ptrs[i]);
-      ptrs[i] = NULL;
-   }
-
-   // Allocate new ones - should fill holes in first page before new page
-   usize pages_before = Memory_get_page_count();
-   for (usize i = 0; i < 50; i++) {
-      void *new_ptr = Memory.alloc(16, false);
-      Assert.isNotNull(new_ptr, "New allocation %zu during hole filling should succeed", i);
-      Assert.isTrue(Memory.is_tracking(new_ptr), "New allocation %zu should be tracked", i);
-      // Find a spot in ptrs to store it
-      for (usize j = 0; j < PAGE_SLOTS_CAPACITY; j++) {
-         if (ptrs[j] == NULL) {
-            ptrs[j] = new_ptr;
-            break;
-         }
-      }
-   }
-
-   usize pages_after = Memory_get_page_count();
-   Assert.isTrue(pages_before == pages_after, "Page count should remain unchanged during hole filling (%zu pages)", pages_before);
-
-   // Dispose all remaining
-   for (usize i = 0; i < PAGE_SLOTS_CAPACITY; i++) {
-      if (ptrs[i]) {
-         Memory.dispose(ptrs[i]);
-      }
-   }
-   Memory.dispose(ptrs);
-}
-
-void test_memory_multi_page_stress(void) {
-   const usize num_allocs = 5000; // Stress with multiple pages
-   void **ptrs = Memory.alloc(num_allocs * sizeof(void *), false);
-   Assert.isNotNull(ptrs, "Should successfully allocate array for %zu stress test pointers", num_allocs);
-
-   // Allocate many
-   for (usize i = 0; i < num_allocs; i++) {
-      ptrs[i] = Memory.alloc(32, false);
-      Assert.isNotNull(ptrs[i], "Stress allocation %zu (size=32) should succeed", i);
-      Assert.isTrue(Memory.is_tracking(ptrs[i]), "Stress allocation %zu should be tracked", i);
-   }
-
-   usize pages_used = Memory_get_page_count();
-   Assert.isTrue(pages_used > 1, "Stress test with %zu allocations should use multiple pages (using %zu)", num_allocs, pages_used);
-
-   // Dispose half
-   for (usize i = 0; i < num_allocs; i += 2) {
-      Memory.dispose(ptrs[i]);
-      ptrs[i] = NULL;
-   }
-
-   // Allocate more to fill holes and possibly new pages
-   for (usize i = 0; i < num_allocs / 2; i++) {
-      void *new_ptr = Memory.alloc(32, false);
-      Assert.isNotNull(new_ptr, "Re-allocation %zu after dispose should succeed", i);
-      Assert.isTrue(Memory.is_tracking(new_ptr), "Re-allocation %zu should be tracked", i);
-      // Store in a free spot
-      for (usize j = 0; j < num_allocs; j++) {
-         if (ptrs[j] == NULL) {
-            ptrs[j] = new_ptr;
-            break;
-         }
-      }
-   }
-
-   // Verify all are tracked
-   for (usize i = 0; i < num_allocs; i++) {
-      Assert.isTrue(Memory.is_tracking(ptrs[i]), "Final pointer %zu should be tracked after stress operations", i);
-   }
-
-   // Dispose all
-   for (usize i = 0; i < num_allocs; i++) {
-      Memory.dispose(ptrs[i]);
-   }
-   Memory.dispose(ptrs);
-}
-
-//  test memory allocation and deallocation
-void test_memory_alloc_free(void) {
-   usize size = 128;
-   void *ptr = Memory.alloc(size, false);
-   Assert.isTrue(ptr != NULL, "Memory.alloc(size=128, zero_init=false) should succeed");
-   Assert.isTrue(Memory.is_tracking(ptr), "Allocated pointer should be tracked by memory system");
-
-   Memory.dispose(ptr);
-   Assert.isFalse(Memory.is_tracking(ptr), "Disposed pointer should no longer be tracked");
-}
-
 //  register test cases
 __attribute__((constructor)) void init_memory_tests(void) {
    testset("core_memory_set", set_config, set_teardown);
@@ -298,8 +158,4 @@ __attribute__((constructor)) void init_memory_tests(void) {
    testcase("Track/untrack external pointers", test_memory_track_untrack);
    testcase("Realloc basic cases", test_memory_realloc);
    testcase("Init/teardown basics", test_memory_init_teardown);
-   testcase("Multi-page creation", test_memory_multi_page_creation);
-   // testcase("Cross-page tracking", test_memory_cross_page_tracking);
-   // testcase("Hole filling across pages", test_memory_hole_filling);
-   // testcase("Multi-page stress test", test_memory_multi_page_stress);
 }

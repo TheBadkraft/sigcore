@@ -1,23 +1,23 @@
-[1] core_memory_set          :  14 :         2025-12-12  07:24:18
+[1] core_memory_set          :  14 :         2025-12-12  19:26:05
 =================================================================
-Running: Constructor initializes state           0.903 us  [PASS]
-Running: Tracker page exists after init          0.145 us  [PASS]
-Running: Tracker SlotArray valid                 1.537 us  [PASS]
-Running: Memory avoids self-tracking            66.527 us  [PASS]
-Running: Memory ready after init                 0.206 us  [PASS]
-Running: Bootstrap allocs tracked                0.817 us  [PASS]
-Running: has() false for garbage                62.657 us  [PASS]
-Running: Alloc/dispose tracks correctly         64.129 us  [PASS]
-Running: Alloc with zero initializes            66.557 us  [PASS]
-Running: Alloc without zero no init             63.649 us  [PASS]
-Running: Track/untrack external pointers        131.703 us  [PASS]
-Running: Realloc basic cases                    197.549 us  [PASS]
-Running: Init/teardown basics                    0.253 us  [PASS]
-Running: Multi-page creation                    381308.531 us  [PASS]
+Running: Constructor initializes state           1.303 us  [PASS]
+Running: Tracker page exists after init          0.156 us  [PASS]
+Running: Tracker SlotArray valid                 1.819 us  [PASS]
+Running: Memory avoids self-tracking             7.630 us  [PASS]
+Running: Memory ready after init                 0.110 us  [PASS]
+Running: Bootstrap allocs tracked                0.507 us  [PASS]
+Running: has() false for garbage                 7.781 us  [PASS]
+Running: Alloc/dispose tracks correctly          7.900 us  [PASS]
+Running: Alloc with zero initializes             9.083 us  [PASS]
+Running: Alloc without zero no init              7.540 us  [PASS]
+Running: Track/untrack external pointers        15.306 us  [PASS]
+Running: Realloc basic cases                    26.821 us  [PASS]
+Running: Init/teardown basics                    0.225 us  [PASS]
+Running: Multi-page creation                    3961.036 us  [FAIL]
 =================================================================
-[1]     TESTS= 14        PASS= 14        FAIL=  0        SKIP=  0
+[1]     TESTS= 14        PASS= 13        FAIL=  1        SKIP=  0
 
 ===== Memory Allocations Report =================================
-WARNING: MEMORY LEAK — 2 unfreed allocation(s)
-  Total mallocs:                5023
-  Total frees:                  5021
+WARNING: MEMORY LEAK — 512 unfreed allocation(s)
+  Total mallocs:                523
+  Total frees:                  11
