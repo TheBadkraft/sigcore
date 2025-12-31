@@ -18,9 +18,11 @@
 
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_fuzzing.log", "w");
-   // Memory.init(); // Now automatic via constructor
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
 }
 static void set_teardown(void) {
+   Memory.reset_alloc_hooks();
    Memory.teardown();
 }
 

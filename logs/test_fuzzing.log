@@ -1,4 +1,4 @@
-[2] core_fuzzing_set          :    6 : 2025-12-29  11:24:22                     
+[2] core_fuzzing_set          :    6 : 2025-12-31  10:12:19                     
 ================================================================================
 Running: Arena allocation fuzzing                
   - value = 0           - Okay
@@ -7,7 +7,7 @@ Running: Arena allocation fuzzing
   - value = 184         - Okay
   - value = 184         - Okay
 
-                                                                44.074 ms [PASS]
+                                                                59.404 ms [PASS]
 Running: FArray fuzzing                          
   - value = 0           - Okay
   - value = 1           - Okay
@@ -15,7 +15,7 @@ Running: FArray fuzzing
   - value = 184         - Okay
   - value = 184         - Okay
 
-                                                                30.951 ms [PASS]
+                                                                28.759 ms [PASS]
 Running: List fuzzing                            
   - value = 0           - Okay
   - value = 1           - Okay
@@ -23,7 +23,7 @@ Running: List fuzzing
   - value = 184         - Okay
   - value = 184         - Okay
 
-                                                                30.545 ms [PASS]
+                                                                26.904 ms [PASS]
 Running: PArray fuzzing                          
   - value = 0           - Okay
   - value = 1           - Okay
@@ -31,7 +31,7 @@ Running: PArray fuzzing
   - value = 184         - Okay
   - value = 184         - Okay
 
-                                                                29.671 ms [PASS]
+                                                                26.337 ms [PASS]
 Running: SlotArray fuzzing                       
   - value = 0           - Okay
   - value = 1           - Okay
@@ -39,7 +39,7 @@ Running: SlotArray fuzzing
   - value = 184         - Okay
   - value = 184         - Okay
 
-                                                                29.377 ms [PASS]
+                                                                26.122 ms [PASS]
 Running: Memory allocation fuzzing               
   - value = 0           - Okay
   - value = 1           - Okay
@@ -47,6 +47,6 @@ Running: Memory allocation fuzzing
   - value = 184         - Okay
   - value = 184         - Okay
 
-                                                                30.889 ms [PASS]
+                                                                27.680 ms [PASS]
 ================================================================================
 [2]     TESTS=  6        PASS=  6        FAIL=  0        SKIP=  0

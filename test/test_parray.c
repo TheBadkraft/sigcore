@@ -22,6 +22,12 @@
 //  configure test set
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_parray.log", "w");
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+}
+
+static void set_teardown(void) {
+   Memory.reset_alloc_hooks();
 }
 
 //  basic initialization, disposal, and properties
@@ -217,7 +223,7 @@ static void test_array_remove_out_of_bounds(void) {
 
 //  register test cases
 __attribute__((constructor)) void init_array_tests(void) {
-   testset("core_pointer_array_set", set_config, NULL);
+   testset("core_pointer_array_set", set_config, set_teardown);
 
    testcase("array_creation", test_array_new);
    testcase("array_init_from_null", test_array_init_from_null);

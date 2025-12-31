@@ -18,6 +18,12 @@
 //  configure test set
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_farray.log", "w");
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+}
+
+static void set_teardown(void) {
+   Memory.reset_alloc_hooks();
 }
 
 //  basic initialization, disposal, and properties
@@ -233,7 +239,7 @@ static void test_farray_remove_out_of_bounds(void) {
 
 //  register test cases
 __attribute__((constructor)) void init_farray_tests(void) {
-   testset("core_farray_set", set_config, NULL);
+   testset("core_farray_set", set_config, set_teardown);
 
    testcase("farray_creation", test_farray_new);
    testcase("farray_init_from_null", test_farray_init_from_null);

@@ -1,62 +1,124 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "gcc: compile active test",
-            "type": "shell",
-            "command": "gcc",
-            "args": [
-                "-Wall",
-                "-Wextra",
-                "-g",
-                "-fPIC",
-                "-std=c2x",
-                "-Iinclude",
-                "-DTSTDBG",
-                "-I/usr/include/sigmatest",
-                "-c",
-                "${file}",
-                "-o",
-                "build/test/${fileBasenameNoExtension}.o"
-            ],
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "silent",
-                "panel": "shared"
-            },
-            "problemMatcher": "$gcc"
-        },
-        {
-            "label": "gcc: link active test",
-            "type": "shell",
-            "command": "gcc",
-            "args": [
-                "build/test/${fileBasenameNoExtension}.o",
-                "build/arrays.o",
-                "build/collections.o",
-                "build/farray.o",
-                "build/list.o",
-                "build/memory.o",
-                "build/parray.o",
-                "build/slotarray.o",
-                "-o",
-                "build/test/${fileBasenameNoExtension}",
-                "-lstest",
-                "-L/usr/lib",
-                "-Wl,--wrap=malloc",
-                "-Wl,--wrap=free",
-                "-Wl,--wrap=calloc",
-                "-Wl,--wrap=realloc"
-            ],
-            "dependsOn": "gcc: compile active test",
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        }
-    ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "gcc: compile active test",
+			"type": "shell",
+			"command": "gcc",
+			"args": [
+				"-Wall",
+				"-Wextra",
+				"-g",
+				"-fPIC",
+				"-std=c2x",
+				"-Iinclude",
+				"-DTSTDBG",
+				"-I/usr/include/sigmatest",
+				"-c",
+				"${file}",
+				"-o",
+				"build/test/${fileBasenameNoExtension}.o"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "silent",
+				"panel": "shared"
+			},
+			"problemMatcher": "$gcc"
+		},
+		{
+			"label": "gcc: link active test",
+			"type": "shell",
+			"command": "gcc",
+			"args": [
+				"build/test/${fileBasenameNoExtension}.o",
+				"build/arrays.o",
+				"build/collections.o",
+				"build/farray.o",
+				"build/list.o",
+				"build/memory.o",
+				"build/parray.o",
+				"build/slotarray.o",
+				"-o",
+				"build/test/${fileBasenameNoExtension}",
+				"-lstest",
+				"-L/usr/lib",
+				"-Wl,--wrap=malloc",
+				"-Wl,--wrap=free",
+				"-Wl,--wrap=calloc",
+				"-Wl,--wrap=realloc"
+			],
+			"dependsOn": "gcc: compile active test",
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "gcc: compile stress daemon",
+			"type": "shell",
+			"command": "gcc",
+			"args": [
+				"-Wall",
+				"-Wextra",
+				"-g",
+				"-fPIC",
+				"-std=c2x",
+				"-Iinclude",
+				"-DTSTDBG",
+				"-I/usr/include/sigmatest",
+				"-c",
+				"test/stress_daemon.c",
+				"-o",
+				"build/test/stress_daemon.o"
+			],
+			"group": "build"
+		},
+		{
+			"label": "gcc: link stress daemon",
+			"type": "shell",
+			"command": "gcc",
+			"args": [
+				"build/test/stress_daemon.o",
+				"build/arrays.o",
+				"build/collections.o",
+				"build/farray.o",
+				"build/list.o",
+				"build/memory.o",
+				"build/parray.o",
+				"build/slotarray.o",
+				"-o",
+				"build/test/stress_daemon",
+				"-lstest",
+				"-L/usr/lib"
+			],
+			"group": "build"
+		},
+		{
+			"label": "gcc: link stress daemon",
+			"type": "shell",
+			"command": "gcc",
+			"args": [
+				"build/test/stress_daemon.o",
+				"build/arrays.o",
+				"build/collections.o",
+				"build/farray.o",
+				"build/list.o",
+				"build/memory.o",
+				"build/parray.o",
+				"build/slotarray.o",
+				"build/arena.o",
+				"build/strings.o",
+				"-o",
+				"build/test/stress_daemon",
+				"-lstest",
+				"-L/usr/lib"
+			],
+			"group": "build"
+		}
+	]
 }

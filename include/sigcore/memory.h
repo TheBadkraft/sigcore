@@ -95,6 +95,22 @@ typedef struct sc_memory_i {
    void (*dispose_arena)(arena);
 
    /**
+    * @brief Set custom memory allocation hooks to replace malloc, free, calloc, realloc.
+    * @param malloc_hook Custom malloc function (NULL to keep default)
+    * @param free_hook Custom free function (NULL to keep default)
+    * @param calloc_hook Custom calloc function (NULL to keep default)
+    * @param realloc_hook Custom realloc function (NULL to keep default)
+    * @note If a hook is NULL, the corresponding default library function is used
+    */
+   void (*set_alloc_hooks)(void *(*malloc_hook)(size_t), void (*free_hook)(void *),
+                           void *(*calloc_hook)(size_t, size_t), void *(*realloc_hook)(void *, size_t));
+
+   /**
+    * @brief Reset memory allocation hooks to default library functions.
+    */
+   void (*reset_alloc_hooks)(void);
+
+   /**
     * @brief Scope management operations for transferring object ownership between scopes.
     *
     * IMPORTANT NOTE: Memory scope transfers are NOT supported. Objects allocated

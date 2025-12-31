@@ -34,6 +34,36 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Memory allocation hooks - can be customized by user
+static void *(*memory_malloc_hook)(size_t) = malloc;
+static void (*memory_free_hook)(void *) = free;
+static void *(*memory_calloc_hook)(size_t, size_t) = calloc;
+static void *(*memory_realloc_hook)(void *, size_t) = realloc;
+
+// Set custom memory allocation hooks
+void Memory_set_alloc_hooks(
+    void *(*malloc_hook)(size_t),
+    void (*free_hook)(void *),
+    void *(*calloc_hook)(size_t, size_t),
+    void *(*realloc_hook)(void *, size_t)) {
+   if (malloc_hook)
+      memory_malloc_hook = malloc_hook;
+   if (free_hook)
+      memory_free_hook = free_hook;
+   if (calloc_hook)
+      memory_calloc_hook = calloc_hook;
+   if (realloc_hook)
+      memory_realloc_hook = realloc_hook;
+}
+
+// Reset memory allocation hooks to defaults
+void Memory_reset_alloc_hooks(void) {
+   memory_malloc_hook = malloc;
+   memory_free_hook = free;
+   memory_calloc_hook = calloc;
+   memory_realloc_hook = realloc;
+}
+
 // Internal structures
 struct sc_slotarray {
    struct {
@@ -133,7 +163,7 @@ static struct memory_page *create_new_page(void) {
 
 // allocate a block of memory of the specified size
 object memory_alloc(usize size, bool zee) {
-   object ptr = malloc(size);
+   object ptr = memory_malloc_hook(size);
    if (zee && ptr) {
       memset(ptr, 0, size);
    }
@@ -160,12 +190,12 @@ object memory_alloc(usize size, bool zee) {
             int result = SlotArray.add(current_page->slots, ptr);
             if (result == ERR) {
                // Even new page is full? Should not happen
-               free(ptr);
+               memory_free_hook(ptr);
                return NULL;
             }
          } else {
             // No more pages, free and return NULL
-            free(ptr);
+            memory_free_hook(ptr);
             return NULL;
          }
       }
@@ -193,7 +223,7 @@ void memory_dispose(object ptr) {
       }
    found:;
    }
-   free(ptr);
+   memory_free_hook(ptr);
 }
 
 // check if a given memory pointer is currently being tracked
@@ -314,7 +344,7 @@ static void memory_teardown(void) {
             if (!SlotArray.is_empty_slot(page->slots, i)) {
                object val;
                if (SlotArray.get_at(page->slots, i, &val) == 0) {
-                  free(val); // raw free, bypass dispose to avoid recursion
+                  memory_free_hook(val); // raw free, bypass dispose to avoid recursion
                }
             }
          }
@@ -351,6 +381,8 @@ const sc_memory_i Memory = {
     .untrack = memory_untrack,
     .create_arena = memory_create_arena,
     .dispose_arena = memory_dispose_arena,
+    .set_alloc_hooks = Memory_set_alloc_hooks,
+    .reset_alloc_hooks = Memory_reset_alloc_hooks,
     .Scope = {
         .move = scope_move_scopes,
     },

@@ -15,6 +15,12 @@
 //  configure test set
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_slotarray.log", "w");
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+}
+
+static void set_teardown(void) {
+   Memory.reset_alloc_hooks();
 }
 
 // basic initialization, disposal, and properties
@@ -386,7 +392,7 @@ static void test_slotarray_from_value_array(void) {
 
 //  register test cases
 __attribute__((constructor)) void init_slotarray_tests(void) {
-   testset("core_slotarray_set", set_config, NULL);
+   testset("core_slotarray_set", set_config, set_teardown);
 
    testcase("slotarray_creation", test_slotarray_new);
    testcase("slotarray_dispose", test_slotarray_dispose);

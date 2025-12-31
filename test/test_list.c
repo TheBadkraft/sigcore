@@ -24,6 +24,12 @@ static void dispose_persons(list);
 //  configure test set
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_list.log", "w");
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+}
+
+static void set_teardown(void) {
+   Memory.reset_alloc_hooks();
 }
 
 //  basic initialization, disposal, and properties
@@ -489,7 +495,7 @@ static void test_list_append_null_value(void) {
 
 //  register test cases
 __attribute__((constructor)) void init_list_tests(void) {
-   testset("core_list_set", set_config, NULL);
+   testset("core_list_set", set_config, set_teardown);
 
    testcase("list_creation", test_list_new);
    testcase("list_dispose", test_list_dispose);
