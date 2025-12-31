@@ -1,18 +1,11 @@
-[1] core_stringbuilder_set   :   7 :         2025-12-12  23:21:46
-=================================================================
-Running: New stringbuilder                       6.507 us  [PASS]
-Running: Clear stringbuilder                     1.689 us  [PASS]
-Running: To string                               0.876 us  [PASS]
-Running: Append empty                            0.362 us  [PASS]
-Running: Append formatted                        1.247 us  [PASS]
-Running: Snew from string                        0.463 us  [PASS]
-Running: Append line                             2.574 us  [PASS]
-=================================================================
-[1]     TESTS=  7        PASS=  7        FAIL=  0        SKIP=  0
-
-===== Memory Allocations Report =================================
-Memory clean — all 37 allocations freed.
-
-
-  Total mallocs:                37
-  Total frees:                  37
+[2] core_stringbuilder_set    :    7 : 2025-12-29  11:24:23                     
+================================================================================
+Running: New stringbuilder                                       7.736 ms [PASS]
+Running: Clear stringbuilder                                     4.091 ms [PASS]
+Running: To string                                               3.917 ms [PASS]
+Running: Append empty                                            3.443 ms [PASS]
+Running: Append formatted                                        5.880 ms [PASS]
+Running: Snew from string                                        3.433 ms [PASS]
+Running: Append line                                             4.952 ms [PASS]
+================================================================================
+[2]     TESTS=  7        PASS=  7        FAIL=  0        SKIP=  0

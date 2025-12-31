@@ -28,7 +28,7 @@
  *             for arrays (parray/farray), with stride-aware operations.
  */
 #include "sigcore/collections.h"
-#include "sigcore/internal/collections.h"
+#include "internal/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
 
@@ -112,6 +112,12 @@ collection collection_new(usize capacity, usize stride) {
       return NULL;
    }
 
+   // Check for overflow: stride * capacity > SIZE_MAX
+   if (capacity > 0 && stride > SIZE_MAX / capacity) {
+      Memory.dispose(coll);
+      return NULL; // Would overflow
+   }
+
    coll->array.buffer = Memory.alloc(stride * capacity, false);
    if (!coll->array.buffer) {
       Memory.dispose(coll);
@@ -119,6 +125,13 @@ collection collection_new(usize capacity, usize stride) {
    }
 
    coll->array.end = (char *)coll->array.buffer + stride * capacity;
+   // Check for pointer arithmetic overflow
+   if (coll->array.end < coll->array.buffer) {
+      Memory.dispose(coll->array.buffer);
+      Memory.dispose(coll);
+      return NULL; // Pointer arithmetic overflow
+   }
+
    coll->stride = stride;
    coll->length = 0;
    coll->owns_buffer = true;

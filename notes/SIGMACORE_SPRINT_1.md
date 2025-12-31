@@ -16,7 +16,7 @@ Scope reduced to what is actually realistic, high-impact and already 80 % writte
 
 What we ship on Dec 13:
 
-- Fully modular headers (`#include "sigcore/list.h"` etc.)  
+- Fully modular headers (`#include "list.h"` etc.)  
 - One true `sc_array` core → zero-copy iterators forever  
 - Global switchable memory (malloc ↔ arena ↔ pool)  
 - `Map` and `OrderedMap` with identical interface and near-identical performance  

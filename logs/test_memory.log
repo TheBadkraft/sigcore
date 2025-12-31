@@ -1,24 +1,17 @@
-[1] core_memory_set          :  13 :         2025-12-12  23:21:26
-=================================================================
-Running: Constructor initializes state           0.760 us  [PASS]
-Running: Tracker page exists after init          0.155 us  [PASS]
-Running: Tracker SlotArray valid                 1.053 us  [PASS]
-Running: Memory avoids self-tracking             2.636 us  [PASS]
-Running: Memory ready after init               < 0.1 us  [PASS]
-Running: Bootstrap allocs tracked                0.335 us  [PASS]
-Running: has() false for garbage                 2.525 us  [PASS]
-Running: Alloc/dispose tracks correctly          2.742 us  [PASS]
-Running: Alloc with zero initializes             3.597 us  [PASS]
-Running: Alloc without zero no init              2.685 us  [PASS]
-Running: Track/untrack external pointers         5.202 us  [PASS]
-Running: Realloc basic cases                     8.431 us  [PASS]
-Running: Init/teardown basics                    0.122 us  [PASS]
-=================================================================
-[1]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0
-
-===== Memory Allocations Report =================================
-Memory clean — all 10 allocations freed.
-
-
-  Total mallocs:                10
-  Total frees:                  10
+[2] core_memory_set           :   13 : 2025-12-29  11:24:22                     
+================================================================================
+Running: Constructor initializes state                           4.263 ms [PASS]
+Running: Tracker page exists after init                          2.561 ms [PASS]
+Running: Tracker SlotArray valid                                 3.445 ms [PASS]
+Running: Memory avoids self-tracking                             5.628 ms [PASS]
+Running: Memory ready after init                                 2.299 ms [PASS]
+Running: Bootstrap allocs tracked                                2.531 ms [PASS]
+Running: has() false for garbage                                 4.491 ms [PASS]
+Running: Alloc/dispose tracks correctly                          5.433 ms [PASS]
+Running: Alloc with zero initializes                             5.517 ms [PASS]
+Running: Alloc without zero no init                              4.620 ms [PASS]
+Running: Track/untrack external pointers                         7.635 ms [PASS]
+Running: Realloc basic cases                                     9.600 ms [PASS]
+Running: Init/teardown basics                                    3.051 ms [PASS]
+================================================================================
+[2]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0

@@ -31,8 +31,9 @@
  *        where memory efficiency is important.
  */
 #include "sigcore/farray.h"
-#include "sigcore/internal/arrays.h"
-#include "sigcore/internal/collections.h"
+#include "sigcore/collections.h"
+#include "internal/arrays.h"
+#include "internal/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
 
@@ -68,6 +69,11 @@ static farray farray_new(usize capacity, usize stride) {
    }
 
    arr->end = (char *)arr->bucket + stride * capacity; // set end to the allocated size
+   // Check for pointer arithmetic overflow
+   if (arr->end < arr->bucket) {
+      array_free_resources(arr->bucket, arr);
+      return NULL; // Pointer arithmetic overflow
+   }
    farray_clear(arr, stride);
 
    return (farray)arr;

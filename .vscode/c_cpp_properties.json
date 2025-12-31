@@ -3,9 +3,11 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/include/**",
-                "${workspaceFolder}/include/sigcore/**"
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/include/sigcore",
+                "${workspaceFolder}/include/internal",
+                "/usr/include/sigtest",
+                "/usr/include/sigtest/internal"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

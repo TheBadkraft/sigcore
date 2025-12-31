@@ -112,7 +112,7 @@ static void test_array_set_value(void) {
    // now verify values in spoofed array
    for (int i = 0; i < 5; i++) {
       int stored_value = (int)(spoofed->bucket[i]);
-      writelnf("\tStored value at index %d: exp: %d  act: %d", i, values[i], stored_value);
+      DebugLogger.log("\tStored value at index %d: exp: %d  act: %d", i, values[i], stored_value);
       Assert.areEqual(&values[i], &stored_value, INT, "Array set value mismatch at index %d", i);
    }
 
@@ -131,7 +131,7 @@ static void test_array_get_value(void) {
    for (int i = 0; i < 5; i++) {
       addr element = ADDR_EMPTY;
       Assert.isTrue(PArray.get(arr, i, &element) == 0, "Array get ERRed at index %d", i);
-      writelnf("\tRetrieved value at index %d: exp: %d  act: %d", i, values[i], element);
+      DebugLogger.log("\tRetrieved value at index %d: exp: %d  act: %d", i, values[i], element);
       Assert.areEqual(&values[i], &element, INT, "Array get value mismatch at index %d", i);
    }
 

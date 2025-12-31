@@ -1,0 +1,17 @@
+[2] core_page_set             :   13 : 2025-12-29  11:24:23                     
+================================================================================
+Running: Page initialization                                    10.387 ms [PASS]
+Running: Allocation within capacity                              5.378 ms [PASS]
+Running: Allocation exceeds capacity                             3.819 ms [PASS]
+Running: Zero initialization                                     3.946 ms [PASS]
+Running: Tracking allocations                                    6.118 ms [PASS]
+Running: Page destruction                                        3.636 ms [PASS]
+Running: Exact capacity boundary                                11.634 ms [PASS]
+Running: Zero byte allocation                                    5.472 ms [PASS]
+Running: Zero init stress test                                  43.402 ms [PASS]
+Running: Tracking integrity                                      9.242 ms [PASS]
+Running: Memory exhaustion                                      18.240 ms [PASS]
+Running: Null safety                                             3.130 ms [PASS]
+Running: Size extremes                                           3.824 ms [PASS]
+================================================================================
+[2]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0

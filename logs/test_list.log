@@ -1,34 +1,27 @@
-[1] core_list_set            :  23 :         2025-12-12  23:21:26
-=================================================================
-Running: list_creation                           1.785 us  [PASS]
-Running: list_dispose                            0.362 us  [PASS]
-Running: list_get_capacity                       0.504 us  [PASS]
-Running: list_get_size                           0.264 us  [PASS]
-Running: list_append_value                       0.418 us  [PASS]
-Running: list_get_value                          0.539 us  [PASS]
-Running: list_remove_at                          0.426 us  [PASS]
-Running: list_set_value                          0.526 us  [PASS]
-Running: list_insert_value                       0.663 us  [PASS]
-Running: list_prepend_value                      0.958 us  [PASS]
-Running: list_clear                              0.807 us  [PASS]
-Running: list_growth                             0.834 us  [PASS]
-Running: list_add_all                            1.038 us  [SKIP]
-Running: list_add_from_array                     0.132 us  [SKIP]
-Running: list_set_out_of_bounds                  0.503 us  [PASS]
-Running: list_get_out_of_bounds                  0.375 us  [PASS]
-Running: list_remove_out_of_bounds               0.383 us  [PASS]
-Running: list_append_null                        0.238 us  [PASS]
-Running: list_prepend_null                       0.245 us  [PASS]
-Running: list_set_empty_list                     0.284 us  [PASS]
-Running: list_get_empty_list                     0.242 us  [PASS]
-Running: list_remove_empty_list                  0.237 us  [PASS]
-Running: list_append_null_value                  0.233 us  [PASS]
-=================================================================
-[1]     TESTS= 23        PASS= 21        FAIL=  0        SKIP=  2
-
-===== Memory Allocations Report =================================
-Memory clean — all 92 allocations freed.
-
-
-  Total mallocs:                92
-  Total frees:                  92
+[2] core_list_set             :   23 : 2025-12-29  11:24:22                     
+================================================================================
+Running: list_creation                                           8.496 ms [PASS]
+Running: list_dispose                                            5.576 ms [PASS]
+Running: list_get_capacity                                       3.287 ms [PASS]
+Running: list_get_size                                           2.816 ms [PASS]
+Running: list_append_value                                       2.940 ms [PASS]
+Running: list_get_value                                          3.142 ms [PASS]
+Running: list_remove_at                                          2.894 ms [PASS]
+Running: list_set_value                                          3.067 ms [PASS]
+Running: list_insert_value                                       3.141 ms [PASS]
+Running: list_prepend_value                                      3.757 ms [PASS]
+Running: list_clear                                              4.629 ms [PASS]
+Running: list_growth                                             3.958 ms [PASS]
+Running: list_add_all                                            3.792 ms [SKIP]
+Running: list_add_from_array                                     3.259 ms [SKIP]
+Running: list_set_out_of_bounds                                  2.932 ms [PASS]
+Running: list_get_out_of_bounds                                  2.764 ms [PASS]
+Running: list_remove_out_of_bounds                               2.853 ms [PASS]
+Running: list_append_null                                        3.325 ms [PASS]
+Running: list_prepend_null                                       2.579 ms [PASS]
+Running: list_set_empty_list                                     2.666 ms [PASS]
+Running: list_get_empty_list                                     2.574 ms [PASS]
+Running: list_remove_empty_list                                  3.266 ms [PASS]
+Running: list_append_null_value                                  2.550 ms [PASS]
+================================================================================
+[2]     TESTS= 23        PASS= 21        FAIL=  0        SKIP=  2

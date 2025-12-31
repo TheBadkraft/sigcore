@@ -30,7 +30,7 @@
  */
 #include "sigcore/list.h"
 #include "sigcore/collections.h"
-#include "sigcore/internal/collections.h"
+#include "internal/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
 

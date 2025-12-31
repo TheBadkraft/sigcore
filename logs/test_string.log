@@ -1,18 +1,11 @@
-[1] core_strings_set         :   7 :         2025-12-12  23:21:26
-=================================================================
-Running: String length                           1.078 us  [PASS]
-Running: String copy                             1.180 us  [PASS]
-Running: String concat                           0.426 us  [PASS]
-Running: String compare                          0.213 us  [PASS]
-Running: String format                           0.801 us  [PASS]
-Running: String dupe                             0.237 us  [PASS]
-Running: String to array                         0.321 us  [PASS]
-=================================================================
-[1]     TESTS=  7        PASS=  7        FAIL=  0        SKIP=  0
-
-===== Memory Allocations Report =================================
-Memory clean — all 5 allocations freed.
-
-
-  Total mallocs:                5
-  Total frees:                  5
+[2] core_strings_set          :    7 : 2025-12-29  11:24:23                     
+================================================================================
+Running: String length                                           4.878 ms [PASS]
+Running: String copy                                             4.474 ms [PASS]
+Running: String concat                                           3.031 ms [PASS]
+Running: String compare                                          2.526 ms [PASS]
+Running: String format                                           3.072 ms [PASS]
+Running: String dupe                                             2.509 ms [PASS]
+Running: String to array                                         3.510 ms [PASS]
+================================================================================
+[2]     TESTS=  7        PASS=  7        FAIL=  0        SKIP=  0

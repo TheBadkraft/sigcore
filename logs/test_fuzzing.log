@@ -1,0 +1,52 @@
+[2] core_fuzzing_set          :    6 : 2025-12-29  11:24:22                     
+================================================================================
+Running: Arena allocation fuzzing                
+  - value = 0           - Okay
+  - value = 1           - Okay
+  - value = 922         - Okay
+  - value = 184         - Okay
+  - value = 184         - Okay
+
+                                                                44.074 ms [PASS]
+Running: FArray fuzzing                          
+  - value = 0           - Okay
+  - value = 1           - Okay
+  - value = 922         - Okay
+  - value = 184         - Okay
+  - value = 184         - Okay
+
+                                                                30.951 ms [PASS]
+Running: List fuzzing                            
+  - value = 0           - Okay
+  - value = 1           - Okay
+  - value = 922         - Okay
+  - value = 184         - Okay
+  - value = 184         - Okay
+
+                                                                30.545 ms [PASS]
+Running: PArray fuzzing                          
+  - value = 0           - Okay
+  - value = 1           - Okay
+  - value = 922         - Okay
+  - value = 184         - Okay
+  - value = 184         - Okay
+
+                                                                29.671 ms [PASS]
+Running: SlotArray fuzzing                       
+  - value = 0           - Okay
+  - value = 1           - Okay
+  - value = 922         - Okay
+  - value = 184         - Okay
+  - value = 184         - Okay
+
+                                                                29.377 ms [PASS]
+Running: Memory allocation fuzzing               
+  - value = 0           - Okay
+  - value = 1           - Okay
+  - value = 922         - Okay
+  - value = 184         - Okay
+  - value = 184         - Okay
+
+                                                                30.889 ms [PASS]
+================================================================================
+[2]     TESTS=  6        PASS=  6        FAIL=  0        SKIP=  0

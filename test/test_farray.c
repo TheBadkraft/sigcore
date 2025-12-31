@@ -117,7 +117,7 @@ static void test_farray_set_value(void) {
    for (int i = 0; i < 5; i++) {
       int stored_value;
       memcpy(&stored_value, (char *)spoofed->bucket + i * element_size, element_size);
-      writelnf("\tStored value at index %d: exp: %d  act: %d", i, values[i], stored_value);
+      DebugLogger.log("\tStored value at index %d: exp: %d  act: %d", i, values[i], stored_value);
       Assert.areEqual(&values[i], &stored_value, INT, "FArray set value mismatch at index %d", i);
    }
 
@@ -137,7 +137,7 @@ static void test_farray_get_value(void) {
    for (int i = 0; i < 5; i++) {
       int element = 0;
       Assert.isTrue(FArray.get(arr, i, element_size, &element) == 0, "FArray get ERRed at index %d", i);
-      writelnf("\tRetrieved value at index %d: exp: %d  act: %d", i, values[i], element);
+      DebugLogger.log("\tRetrieved value at index %d: exp: %d  act: %d", i, values[i], element);
       Assert.areEqual(&values[i], &element, INT, "FArray get value mismatch at index %d", i);
    }
 

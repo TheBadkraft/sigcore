@@ -1,0 +1,14 @@
+[2] core_scoping_set          :   10 : 2025-12-31  09:33:39                     
+================================================================================
+Running: Handle validation works                                10.346 ms [PASS]
+Running: Invalid handles rejected                                4.872 ms [PASS]
+Running: Memory to Arena transfer rejected                       4.291 ms [PASS]
+Running: Arena to Memory transfer rejected                       3.618 ms [PASS]
+Running: Frame to Arena transfer                                 8.149 ms [PASS]
+Running: Arena to Frame transfer                                 4.478 ms [PASS]
+Running: Transfer between arenas                                 4.934 ms [PASS]
+Running: Transfer between frames                                 8.103 ms [PASS]
+Running: Unowned object transfer fails                           3.595 ms [PASS]
+Running: NULL parameters fail                                    4.902 ms [PASS]
+================================================================================
+[2]     TESTS= 10        PASS= 10        FAIL=  0        SKIP=  0

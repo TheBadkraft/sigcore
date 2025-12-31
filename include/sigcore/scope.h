@@ -21,28 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * ----------------------------------------------
- * File: arrays.c
- * Description: Common array operations implementation
+ * File: scope.h
+ * Description: Header file for SigmaCore scope transfer operations
  */
-#include "internal/arrays.h"
-#include "sigcore/memory.h"
-#include <string.h>
+#pragma once
 
-// allocate memory for an array bucket
-object array_alloc_bucket(size_t element_size, usize capacity) {
-   // Check for overflow: capacity * element_size > SIZE_MAX
-   if (capacity > 0 && element_size > SIZE_MAX / capacity) {
-      return NULL; // Would overflow
-   }
-   return Memory.alloc(element_size * capacity, false);
-}
+#include "sigcore/types.h"
 
-// free array resources (bucket and struct)
-void array_free_resources(void *bucket, void *struct_ptr) {
-   if (bucket) {
-      Memory.dispose(bucket);
-   }
-   if (struct_ptr) {
-      Memory.dispose(struct_ptr);
-   }
-}
+/**
+ * @brief Transfer ownership of an object from one scope to another.
+ *
+ * IMPORTANT RESTRICTIONS:
+ * =======================================================================
+ * 🚫 MEMORY SCOPE TRANSFERS ARE NOT SUPPORTED 🚫
+ *
+ * Objects allocated with Memory.alloc() CANNOT be transferred to other scopes.
+ * This is due to incompatible allocation models:
+ * - Memory: individual malloc/free with slotarray tracking
+ * - Arena/Frame: bump allocation within pre-allocated pages
+ *
+ * Attempting to transfer Memory objects will result in undefined behavior
+ * or memory corruption. Memory objects must be disposed in their original scope.
+ * =======================================================================
+ *
+ * Supported transfers:
+ * ✅ Arena ↔ Arena
+ * ✅ Frame ↔ Arena
+ * ✅ Frame ↔ Frame
+ *
+ * @param from Source scope (arena or frame)
+ * @param to   Destination scope (arena or frame)
+ * @param obj  Object to transfer
+ * @return 0 on success, -1 on failure
+ */
+int scope_move_scopes(void *from, void *to, object obj);

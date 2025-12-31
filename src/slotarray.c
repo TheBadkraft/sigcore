@@ -32,7 +32,7 @@
  *             can be performed via a dedicated function if desired.
  */
 #include "sigcore/slotarray.h"
-#include "sigcore/internal/collections.h"
+#include "internal/collections.h"
 #include "sigcore/memory.h"
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +58,11 @@ static slotarray slotarray_new(usize capacity) {
       return NULL; // allocation ERRed
    }
    // Initialize the buffer with the specified capacity
+   // Check for overflow: capacity * sizeof(addr) > SIZE_MAX
+   if (capacity > 0 && sizeof(addr) > SIZE_MAX / capacity) {
+      Memory.dispose(sa);
+      return NULL; // Would overflow
+   }
    usize total_size = capacity * sizeof(addr);
    sa->array.buffer = Memory.alloc(total_size, false);
    if (!sa->array.buffer) {
@@ -65,6 +70,12 @@ static slotarray slotarray_new(usize capacity) {
       return NULL; // allocation ERRed
    }
    sa->array.end = (addr *)sa->array.buffer + capacity;
+   // Check for pointer arithmetic overflow
+   if ((addr *)sa->array.end < (addr *)sa->array.buffer) {
+      Memory.dispose(sa->array.buffer);
+      Memory.dispose(sa);
+      return NULL; // Pointer arithmetic overflow
+   }
    sa->stride = sizeof(addr);
    sa->can_grow = true;
    // initialize all to ADDR_EMPTY
