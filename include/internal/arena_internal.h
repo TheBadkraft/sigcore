@@ -21,27 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * ----------------------------------------------
- * File: internal/memory.h
- * Description: Internal memory interfaces for testing and development
+ * File: arena_internal.h
+ * Description: Internal arena functions for scope operations
  */
-
 #pragma once
 
-#include "sigcore/types.h"
+#include "sigcore/arena.h"
 
-// Allocation tracking structure
-struct sc_allocation {
-   addr ptr;
-   usize size;
-};
-
-// Opaque slotarray typedef for backdoor access
-typedef struct sc_slotarray *slotarray;
-
-// Memory page structure (internal)
-struct memory_page;
-
-// Backdoor functions for testing internals
-struct memory_page *Memory_get_current_page(void);
-slotarray Memory_get_tracker(void);
-usize Memory_get_page_count(void);
+// Get arena from frame (for internal scope operations)
+arena frame_get_arena(frame f);

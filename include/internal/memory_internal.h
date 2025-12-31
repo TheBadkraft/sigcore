@@ -21,28 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * ----------------------------------------------
- * File: arrays.c
- * Description: Common array operations implementation
+ * File: internal/memory.h
+ * Description: Internal memory interfaces for testing and development
  */
-#include "internal/arrays.h"
-#include "sigcore/memory.h"
-#include <string.h>
 
-// allocate memory for an array bucket
-object array_alloc_bucket(size_t element_size, usize capacity) {
-   // Check for overflow: capacity * element_size > SIZE_MAX
-   if (capacity > 0 && element_size > SIZE_MAX / capacity) {
-      return NULL; // Would overflow
-   }
-   return Memory.alloc(element_size * capacity, false);
-}
+#pragma once
 
-// free array resources (bucket and struct)
-void array_free_resources(void *bucket, void *struct_ptr) {
-   if (bucket) {
-      Memory.dispose(bucket);
-   }
-   if (struct_ptr) {
-      Memory.dispose(struct_ptr);
-   }
-}
+#include "sigcore/arena.h"
+#include "sigcore/types.h"
+
+// Allocation tracking structure
+struct sc_allocation {
+   addr ptr;
+   usize size;
+};
+
+// Opaque slotarray typedef for backdoor access
+typedef struct sc_slotarray *slotarray;
+
+// Memory page structure (internal)
+struct memory_page;
+
+// Memory functions (internal, used by Arena)
+object memory_alloc(usize, bool);
+void memory_dispose(object);
+
+// Arena functions (internal, used by Memory)
+arena arena_create(usize);
+void arena_dispose(arena);
+
+// Backdoor functions for testing internals
+struct memory_page *Memory_get_current_page(void);
+slotarray Memory_get_tracker(void);
+usize Memory_get_page_count(void);

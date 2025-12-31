@@ -1,13 +1,8 @@
-[1] core_mempaging_set       :   4 :         2025-12-12  23:21:26
-=================================================================
-Running: Multi-page creation                     0.894 us  [PASS]
-Running: Cross-page tracking                    3719.919 us  [PASS]
-Running: Hole filling across pages              1072.363 us  [PASS]
-Running: Multi-page stress test                 12638.521 us  [PASS]
-=================================================================
-[1]     TESTS=  4        PASS=  4        FAIL=  0        SKIP=  0
-
-===== Memory Allocations Report =================================
-WARNING: MEMORY LEAK — 2 unfreed allocation(s)
-  Total mallocs:                2179
-  Total frees:                  2177
+[2] core_mempaging_set        :    4 : 2025-12-29  06:35:06                     
+================================================================================
+Running: Multi-page creation                                     8.128 ms [PASS]
+Running: Cross-page tracking                                  3277.633 ms [PASS]
+Running: Hole filling across pages                             965.213 ms [PASS]
+Running: Multi-page stress test                              12428.852 ms [PASS]
+================================================================================
+[2]     TESTS=  4        PASS=  4        FAIL=  0        SKIP=  0

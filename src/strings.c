@@ -26,7 +26,8 @@
  */
 
 #include "sigcore/strings.h"
-#include "sigcore/internal/collections.h"
+#include "sigcore/collections.h"
+#include "internal/collections.h"
 #include "sigcore/memory.h"
 #include <stdio.h>
 #include <stdlib.h>

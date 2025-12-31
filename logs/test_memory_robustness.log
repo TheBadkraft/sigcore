@@ -1,0 +1,11 @@
+[2] run_mem_functions         :    7 : 2025-12-29  07:56:51                     
+================================================================================
+Running: Inheritance tracking persistence                       13.704 ms [PASS]
+Running: Allocation pattern stress                             146.637 ms [PASS]
+Running: Page boundary stress                                    9.129 ms [PASS]
+Running: Root tracking groundwork                               25.922 ms [PASS]
+Running: Memory system integration                              31.340 ms [PASS]
+Running: Failure injection                                       5.563 ms [PASS]
+Running: Extreme patterns                               -75673159.000 µs [PASS]
+================================================================================
+[2]     TESTS=  7        PASS=  7        FAIL=  0        SKIP=  0

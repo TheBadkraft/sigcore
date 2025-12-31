@@ -30,8 +30,9 @@
  *        Iterator mechanism can be uniformly applied across all collection types.
  */
 #include "sigcore/parray.h"
-#include "sigcore/internal/arrays.h"
-#include "sigcore/internal/collections.h"
+#include "sigcore/collections.h"
+#include "internal/arrays.h"
+#include "internal/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
 
@@ -61,6 +62,11 @@ static parray array_new(usize capacity) {
    }
 
    arr->end = (addr)(arr->bucket + capacity); // set end to the allocated size
+   // Check for pointer arithmetic overflow
+   if (arr->end < (addr)arr->bucket) {
+      array_free_resources(arr->bucket, arr);
+      return NULL; // Pointer arithmetic overflow
+   }
    PArray.clear((parray)arr);
 
    return (parray)arr;

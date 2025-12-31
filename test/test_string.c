@@ -8,6 +8,12 @@
 
 void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_string.log", "w");
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+}
+
+void set_teardown(void) {
+   Memory.reset_alloc_hooks();
 }
 
 // Test string length calculation
@@ -110,7 +116,7 @@ void test_to_array(void) {
 
 // Register tests
 __attribute__((constructor)) void init_strings_tests(void) {
-   testset("core_strings_set", set_config, NULL);
+   testset("core_strings_set", set_config, set_teardown);
 
    testcase("String length", test_get_length);
    testcase("String copy", test_copy_string);

@@ -4,7 +4,7 @@
 As PM, I'm locking this plan. You're the dev—execute daily commits. We hit v1.0.0 on Dec 13 with modular headers, unified `sc_array` core, and Map/OrderedMap ready. No fluff: just achievable tasks, git branches, and deliverables. Timeline assumes 8–10 hr days; if blockers, we pivot to must-haves (modularization + array refactor).
 
 ### Key Principles (Locked)
-- **Modularization**: Headers under `include/sigcore/`. Each self-contained with deps auto-included via nested `#include`. `sigcore.h` aggregates all (like .NET `using System;`). Users pick granular: `#include "sigcore/list.h"` pulls only list + deps (array.h, memory.h).
+- **Modularization**: Headers under `include/sigcore/`. Each self-contained with deps auto-included via nested `#include`. `sigcore.h` aggregates all (like .NET `using System;`). Users pick granular: `#include "list.h"` pulls only list + deps (array.h, memory.h).
 - **Array Core**: All collections build on `struct sc_array { addr* bucket; addr last; addr end; };`. Iterators point directly—no copies. This unifies List/Queue/SlotArray/Map under one pattern.
 - **Map/OrderedMap**: Shared impl in `map.c`. `OrderedMap` reuses entry `next` for insertion-order list. One `sc_map_i` interface, two globals.
 - **No Macro Hell**: Ever. Full stop.

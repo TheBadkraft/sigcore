@@ -3,7 +3,8 @@
  *  Description: Test cases for SigmaCore memory management interfaces
  */
 
-#include "sigcore/internal/memory.h"
+#include "internal/memory_internal.h"
+#include "prototyping/proto_arena.h"
 #include "sigcore/memory.h"
 #include <sigtest/sigtest.h>
 #include <stdio.h>
@@ -13,9 +14,12 @@
 
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_memory.log", "w");
-   Memory.init();
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   // Note: sigtest only provides __wrap_malloc and __wrap_free
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
 }
 static void set_teardown(void) {
+   Memory.reset_alloc_hooks();
    Memory.teardown();
 }
 
@@ -141,6 +145,53 @@ void test_memory_init_teardown(void) {
    // Note: Teardown not tested here as it destroys the system for all tests
 }
 
+// Test custom allocation hooks with prototype arena
+void test_memory_custom_hooks_basic(void) {
+   // Save original hooks
+   Memory.reset_alloc_hooks();
+
+   // Set up prototype hooks
+   proto_reset_tracking();
+   proto_setup_hooks();
+
+   // Test allocation with custom hooks
+   void *ptr = Memory.alloc(64, false);
+   Assert.isNotNull(ptr, "Memory.alloc() with custom hooks should succeed");
+   Assert.areEqual(ptr, PROTO_PTR_1, PTR, "Custom malloc hook should return fixed test pointer");
+   Assert.isTrue(proto_verify_allocations(), "Prototype allocation tracking should verify correctly");
+
+   // Test disposal with custom hooks
+   Memory.dispose(ptr);
+
+   // Reset to default hooks
+   Memory.reset_alloc_hooks();
+}
+
+// Test hook reset functionality
+void test_memory_hook_reset(void) {
+   // Set custom hooks
+   proto_reset_tracking();
+   proto_setup_hooks();
+
+   // Verify custom hooks are active
+   void *ptr1 = Memory.alloc(32, false);
+   Assert.areEqual(ptr1, PROTO_PTR_1, PTR, "Custom hook should return PROTO_PTR_1");
+
+   // Dispose with custom hooks still active (since ptr1 is fake)
+   Memory.dispose(ptr1);
+
+   // Reset hooks
+   Memory.reset_alloc_hooks();
+
+   // Verify default hooks are restored
+   void *ptr2 = Memory.alloc(32, false);
+   Assert.areNotEqual(ptr2, PROTO_PTR_2, PTR, "After reset, should not return PROTO_PTR_2");
+   Assert.isNotNull(ptr2, "Default malloc should still work");
+
+   // Clean up
+   Memory.dispose(ptr2);
+}
+
 //  register test cases
 __attribute__((constructor)) void init_memory_tests(void) {
    testset("core_memory_set", set_config, set_teardown);
@@ -158,4 +209,6 @@ __attribute__((constructor)) void init_memory_tests(void) {
    testcase("Track/untrack external pointers", test_memory_track_untrack);
    testcase("Realloc basic cases", test_memory_realloc);
    testcase("Init/teardown basics", test_memory_init_teardown);
+   testcase("Custom allocation hooks", test_memory_custom_hooks_basic);
+   testcase("Hook reset functionality", test_memory_hook_reset);
 }

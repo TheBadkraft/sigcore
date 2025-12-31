@@ -3,7 +3,7 @@
  *  Description: Test cases for SigmaCore memory paging
  */
 
-#include "sigcore/internal/memory.h"
+#include "internal/memory_internal.h"
 #include "sigcore/memory.h"
 #include <sigtest/sigtest.h>
 #include <stdio.h>
@@ -12,10 +12,13 @@
 #define PAGE_SLOTS_CAPACITY 512
 
 static void set_config(FILE **log_stream) {
-   *log_stream = fopen("logs/test_mempaging.log", "w");
-   Memory.init();
+   // *log_stream = fopen("logs/test_mempaging.log", "w");
+   *log_stream = NULL;
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
 }
 static void set_teardown(void) {
+   Memory.reset_alloc_hooks();
    Memory.teardown();
 }
 

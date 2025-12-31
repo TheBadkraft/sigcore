@@ -8,6 +8,12 @@
 
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_stringbuilder.log", "w");
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+}
+
+static void set_teardown(void) {
+   Memory.reset_alloc_hooks();
 }
 
 // Test new stringbuilder
@@ -109,7 +115,7 @@ void test_appendl_sb(void) {
 
 // Register tests
 __attribute__((constructor)) void init_stringbuilder_tests(void) {
-   testset("core_stringbuilder_set", set_config, NULL);
+   testset("core_stringbuilder_set", set_config, set_teardown);
 
    testcase("New stringbuilder", test_new_stringbuilder);
    testcase("Clear stringbuilder", test_sb_clear);

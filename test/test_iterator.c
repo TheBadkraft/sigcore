@@ -8,6 +8,12 @@
 
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_iterator.log", "w");
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+}
+
+static void set_teardown(void) {
+   Memory.reset_alloc_hooks();
 }
 
 // Test iterator over a collection
@@ -66,7 +72,7 @@ void test_iterator_basic(void) {
 
 // Register tests
 __attribute__((constructor)) void init_iterator_tests(void) {
-   testset("core_iterator_set", set_config, NULL);
+   testset("core_iterator_set", set_config, set_teardown);
 
    testcase("Iterator basic", test_iterator_basic);
 }

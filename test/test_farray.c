@@ -18,6 +18,12 @@
 //  configure test set
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_farray.log", "w");
+   // Set memory hooks to use sigtest's wrapped functions for tracking
+   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+}
+
+static void set_teardown(void) {
+   Memory.reset_alloc_hooks();
 }
 
 //  basic initialization, disposal, and properties
@@ -117,7 +123,7 @@ static void test_farray_set_value(void) {
    for (int i = 0; i < 5; i++) {
       int stored_value;
       memcpy(&stored_value, (char *)spoofed->bucket + i * element_size, element_size);
-      writelnf("\tStored value at index %d: exp: %d  act: %d", i, values[i], stored_value);
+      DebugLogger.log("\tStored value at index %d: exp: %d  act: %d", i, values[i], stored_value);
       Assert.areEqual(&values[i], &stored_value, INT, "FArray set value mismatch at index %d", i);
    }
 
@@ -137,7 +143,7 @@ static void test_farray_get_value(void) {
    for (int i = 0; i < 5; i++) {
       int element = 0;
       Assert.isTrue(FArray.get(arr, i, element_size, &element) == 0, "FArray get ERRed at index %d", i);
-      writelnf("\tRetrieved value at index %d: exp: %d  act: %d", i, values[i], element);
+      DebugLogger.log("\tRetrieved value at index %d: exp: %d  act: %d", i, values[i], element);
       Assert.areEqual(&values[i], &element, INT, "FArray get value mismatch at index %d", i);
    }
 
@@ -233,7 +239,7 @@ static void test_farray_remove_out_of_bounds(void) {
 
 //  register test cases
 __attribute__((constructor)) void init_farray_tests(void) {
-   testset("core_farray_set", set_config, NULL);
+   testset("core_farray_set", set_config, set_teardown);
 
    testcase("farray_creation", test_farray_new);
    testcase("farray_init_from_null", test_farray_init_from_null);

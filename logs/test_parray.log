@@ -1,34 +1,31 @@
-[1] core_pointer_array_set   :  13 :         2025-12-12  23:21:26
-=================================================================
-Running: array_creation                          1.852 us  [PASS]
-Running: array_init_from_null                    0.412 us  [PASS]
-Running: array_init_from_exisiting               0.388 us  [PASS]
-Running: array_get_capacity                      0.465 us  [PASS]
-Running: array_clear                             0.607 us  [PASS]
-	Stored value at index 0: exp: 1  act: 1
-	Stored value at index 1: exp: 2  act: 2
-	Stored value at index 2: exp: 3  act: 3
-	Stored value at index 3: exp: 4  act: 4
-	Stored value at index 4: exp: 5  act: 5
-Running: array_set_value                         8.827 us  [PASS]
-	Retrieved value at index 0: exp: 10  act: 10
-	Retrieved value at index 1: exp: 20  act: 20
-	Retrieved value at index 2: exp: 30  act: 30
-	Retrieved value at index 3: exp: 40  act: 40
-	Retrieved value at index 4: exp: 50  act: 50
-Running: array_get_value                        15.780 us  [PASS]
-Running: array_remove_at                         0.470 us  [PASS]
-Running: array_as_collection                     0.565 us  [PASS]
-Running: array_to_collection                     0.581 us  [PASS]
-Running: array_set_out_of_bounds                 0.232 us  [PASS]
-Running: array_get_out_of_bounds                 0.223 us  [PASS]
-Running: array_remove_out_of_bounds              0.256 us  [PASS]
-=================================================================
-[1]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0
+[2] core_pointer_array_set    :   13 : 2025-12-31  10:12:20                     
+================================================================================
+Running: array_creation                                          5.776 ms [PASS]
+Running: array_init_from_null                                    3.085 ms [PASS]
+Running: array_init_from_exisiting                               2.777 ms [PASS]
+Running: array_get_capacity                                      2.746 ms [PASS]
+Running: array_clear                                             3.678 ms [PASS]
+Running: array_set_value                         
+  - 	Stored value at index 0: exp: 1  act: 1
+  - 	Stored value at index 1: exp: 2  act: 2
+  - 	Stored value at index 2: exp: 3  act: 3
+  - 	Stored value at index 3: exp: 4  act: 4
+  - 	Stored value at index 4: exp: 5  act: 5
 
-===== Memory Allocations Report =================================
-Memory clean — all 30 allocations freed.
+                                                                14.744 ms [PASS]
+Running: array_get_value                         
+  - 	Retrieved value at index 0: exp: 10  act: 10
+  - 	Retrieved value at index 1: exp: 20  act: 20
+  - 	Retrieved value at index 2: exp: 30  act: 30
+  - 	Retrieved value at index 3: exp: 40  act: 40
+  - 	Retrieved value at index 4: exp: 50  act: 50
 
-
-  Total mallocs:                30
-  Total frees:                  30
+                                                                14.012 ms [PASS]
+Running: array_remove_at                                         2.703 ms [PASS]
+Running: array_as_collection                                     2.920 ms [PASS]
+Running: array_to_collection                                     3.043 ms [PASS]
+Running: array_set_out_of_bounds                                 2.476 ms [PASS]
+Running: array_get_out_of_bounds                                 2.441 ms [PASS]
+Running: array_remove_out_of_bounds                              3.195 ms [PASS]
+================================================================================
+[2]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0

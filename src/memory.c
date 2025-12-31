@@ -25,12 +25,44 @@
  * Description: SigmaCore memory management implementation
  */
 #include "sigcore/memory.h"
-#include "sigcore/internal/memory.h"
+#include "internal/memory_internal.h"
+#include "sigcore/arena.h"
 #include "sigcore/parray.h"
+#include "sigcore/scope.h"
 #include "sigcore/slotarray.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Memory allocation hooks - can be customized by user
+static void *(*memory_malloc_hook)(size_t) = malloc;
+static void (*memory_free_hook)(void *) = free;
+static void *(*memory_calloc_hook)(size_t, size_t) = calloc;
+static void *(*memory_realloc_hook)(void *, size_t) = realloc;
+
+// Set custom memory allocation hooks
+void Memory_set_alloc_hooks(
+    void *(*malloc_hook)(size_t),
+    void (*free_hook)(void *),
+    void *(*calloc_hook)(size_t, size_t),
+    void *(*realloc_hook)(void *, size_t)) {
+   if (malloc_hook)
+      memory_malloc_hook = malloc_hook;
+   if (free_hook)
+      memory_free_hook = free_hook;
+   if (calloc_hook)
+      memory_calloc_hook = calloc_hook;
+   if (realloc_hook)
+      memory_realloc_hook = realloc_hook;
+}
+
+// Reset memory allocation hooks to defaults
+void Memory_reset_alloc_hooks(void) {
+   memory_malloc_hook = malloc;
+   memory_free_hook = free;
+   memory_calloc_hook = calloc;
+   memory_realloc_hook = realloc;
+}
 
 // Internal structures
 struct sc_slotarray {
@@ -87,6 +119,10 @@ static struct sc_pointer_array memory_pages_struct = {
 // Pre-allocated page structures
 static struct memory_page memory_pages_pool[MAX_PAGES];
 
+// Pre-allocated slot arrays and buffers for pages
+static struct sc_slotarray page_slot_arrays[MAX_PAGES];
+static addr page_slot_buffers[MAX_PAGES][PAGE_SLOTS_CAPACITY];
+
 // The current memory page, encapsulating the tracker slotarray and free head index.
 static struct memory_page current_page_struct = {
     .slots = &memory_slots_struct,
@@ -96,7 +132,7 @@ static struct memory_page current_page_struct = {
 static usize next_page_index = 1; // Next available page in pool
 static usize page_count = 1;      // Number of active pages
 
-// Create a new memory page with dynamically allocated slotarray buffer
+// Create a new memory page with statically allocated slotarray buffer
 static struct memory_page *create_new_page(void) {
    if (next_page_index >= MAX_PAGES) {
       return NULL; // No more pages available
@@ -104,16 +140,9 @@ static struct memory_page *create_new_page(void) {
    struct memory_page *new_page = &memory_pages_pool[next_page_index++];
    page_count++;
 
-   // Allocate slot array for the new page
-   struct sc_slotarray *sa = malloc(sizeof(struct sc_slotarray));
-   if (!sa) {
-      return NULL; // allocation failed
-   }
-   sa->array.buffer = malloc(PAGE_SLOTS_CAPACITY * sizeof(addr));
-   if (!sa->array.buffer) {
-      free(sa);
-      return NULL; // allocation failed
-   }
+   // Use pre-allocated slot array
+   struct sc_slotarray *sa = &page_slot_arrays[next_page_index - 1];
+   sa->array.buffer = page_slot_buffers[next_page_index - 1];
    sa->array.end = (addr *)sa->array.buffer + PAGE_SLOTS_CAPACITY;
    sa->stride = sizeof(addr);
    sa->can_grow = false; // Pages have fixed capacity
@@ -133,8 +162,8 @@ static struct memory_page *create_new_page(void) {
 }
 
 // allocate a block of memory of the specified size
-static object memory_alloc(usize size, bool zee) {
-   object ptr = malloc(size);
+object memory_alloc(usize size, bool zee) {
+   object ptr = memory_malloc_hook(size);
    if (zee && ptr) {
       memset(ptr, 0, size);
    }
@@ -161,12 +190,12 @@ static object memory_alloc(usize size, bool zee) {
             int result = SlotArray.add(current_page->slots, ptr);
             if (result == ERR) {
                // Even new page is full? Should not happen
-               free(ptr);
+               memory_free_hook(ptr);
                return NULL;
             }
          } else {
             // No more pages, free and return NULL
-            free(ptr);
+            memory_free_hook(ptr);
             return NULL;
          }
       }
@@ -175,7 +204,7 @@ static object memory_alloc(usize size, bool zee) {
 }
 
 // dispose of a previously allocated block of memory
-static void memory_dispose(object ptr) {
+void memory_dispose(object ptr) {
    if (memory_ready && current_page) {
       // Search all pages for the pointer
       struct memory_page *page = current_page;
@@ -194,7 +223,7 @@ static void memory_dispose(object ptr) {
       }
    found:;
    }
-   free(ptr);
+   memory_free_hook(ptr);
 }
 
 // check if a given memory pointer is currently being tracked
@@ -262,6 +291,16 @@ static bool memory_is_ready(void) {
    return memory_ready;
 }
 
+// create a new arena
+static arena memory_create_arena(usize initial_pages) {
+   return arena_create(initial_pages);
+}
+
+// dispose an arena
+static void memory_dispose_arena(arena arena) {
+   arena_dispose(arena);
+}
+
 // initialize memory system
 static void memory_init(void) {
    if (memory_ready)
@@ -284,7 +323,7 @@ static void memory_init(void) {
    memory_slots = &memory_slots_struct;
 
    // Set memory_pages[0] = current_page
-   PArray.set(memory_pages, 0, (addr)current_page);
+   // PArray.set(memory_pages, 0, (addr)current_page);
 
    memory_ready = true;
 
@@ -296,37 +335,67 @@ static void memory_teardown(void) {
    if (!memory_ready)
       return;
 
-   // Dispose all tracked allocations from the current page
-   if (current_page && current_page->slots) {
-      usize cap = SlotArray.capacity(current_page->slots);
-      for (usize i = 0; i < cap; i++) {
-         if (!SlotArray.is_empty_slot(current_page->slots, i)) {
-            object val;
-            if (SlotArray.get_at(current_page->slots, i, &val) == 0) {
-               free(val); // raw free, bypass dispose to avoid recursion
+   // Dispose all tracked allocations from all pages
+   struct memory_page *page = current_page;
+   while (page) {
+      if (page->slots) {
+         usize cap = SlotArray.capacity(page->slots);
+         for (usize i = 0; i < cap; i++) {
+            if (!SlotArray.is_empty_slot(page->slots, i)) {
+               object val;
+               if (SlotArray.get_at(page->slots, i, &val) == 0) {
+                  memory_free_hook(val); // raw free, bypass dispose to avoid recursion
+               }
             }
          }
+         // Slot arrays are now static, no need to free
       }
+      // Move to previous page
+      page = page->prev;
    }
+
+   // Dispose the pages array
+   // Note: memory_pages is a static struct, don't dispose it
+   // if (memory_pages) {
+   //    PArray.dispose(memory_pages);
+   // }
 
    // Reset globals
    memory_slots = NULL;
    current_page = NULL;
    memory_pages = NULL;
+   next_page_index = 0;
+   page_count = 0;
    memory_ready = false;
 }
 
 const sc_memory_i Memory = {
+    .init = memory_init,
+    .teardown = memory_teardown,
+    .is_ready = memory_is_ready,
     .alloc = memory_alloc,
     .dispose = memory_dispose,
     .realloc = memory_realloc,
     .is_tracking = memory_is_tracking,
     .track = memory_track,
     .untrack = memory_untrack,
-    .init = memory_init,
-    .teardown = memory_teardown,
-    .is_ready = memory_is_ready,
+    .create_arena = memory_create_arena,
+    .dispose_arena = memory_dispose_arena,
+    .set_alloc_hooks = Memory_set_alloc_hooks,
+    .reset_alloc_hooks = Memory_reset_alloc_hooks,
+    .Scope = {
+        .move = scope_move_scopes,
+    },
 };
+
+// Automatic initialization and teardown using GCC constructor/destructor
+__attribute__((constructor)) static void memory_auto_init(void) {
+   memory_init();
+}
+
+__attribute__((destructor)) static void memory_auto_teardown(void) {
+   memory_teardown();
+}
 
 // Backdoor functions for testing
 struct memory_page *Memory_get_current_page(void) {
