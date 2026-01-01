@@ -28,6 +28,7 @@
 #pragma once
 
 #include "sigcore/arena.h"
+#include "sigcore/memory.h"
 #include "sigcore/types.h"
 
 // Allocation tracking structure
@@ -46,11 +47,18 @@ struct memory_page;
 object memory_alloc(usize, bool);
 void memory_dispose(object);
 
+// Pool functions (internal, used by Arena)
+object pool_alloc(pool, usize, bool);
+void pool_free(pool, object);
+
 // Arena functions (internal, used by Memory)
 arena arena_create(usize);
 void arena_dispose(arena);
 
+// Scope functions (internal, used by Memory)
+object scope_import(void *, const void *, usize);
+
 // Backdoor functions for testing internals
-struct memory_page *Memory_get_current_page(void);
-slotarray Memory_get_tracker(void);
-usize Memory_get_page_count(void);
+struct memory_page *memory_get_current_page(void);
+slotarray memory_get_tracker(void);
+usize memory_get_page_count(void);

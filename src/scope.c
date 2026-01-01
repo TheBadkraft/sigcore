@@ -122,3 +122,31 @@ int scope_move_scopes(void *from, void *to, object obj) {
 
    return OK;
 }
+
+// Import external data into a scope
+object scope_import(void *scope, const void *data, usize size) {
+   if (!scope || !data || size == 0)
+      return NULL;
+
+   if (is_arena_scope(scope)) {
+      // Import into arena - allocate and copy
+      object ptr = Arena.alloc((arena)scope, size, false);
+      if (!ptr)
+         return NULL;
+      memcpy(ptr, data, size);
+      return ptr;
+   } else if (is_frame_scope(scope)) {
+      // Import into frame's arena - allocate and copy
+      arena frame_arena = frame_get_arena((frame)scope);
+      if (!frame_arena)
+         return NULL;
+      object ptr = Arena.alloc(frame_arena, size, false);
+      if (!ptr)
+         return NULL;
+      memcpy(ptr, data, size);
+      return ptr;
+   }
+
+   // Unsupported scope type
+   return NULL;
+}

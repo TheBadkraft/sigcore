@@ -11,30 +11,28 @@
 
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_arena.log", "w");
-   // Set memory hooks to use sigtest's wrapped functions for tracking
-   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
 }
+
 static void set_teardown(void) {
-   Memory.reset_alloc_hooks();
-   Memory.teardown();
+   // No hooks to reset
 }
 
 // test arena creation
 void test_arena_create(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
-   Assert.isNotNull(test_arena, "Memory.create_arena(1) should succeed and return valid arena pointer");
+   sc_arena *test_arena = Memory.Arena.create(1);
+   Assert.isNotNull(test_arena, "Memory.Arena.create(1) should succeed and return valid arena pointer");
    usize expected_pages = 1;
    usize actual_pages = Arena.get_page_count(test_arena);
    Assert.areEqual(&expected_pages, &actual_pages, LONG, "Arena should have 1 page initially");
    usize expected_alloc = 0;
    usize actual_alloc = Arena.get_total_allocated(test_arena);
    Assert.areEqual(&expected_alloc, &actual_alloc, LONG, "New arena should have no allocated bytes");
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test arena allocation
 void test_arena_alloc(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    usize alloc_size = 128;
@@ -44,12 +42,12 @@ void test_arena_alloc(void) {
    usize actual_alloc = Arena.get_total_allocated(test_arena);
    Assert.areEqual(&alloc_size, &actual_alloc, LONG, "Arena should report correct total allocated bytes");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test arena zero initialization
 void test_arena_alloc_zero(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    usize alloc_size = 100;
@@ -65,12 +63,12 @@ void test_arena_alloc_zero(void) {
    }
    Assert.isTrue(all_zero, "Zero-initialized allocation should have all bytes set to 0");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test arena multi-page allocation
 void test_arena_multi_page(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Allocate enough to potentially span multiple pages
@@ -88,12 +86,12 @@ void test_arena_multi_page(void) {
    usize page_count = Arena.get_page_count(test_arena);
    Assert.isTrue(page_count >= 1, "Arena should have at least 1 page (may have grown to %d)", page_count);
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test arena tracking
 void test_arena_tracking(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Allocate several pointers
@@ -114,12 +112,12 @@ void test_arena_tracking(void) {
    Assert.isFalse(Arena.is_tracking(test_arena, external), "External pointer should not be tracked by arena");
    free(external);
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test arena destruction
 void test_arena_destroy(void) {
-   sc_arena *test_arena = Memory.create_arena(2);
+   sc_arena *test_arena = Memory.Arena.create(2);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Allocate some memory
@@ -129,7 +127,7 @@ void test_arena_destroy(void) {
    Assert.isNotNull(ptr2, "Allocation should succeed");
 
    // Destroy the arena - this should free all resources
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 
    // Note: We can't reliably test that the pointers are freed since
    // they were bump-allocated from page data areas.
@@ -139,7 +137,7 @@ void test_arena_destroy(void) {
 
 // test arena stress allocation
 void test_arena_stress_alloc(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Perform many allocations of varying sizes
@@ -166,12 +164,12 @@ void test_arena_stress_alloc(void) {
       Assert.isTrue(Arena.is_tracking(test_arena, ptrs[i]), "Pointer %d should still be tracked after all allocations", i);
    }
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test arena page growth
 void test_arena_page_growth(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    usize initial_pages = Arena.get_page_count(test_arena);
@@ -199,7 +197,7 @@ void test_arena_page_growth(void) {
    Assert.isTrue(final_pages >= pages_after_large, "Page count should be stable or increase");
    Assert.isTrue(final_allocated >= expected_min_allocated, "Total allocated should be at least expected minimum");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test arena null safety
@@ -214,12 +212,12 @@ void test_arena_null_safety(void) {
    Assert.areEqual(&expected_zero, &total_null, LONG, "Arena.get_total_allocated(NULL) should return 0");
 
    // Test destruction of null arena (should not crash)
-   Memory.dispose_arena(NULL);
+   Memory.Arena.dispose(NULL);
 }
 
 // test arena allocation failures
 void test_arena_alloc_failures(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Test allocation of 1 byte
@@ -237,12 +235,12 @@ void test_arena_alloc_failures(void) {
    object large_ptr = Arena.alloc(test_arena, 10000, false); // Much larger than page size
    Assert.isNull(large_ptr, "Very large allocation should fail (exceeds page capacity)");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test arena tracking accuracy
 void test_arena_tracking_accuracy(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Allocate several pointers
@@ -274,12 +272,12 @@ void test_arena_tracking_accuracy(void) {
    usize total_actual = Arena.get_total_allocated(test_arena);
    Assert.areEqual(&total_expected, &total_actual, LONG, "Total allocated should match expected");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test arena mixed allocation patterns
 void test_arena_mixed_patterns(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Mix of zero-init and non-zero-init allocations
@@ -313,13 +311,13 @@ void test_arena_mixed_patterns(void) {
    usize actual_total = Arena.get_total_allocated(test_arena);
    Assert.areEqual(&expected_total, &actual_total, LONG, "Total allocated should be correct");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test arena creation with different initial page counts
 void test_arena_initial_pages(void) {
    // Test with 0 initial pages
-   sc_arena *arena0 = Memory.create_arena(0);
+   sc_arena *arena0 = Memory.Arena.create(0);
    Assert.isNotNull(arena0, "Arena with 0 initial pages should succeed");
    usize pages0 = Arena.get_page_count(arena0);
    Assert.areEqual(&(usize){0}, &pages0, LONG, "Arena with 0 initial pages should have 0 pages");
@@ -329,19 +327,19 @@ void test_arena_initial_pages(void) {
    Assert.isNotNull(ptr, "First allocation on 0-page arena should succeed");
    usize pages0_after = Arena.get_page_count(arena0);
    Assert.areEqual(&(usize){1}, &pages0_after, LONG, "First allocation should create 1 page");
-   Memory.dispose_arena(arena0);
+   Memory.Arena.dispose(arena0);
 
    // Test with multiple initial pages
-   sc_arena *arena5 = Memory.create_arena(5);
+   sc_arena *arena5 = Memory.Arena.create(5);
    Assert.isNotNull(arena5, "Arena with 5 initial pages should succeed");
    usize pages5 = Arena.get_page_count(arena5);
    Assert.areEqual(&(usize){5}, &pages5, LONG, "Arena should have 5 initial pages");
-   Memory.dispose_arena(arena5);
+   Memory.Arena.dispose(arena5);
 }
 
 // test frame begin/end basic functionality
 void test_frame_basic(void) {
-   sc_arena *arena = Memory.create_arena(1);
+   sc_arena *arena = Memory.Arena.create(1);
    Assert.isNotNull(arena, "Arena setup should succeed");
 
    // Begin a frame
@@ -375,12 +373,12 @@ void test_frame_basic(void) {
    object ptr3 = Arena.alloc(arena, 64, false);
    Assert.isNotNull(ptr3, "Allocation after frame end should succeed");
 
-   Memory.dispose_arena(arena);
+   Memory.Arena.dispose(arena);
 }
 
 // test nested frames
 void test_frame_nested(void) {
-   sc_arena *arena = Memory.create_arena(1);
+   sc_arena *arena = Memory.Arena.create(1);
    Assert.isNotNull(arena, "Arena setup should succeed");
 
    // Begin outer frame
@@ -414,12 +412,12 @@ void test_frame_nested(void) {
    usize alloc_final = Arena.get_total_allocated(arena);
    Assert.isTrue(alloc_final < alloc_after_inner, "Allocation should decrease after outer frame end");
 
-   Memory.dispose_arena(arena);
+   Memory.Arena.dispose(arena);
 }
 
 // test frame with page growth
 void test_frame_page_growth(void) {
-   sc_arena *arena = Memory.create_arena(1);
+   sc_arena *arena = Memory.Arena.create(1);
    Assert.isNotNull(arena, "Arena setup should succeed");
 
    // Begin frame
@@ -457,12 +455,12 @@ void test_frame_page_growth(void) {
    Assert.areEqual(&pages_after_alloc, &pages_final, LONG, "Page count should remain the same");
 
    free(ptrs);
-   Memory.dispose_arena(arena);
+   Memory.Arena.dispose(arena);
 }
 
 // test frame edge cases
 void test_frame_edge_cases(void) {
-   sc_arena *arena = Memory.create_arena(1);
+   sc_arena *arena = Memory.Arena.create(1);
    Assert.isNotNull(arena, "Arena setup should succeed");
 
    // Test begin_frame on NULL arena
@@ -488,12 +486,12 @@ void test_frame_edge_cases(void) {
 
    Arena.end_frame(zero_frame);
 
-   Memory.dispose_arena(arena);
+   Memory.Arena.dispose(arena);
 }
 
 // test frame early exit (outer ended before inner)
 void test_frame_early_exit(void) {
-   sc_arena *arena = Memory.create_arena(1);
+   sc_arena *arena = Memory.Arena.create(1);
    Assert.isNotNull(arena, "Arena setup should succeed");
 
    // Begin outer frame
@@ -527,7 +525,7 @@ void test_frame_early_exit(void) {
    usize alloc_final = Arena.get_total_allocated(arena);
    Assert.areEqual(&alloc_after_early_exit, &alloc_final, LONG, "Ending already-cleaned inner frame should not change allocation");
 
-   Memory.dispose_arena(arena);
+   Memory.Arena.dispose(arena);
 }
 
 //  register test cases

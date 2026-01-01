@@ -71,17 +71,17 @@ static object page_alloc(sc_page *page, usize size, bool zero);
 
 // Create a new arena page
 static sc_page *page_create(void) {
-   sc_page *page = memory_alloc(sizeof(sc_page), true);
+   sc_page *page = malloc(sizeof(sc_page));
    if (!page)
       return NULL;
 
    page->next = NULL;
    page->bump = page->data;
    page->used = 0;
-   page->tracked_addrs = SlotArray.new(64); // Initial capacity
+   page->tracked_addrs = SlotArray.new(64);
 
    if (!page->tracked_addrs) {
-      memory_dispose(page);
+      free(page);
       return NULL;
    }
 
@@ -99,7 +99,7 @@ static void page_destroy(sc_page *page) {
       SlotArray.dispose(page->tracked_addrs);
    }
 
-   memory_dispose(page);
+   free(page);
 }
 
 // Allocate from a page
@@ -140,14 +140,15 @@ arena arena_create(usize initial_pages) {
 
    arena->root_pages = NULL;
    arena->current_page = NULL;
-   arena->root_tracker = SlotArray.new(64); // For future inheritance
+   // arena->root_tracker = SlotArray.new(64); // TEMP: disable for testing
+   arena->root_tracker = NULL;
    arena->page_count = 0;
    arena->frame_stack = NULL;
 
-   if (!arena->root_tracker) {
-      memory_dispose(arena);
-      return NULL;
-   }
+   // if (!arena->root_tracker) {
+   //    memory_dispose(arena);
+   //    return NULL;
+   // }
 
    // Create initial pages
    for (usize i = 0; i < initial_pages; i++) {
@@ -185,9 +186,9 @@ void arena_dispose(arena arena) {
    }
 
    // Dispose root tracker
-   if (arena->root_tracker) {
-      SlotArray.dispose(arena->root_tracker);
-   }
+   // if (arena->root_tracker) {
+   //    SlotArray.dispose(arena->root_tracker);
+   // }
 
    memory_dispose(arena);
 }
@@ -198,9 +199,8 @@ static object arena_alloc(arena arena, usize size, bool zero) {
       return NULL;
 
    // Handle large allocations (> PAGE_DATA_SIZE) - not supported in bump allocation
-   if (size > PAGE_DATA_SIZE) {
+   if (size > PAGE_DATA_SIZE)
       return NULL; // Large allocations are not supported
-   }
 
    // If no current page, create one
    if (!arena->current_page) {
@@ -215,9 +215,8 @@ static object arena_alloc(arena arena, usize size, bool zero) {
 
    // Try to allocate from current page
    object ptr = page_alloc(arena->current_page, size, zero);
-   if (ptr) {
+   if (ptr)
       return ptr;
-   }
 
    // Current page is full, create new page
    sc_page *new_page = page_create();

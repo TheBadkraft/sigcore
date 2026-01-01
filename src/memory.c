@@ -34,261 +34,216 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Memory allocation hooks - can be customized by user
+// Forward declarations for arena functions
+extern arena arena_create(usize initial_pages);
+extern void arena_dispose(arena arena);
+
+// Memory allocation hooks - used internally for page management
 static void *(*memory_malloc_hook)(size_t) = malloc;
 static void (*memory_free_hook)(void *) = free;
-static void *(*memory_calloc_hook)(size_t, size_t) = calloc;
-static void *(*memory_realloc_hook)(void *, size_t) = realloc;
 
-// Set custom memory allocation hooks
-void Memory_set_alloc_hooks(
-    void *(*malloc_hook)(size_t),
-    void (*free_hook)(void *),
-    void *(*calloc_hook)(size_t, size_t),
-    void *(*realloc_hook)(void *, size_t)) {
-   if (malloc_hook)
-      memory_malloc_hook = malloc_hook;
-   if (free_hook)
-      memory_free_hook = free_hook;
-   if (calloc_hook)
-      memory_calloc_hook = calloc_hook;
-   if (realloc_hook)
-      memory_realloc_hook = realloc_hook;
+struct block {
+   usize size;
+   struct block *next_free;
+   struct block *prev_free;
+   // Allocation tracking (used when block is allocated)
+   object ptr;               // User pointer
+   usize alloc_size;         // Size of user allocation
+   struct block *next_alloc; // Next in scope's allocation list
+   struct block *prev_alloc; // Prev in scope's allocation list
+};
+
+struct sc_pool {
+   char handle[4];
+   struct sc_page *pages;
+   struct block *free_head;
+   usize total_bytes;
+   usize used_bytes;
+};
+
+struct sc_page {
+   struct sc_page *next;
+   char data[4096];
+};
+
+static struct sc_pool root_pool;
+
+// Find and allocate a block from the free list that fits the total_size
+static object memory_alloc_from_free(usize total_size, usize size, bool zero) {
+   struct block *b = root_pool.free_head;
+   while (b) {
+      if (b->size >= total_size) {
+         if (b->size > total_size) {
+            // Split the block
+            struct block *split = (struct block *)((char *)b + total_size);
+            split->size = b->size - total_size;
+            split->next_free = b->next_free;
+            split->prev_free = b->prev_free;
+            if (b->prev_free)
+               b->prev_free->next_free = split;
+            else
+               root_pool.free_head = split;
+            if (b->next_free)
+               b->next_free->prev_free = split;
+            b->size = total_size;
+         } else {
+            // Exact fit - remove from free list
+            if (b->prev_free)
+               b->prev_free->next_free = b->next_free;
+            else
+               root_pool.free_head = b->next_free;
+            if (b->next_free)
+               b->next_free->prev_free = b->prev_free;
+         }
+         b->next_free = NULL;
+         b->prev_free = NULL;
+         root_pool.used_bytes += total_size - sizeof(struct block);
+         object ptr = (char *)b + sizeof(struct block);
+         if (zero)
+            memset(ptr, 0, size);
+         return ptr;
+      }
+      b = b->next_free;
+   }
+   return NULL; // No suitable block found
 }
 
-// Reset memory allocation hooks to defaults
-void Memory_reset_alloc_hooks(void) {
-   memory_malloc_hook = malloc;
-   memory_free_hook = free;
-   memory_calloc_hook = calloc;
-   memory_realloc_hook = realloc;
-}
+// Grow the pool by allocating a new page
+static void memory_grow_pool(void) {
+   struct sc_page *new_pg = (struct sc_page *)memory_malloc_hook(sizeof(struct sc_page));
+   memset(new_pg, 0, sizeof(*new_pg));
+   new_pg->next = root_pool.pages;
+   root_pool.pages = new_pg;
+   root_pool.total_bytes += 4096;
 
-// Internal structures
-struct sc_slotarray {
-   struct {
-      void *buffer;
-      void *end;
-   } array;
-   usize stride;
-   bool can_grow;
-};
+   struct block *new_b = (struct block *)new_pg->data;
+   new_b->size = 4096;
+   new_b->next_free = NULL;
+   new_b->prev_free = NULL;
 
-struct sc_pointer_array {
-   addr *bucket; // pointer to first element (array of addr)
-   addr end;     // one past allocated memory (as raw addr)
-};
-
-struct index {
-   usize head;
-   usize next;
-};
-
-struct memory_page {
-   slotarray slots;
-   struct memory_page *next;
-   struct memory_page *prev;
-};
-
-static struct memory_page *current_page = NULL;
-static parray memory_pages = NULL;
-static slotarray memory_slots = NULL;
-static bool memory_ready = false;
-
-// Static buffers to avoid bootstrap allocations
-#define TRACKER_CAPACITY 512
-#define PAGE_ARRAY_CAPACITY 16
-#define PAGE_SLOTS_CAPACITY 512
-#define MAX_PAGES 16
-
-// Pre-allocated buffer for the slotarray used as the memory tracker.
-// This avoids dynamic allocation during init, preventing self-tracking issues.
-static addr page_slots_buffer[PAGE_SLOTS_CAPACITY];
-static struct sc_slotarray memory_slots_struct = {
-    .array = {.buffer = page_slots_buffer, .end = page_slots_buffer + PAGE_SLOTS_CAPACITY},
-    .stride = sizeof(addr),
-    .can_grow = false};
-
-// Pre-allocated buffer for the parray holding memory pages.
-// Allows static initialization of the page container.
-static addr page_bucket[PAGE_ARRAY_CAPACITY];
-static struct sc_pointer_array memory_pages_struct = {
-    .bucket = page_bucket,
-    .end = (addr)(page_bucket + PAGE_ARRAY_CAPACITY)};
-
-// Pre-allocated page structures
-static struct memory_page memory_pages_pool[MAX_PAGES];
-
-// Pre-allocated slot arrays and buffers for pages
-static struct sc_slotarray page_slot_arrays[MAX_PAGES];
-static addr page_slot_buffers[MAX_PAGES][PAGE_SLOTS_CAPACITY];
-
-// The current memory page, encapsulating the tracker slotarray and free head index.
-static struct memory_page current_page_struct = {
-    .slots = &memory_slots_struct,
-    .next = NULL,
-    .prev = NULL};
-
-static usize next_page_index = 1; // Next available page in pool
-static usize page_count = 1;      // Number of active pages
-
-// Create a new memory page with statically allocated slotarray buffer
-static struct memory_page *create_new_page(void) {
-   if (next_page_index >= MAX_PAGES) {
-      return NULL; // No more pages available
+   // Insert into sorted free list
+   struct block *curr = root_pool.free_head;
+   struct block *prev = NULL;
+   while (curr && (char *)curr < (char *)new_b) {
+      prev = curr;
+      curr = curr->next_free;
    }
-   struct memory_page *new_page = &memory_pages_pool[next_page_index++];
-   page_count++;
-
-   // Use pre-allocated slot array
-   struct sc_slotarray *sa = &page_slot_arrays[next_page_index - 1];
-   sa->array.buffer = page_slot_buffers[next_page_index - 1];
-   sa->array.end = (addr *)sa->array.buffer + PAGE_SLOTS_CAPACITY;
-   sa->stride = sizeof(addr);
-   sa->can_grow = false; // Pages have fixed capacity
-   // Initialize all slots to empty
-   for (usize i = 0; i < PAGE_SLOTS_CAPACITY; ++i) {
-      ((addr *)sa->array.buffer)[i] = ADDR_EMPTY;
-   }
-   new_page->slots = sa;
-
-   new_page->next = NULL;
-   new_page->prev = current_page;
-   // Link the new page to the current page
-   if (current_page) {
-      current_page->next = new_page;
-   }
-   return new_page;
+   new_b->next_free = curr;
+   new_b->prev_free = prev;
+   if (prev)
+      prev->next_free = new_b;
+   else
+      root_pool.free_head = new_b;
+   if (curr)
+      curr->prev_free = new_b;
 }
 
 // allocate a block of memory of the specified size
-object memory_alloc(usize size, bool zee) {
-   object ptr = memory_malloc_hook(size);
-   if (zee && ptr) {
-      memset(ptr, 0, size);
-   }
-   if (memory_ready && current_page) {
-      // Try to find a free slot in any existing page, starting from current
-      struct memory_page *page = current_page;
-      bool added = false;
-      while (page && !added) {
-         int result = SlotArray.add(page->slots, ptr);
-         if (result != ERR) {
-            added = true;
-         } else {
-            page = page->prev;
-         }
-      }
-      if (!added) {
-         // No space in existing pages, create a new page
-         struct memory_page *new_page = create_new_page();
-         if (new_page) {
-            // Switch to new page
-            current_page = new_page;
-            memory_slots = new_page->slots;
-            // Add to the new page
-            int result = SlotArray.add(current_page->slots, ptr);
-            if (result == ERR) {
-               // Even new page is full? Should not happen
-               memory_free_hook(ptr);
-               return NULL;
-            }
-         } else {
-            // No more pages, free and return NULL
-            memory_free_hook(ptr);
-            return NULL;
-         }
-      }
-   }
-   return ptr;
+object memory_alloc(usize size, bool zero) {
+   if (size == 0)
+      return NULL;
+
+   usize total_size = size + sizeof(struct block);
+   total_size = (total_size + 7) & ~7; // Align to 8 bytes
+
+   // Try to allocate from existing free blocks
+   object ptr = memory_alloc_from_free(total_size, size, zero);
+   if (ptr)
+      return ptr;
+
+   // No suitable free block found, grow the pool
+   memory_grow_pool();
+
+   // Try again with the new page
+   return memory_alloc_from_free(total_size, size, zero);
 }
 
 // dispose of a previously allocated block of memory
 void memory_dispose(object ptr) {
-   if (memory_ready && current_page) {
-      // Search all pages for the pointer
-      struct memory_page *page = current_page;
-      while (page) {
-         usize cap = SlotArray.capacity(page->slots);
-         for (usize i = 0; i < cap; i++) {
-            if (!SlotArray.is_empty_slot(page->slots, i)) {
-               object val;
-               if (SlotArray.get_at(page->slots, i, &val) == 0 && val == ptr) {
-                  SlotArray.remove_at(page->slots, i);
-                  goto found;
-               }
-            }
-         }
-         page = page->prev;
-      }
-   found:;
+   if (!ptr)
+      return;
+   struct block *b = (struct block *)((char *)ptr - sizeof(struct block));
+   memset(ptr, 0, b->size - sizeof(struct block));
+   root_pool.used_bytes -= b->size - sizeof(struct block);
+   b->next_free = NULL;
+   b->prev_free = NULL;
+   struct block *curr = root_pool.free_head;
+   struct block *prev = NULL;
+   while (curr && curr < b) {
+      prev = curr;
+      curr = curr->next_free;
    }
-   memory_free_hook(ptr);
-}
-
-// check if a given memory pointer is currently being tracked
-static bool memory_is_tracking(object ptr) {
-   if (!memory_ready || !current_page)
-      return false;
-   // Search all pages for the pointer
-   struct memory_page *page = current_page;
-   while (page) {
-      usize cap = SlotArray.capacity(page->slots);
-      for (usize i = 0; i < cap; i++) {
-         if (!SlotArray.is_empty_slot(page->slots, i)) {
-            object val;
-            if (SlotArray.get_at(page->slots, i, &val) == 0 && val == ptr)
-               return true;
-         }
-      }
-      page = page->prev;
+   b->next_free = curr;
+   b->prev_free = prev;
+   if (prev)
+      prev->next_free = b;
+   else
+      root_pool.free_head = b;
+   if (curr)
+      curr->prev_free = b;
+   if (curr && (char *)b + b->size == (char *)curr) {
+      b->size += curr->size;
+      b->next_free = curr->next_free;
+      if (curr->next_free)
+         curr->next_free->prev_free = b;
    }
-   return false;
-}
-
-// track a memory pointer
-static void memory_track(object ptr) {
-   if (memory_ready && current_page) {
-      SlotArray.add(current_page->slots, ptr);
+   if (prev && (char *)prev + prev->size == (char *)b) {
+      prev->size += b->size;
+      prev->next_free = b->next_free;
+      if (b->next_free)
+         b->next_free->prev_free = prev;
+      b = prev; // Update b to the merged block
    }
-}
 
-// untrack a memory pointer
-static void memory_untrack(object ptr) {
-   if (memory_ready && current_page) {
-      usize cap = SlotArray.capacity(current_page->slots);
-      for (usize i = 0; i < cap; i++) {
-         if (!SlotArray.is_empty_slot(current_page->slots, i)) {
-            object val;
-            if (SlotArray.get_at(current_page->slots, i, &val) == 0 && val == ptr) {
-               SlotArray.remove_at(current_page->slots, i);
-               return;
-            }
+   // Check if entire page is free
+   if (b->size == 4096 && root_pool.total_bytes > 16 * 4096) {
+      // Find and free the page
+      struct sc_page *pg = root_pool.pages;
+      struct sc_page *prev_pg = NULL;
+      while (pg) {
+         if ((char *)pg->data <= (char *)b && (char *)b < (char *)pg->data + 4096) {
+            // Remove from list
+            if (prev_pg)
+               prev_pg->next = pg->next;
+            else
+               root_pool.pages = pg->next;
+            // Remove b from free chain
+            if (b->prev_free)
+               b->prev_free->next_free = b->next_free;
+            else
+               root_pool.free_head = b->next_free;
+            if (b->next_free)
+               b->next_free->prev_free = b->prev_free;
+            // Free page
+            root_pool.total_bytes -= 4096;
+            memory_free_hook(pg);
+            break;
          }
+         prev_pg = pg;
+         pg = pg->next;
       }
    }
 }
 
 // reallocate memory
 static object memory_realloc(object ptr, usize new_size) {
-   if (!ptr)
-      return memory_alloc(new_size, false);
-   if (!new_size) {
-      memory_dispose(ptr);
+   if (new_size == 0) {
+      Memory.dispose(ptr);
       return NULL;
    }
-
-   // Temporary: use dispose+alloc until swap is debugged
-   if (memory_is_tracking(ptr)) {
-      memory_dispose(ptr);
-      return memory_alloc(new_size, false);
+   if (ptr == NULL) {
+      return Memory.alloc(new_size, false);
    }
-   return NULL;
-}
-
-// check if memory system is ready
-static bool memory_is_ready(void) {
-   return memory_ready;
+   // Get old size
+   struct block *b = (struct block *)((char *)ptr - sizeof(struct block));
+   usize old_size = b->size - sizeof(struct block);
+   object new_ptr = Memory.alloc(new_size, false);
+   if (!new_ptr)
+      return NULL;
+   usize copy_size = old_size < new_size ? old_size : new_size;
+   memcpy(new_ptr, ptr, copy_size);
+   Memory.dispose(ptr);
+   return new_ptr;
 }
 
 // create a new arena
@@ -301,111 +256,257 @@ static void memory_dispose_arena(arena arena) {
    arena_dispose(arena);
 }
 
-// initialize memory system
-static void memory_init(void) {
-   if (memory_ready)
-      return; // already initialized
-
-   // Initialize static structures
-   memory_slots_struct.array.buffer = page_slots_buffer;
-   memory_slots_struct.array.end = page_slots_buffer + PAGE_SLOTS_CAPACITY;
-   memory_slots_struct.stride = sizeof(addr);
-   memory_slots_struct.can_grow = false;
-
-   // Initialize all slots to ADDR_EMPTY
-   for (usize i = 0; i < PAGE_SLOTS_CAPACITY; i++) {
-      page_slots_buffer[i] = ADDR_EMPTY;
-   }
-
-   // Set pointers
-   memory_pages = &memory_pages_struct;
-   current_page = &current_page_struct;
-   memory_slots = &memory_slots_struct;
-
-   // Set memory_pages[0] = current_page
-   // PArray.set(memory_pages, 0, (addr)current_page);
-
-   memory_ready = true;
-
-   // Note: Internal structures are not tracked to avoid self-tracking issues
-}
-
-// teardown memory system
-static void memory_teardown(void) {
-   if (!memory_ready)
+// dispose a memory pool
+static void pool_dispose(pool p) {
+   if (!p)
       return;
 
-   // Dispose all tracked allocations from all pages
-   struct memory_page *page = current_page;
-   while (page) {
-      if (page->slots) {
-         usize cap = SlotArray.capacity(page->slots);
-         for (usize i = 0; i < cap; i++) {
-            if (!SlotArray.is_empty_slot(page->slots, i)) {
-               object val;
-               if (SlotArray.get_at(page->slots, i, &val) == 0) {
-                  memory_free_hook(val); // raw free, bypass dispose to avoid recursion
-               }
-            }
-         }
-         // Slot arrays are now static, no need to free
-      }
-      // Move to previous page
-      page = page->prev;
+   // Free all pages
+   struct sc_page *pg = p->pages;
+   while (pg) {
+      struct sc_page *next = pg->next;
+      memory_free_hook(pg);
+      pg = next;
    }
 
-   // Dispose the pages array
-   // Note: memory_pages is a static struct, don't dispose it
-   // if (memory_pages) {
-   //    PArray.dispose(memory_pages);
-   // }
-
-   // Reset globals
-   memory_slots = NULL;
-   current_page = NULL;
-   memory_pages = NULL;
-   next_page_index = 0;
-   page_count = 0;
-   memory_ready = false;
+   // Free the pool structure
+   memory_free_hook(p);
 }
 
-const sc_memory_i Memory = {
-    .init = memory_init,
-    .teardown = memory_teardown,
-    .is_ready = memory_is_ready,
-    .alloc = memory_alloc,
-    .dispose = memory_dispose,
-    .realloc = memory_realloc,
-    .is_tracking = memory_is_tracking,
-    .track = memory_track,
-    .untrack = memory_untrack,
-    .create_arena = memory_create_arena,
-    .dispose_arena = memory_dispose_arena,
-    .set_alloc_hooks = Memory_set_alloc_hooks,
-    .reset_alloc_hooks = Memory_reset_alloc_hooks,
-    .Scope = {
-        .move = scope_move_scopes,
-    },
-};
+// Grow a pool by allocating a new page
+static void pool_grow(pool p) {
+   if (!p)
+      return;
+
+   struct sc_page *new_pg = (struct sc_page *)memory_malloc_hook(sizeof(struct sc_page));
+   if (!new_pg)
+      return;
+
+   memset(new_pg, 0, sizeof(*new_pg));
+   new_pg->next = p->pages;
+   p->pages = new_pg;
+   p->total_bytes += 4096;
+
+   struct block *new_b = (struct block *)new_pg->data;
+   new_b->size = 4096;
+   new_b->next_free = p->free_head;
+   new_b->prev_free = NULL;
+   if (p->free_head)
+      p->free_head->prev_free = new_b;
+   p->free_head = new_b;
+}
+
+// Allocate from a specific pool
+object pool_alloc(pool p, usize size, bool zero) {
+   if (!p || size == 0)
+      return NULL;
+
+   usize total_size = size + sizeof(struct block);
+   if (total_size < size) // Overflow check
+      return NULL;
+
+   // Find a suitable block in the free list
+   struct block *b = p->free_head;
+   while (b) {
+      if (b->size >= total_size) {
+         if (b->size > total_size) {
+            // Split the block
+            struct block *split = (struct block *)((char *)b + total_size);
+            split->size = b->size - total_size;
+            split->next_free = b->next_free;
+            split->prev_free = b->prev_free;
+            if (b->prev_free)
+               b->prev_free->next_free = split;
+            else
+               p->free_head = split;
+            if (b->next_free)
+               b->next_free->prev_free = split;
+            b->size = total_size;
+         } else {
+            // Exact fit - remove from free list
+            if (b->prev_free)
+               b->prev_free->next_free = b->next_free;
+            else
+               p->free_head = b->next_free;
+            if (b->next_free)
+               b->next_free->prev_free = b->prev_free;
+         }
+         b->next_free = NULL;
+         b->prev_free = NULL;
+         p->used_bytes += total_size - sizeof(struct block);
+         object ptr = (char *)b + sizeof(struct block);
+         // Initialize allocation tracking
+         b->ptr = ptr;
+         b->alloc_size = size;
+         b->next_alloc = NULL;
+         b->prev_alloc = NULL;
+         if (zero)
+            memset(ptr, 0, size);
+         return ptr;
+      }
+      b = b->next_free;
+   }
+
+   // No suitable block found - grow the pool
+   pool_grow(p);
+
+   // Try again with the new page
+   b = p->free_head;
+   while (b) {
+      if (b->size >= total_size) {
+         if (b->size > total_size) {
+            // Split the block
+            struct block *split = (struct block *)((char *)b + total_size);
+            split->size = b->size - total_size;
+            split->next_free = b->next_free;
+            split->prev_free = b->prev_free;
+            if (b->prev_free)
+               b->prev_free->next_free = split;
+            else
+               p->free_head = split;
+            if (b->next_free)
+               b->next_free->prev_free = split;
+            b->size = total_size;
+         } else {
+            // Exact fit - remove from free list
+            if (b->prev_free)
+               b->prev_free->next_free = b->next_free;
+            else
+               p->free_head = b->next_free;
+            if (b->next_free)
+               b->next_free->prev_free = b->prev_free;
+         }
+         b->next_free = NULL;
+         b->prev_free = NULL;
+         p->used_bytes += total_size - sizeof(struct block);
+         object ptr = (char *)b + sizeof(struct block);
+         // Initialize allocation tracking
+         b->ptr = ptr;
+         b->alloc_size = size;
+         b->next_alloc = NULL;
+         b->prev_alloc = NULL;
+         if (zero)
+            memset(ptr, 0, size);
+         return ptr;
+      }
+      b = b->next_free;
+   }
+
+   // Still no suitable block (shouldn't happen after growing)
+   return NULL;
+}
+
+// Free memory back to a specific pool
+void pool_free(pool p, object ptr) {
+   if (!p || !ptr)
+      return;
+
+   // Get the block header
+   struct block *b = (struct block *)((char *)ptr - sizeof(struct block));
+
+   // Clear allocation tracking
+   b->ptr = NULL;
+   b->alloc_size = 0;
+   b->next_alloc = NULL;
+   b->prev_alloc = NULL;
+
+   // Add back to free list
+   b->next_free = p->free_head;
+   b->prev_free = NULL;
+   if (p->free_head)
+      p->free_head->prev_free = b;
+   p->free_head = b;
+   p->used_bytes -= b->size - sizeof(struct block);
+}
+
+// create a new memory pool
+static pool pool_create(usize initial_pages) {
+   if (initial_pages == 0)
+      return NULL;
+
+   // Allocate the pool structure
+   struct sc_pool *p = (struct sc_pool *)memory_malloc_hook(sizeof(struct sc_pool));
+   if (!p)
+      return NULL;
+
+   memset(p, 0, sizeof(*p));
+   memcpy(p->handle, "POL", 4);
+
+   // Allocate initial pages
+   for (usize i = 0; i < initial_pages; i++) {
+      struct sc_page *pg = (struct sc_page *)memory_malloc_hook(sizeof(struct sc_page));
+      if (!pg) {
+         // Cleanup on failure
+         pool_dispose(p);
+         return NULL;
+      }
+      memset(pg, 0, sizeof(*pg));
+      pg->next = p->pages;
+      p->pages = pg;
+      p->total_bytes += 4096;
+
+      struct block *b = (struct block *)pg->data;
+      b->size = 4096;
+      b->next_free = p->free_head;
+      b->prev_free = NULL;
+      if (p->free_head)
+         p->free_head->prev_free = b;
+      p->free_head = b;
+   }
+
+   return p;
+}
 
 // Automatic initialization and teardown using GCC constructor/destructor
 __attribute__((constructor)) static void memory_auto_init(void) {
-   memory_init();
-}
-
-__attribute__((destructor)) static void memory_auto_teardown(void) {
-   memory_teardown();
+   memset(&root_pool, 0, sizeof(root_pool));
+   memcpy(root_pool.handle, "POL\0", 4);
+   for (usize i = 0; i < 16; i++) {
+      struct sc_page *pg = (struct sc_page *)memory_malloc_hook(sizeof(struct sc_page));
+      memset(pg, 0, sizeof(*pg));
+      pg->next = root_pool.pages;
+      root_pool.pages = pg;
+      root_pool.total_bytes += 4096;
+      struct block *b = (struct block *)pg->data;
+      b->size = 4096;
+      b->next_free = root_pool.free_head;
+      b->prev_free = NULL;
+      if (root_pool.free_head)
+         root_pool.free_head->prev_free = b;
+      root_pool.free_head = b;
+   }
 }
 
 // Backdoor functions for testing
-struct memory_page *Memory_get_current_page(void) {
-   return current_page;
+struct memory_page *memory_get_current_page(void) {
+   // Gutted: return NULL
+   return NULL;
 }
 
-slotarray Memory_get_tracker(void) {
-   return memory_slots;
+slotarray memory_get_tracker(void) {
+   // Gutted: return NULL
+   return NULL;
 }
 
-usize Memory_get_page_count(void) {
-   return page_count;
+usize memory_get_page_count(void) {
+   // Gutted: return 0
+   return 0;
 }
+
+const sc_memory_i Memory = {
+    .alloc = memory_alloc,
+    .dispose = memory_dispose,
+    .realloc = memory_realloc,
+    .Scope = {
+        .move = scope_move_scopes,
+        .import = scope_import,
+    },
+    .Pool = {
+        .create = pool_create,
+        .dispose = pool_dispose,
+    },
+    .Arena = {
+        .create = memory_create_arena,
+        .dispose = memory_dispose_arena,
+    },
+};
