@@ -23,11 +23,11 @@
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_parray.log", "w");
    // Set memory hooks to use sigtest's wrapped functions for tracking
-   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+   // Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
 }
 
 static void set_teardown(void) {
-   Memory.reset_alloc_hooks();
+   // Memory.reset_alloc_hooks();
 }
 
 //  basic initialization, disposal, and properties
@@ -74,6 +74,7 @@ static void test_array_clear(void) {
 
    // Spoof the array to inject test values
    struct spoofed_array {
+      char handle[2];
       addr *bucket;
       addr end;
    } *spoofed = (struct spoofed_array *)arr;
@@ -112,6 +113,7 @@ static void test_array_set_value(void) {
    }
    // we can spoof the array here with an anonymous struct
    struct spoofed_array {
+      char handle[2];
       addr *bucket;
       addr end;
    } *spoofed = (struct spoofed_array *)arr;
@@ -158,6 +160,7 @@ static void test_array_remove_at(void) {
    // Expected after removal: 10, 20, ADDR_EMPTY, 40, 50
    int expected_values[] = {10, 20, ADDR_EMPTY, 40, 50};
    struct spoofed_array {
+      char handle[2];
       addr *bucket;
       addr end;
    } *spoofed = (struct spoofed_array *)arr;

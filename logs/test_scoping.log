@@ -1,14 +1,14 @@
-[2] core_scoping_set          :   10 : 2025-12-31  10:12:20                     
+[2] core_scoping_set          :   10 : 2026-01-02  08:37:58                     
 ================================================================================
-Running: Handle validation works                                 8.670 ms [PASS]
-Running: Invalid handles rejected                                4.287 ms [PASS]
-Running: Memory to Arena transfer rejected                       4.100 ms [PASS]
-Running: Arena to Memory transfer rejected                       3.404 ms [PASS]
-Running: Frame to Arena transfer                                 7.605 ms [PASS]
-Running: Arena to Frame transfer                                 3.989 ms [PASS]
-Running: Transfer between arenas                                 4.501 ms [PASS]
-Running: Transfer between frames                                 7.156 ms [PASS]
-Running: Unowned object transfer fails                           9.236 ms [PASS]
-Running: NULL parameters fail                                    4.618 ms [PASS]
+Running: Handle validation works                                 8.786 ms [PASS]
+Running: Invalid handles rejected                                3.758 ms [PASS]
+Running: Frame to Frame transfer                                 8.590 ms [PASS]
+Running: Frame to Arena transfer                                 6.740 ms [PASS]
+Running: Arena to Frame transfer                                 2.944 ms [PASS]
+Running: Transfer between arenas                                 3.141 ms [PASS]
+Running: Transfer between frames                                 4.996 ms [PASS]
+Running: Unowned object transfer fails                           2.863 ms [PASS]
+Running: NULL parameters fail                                    2.966 ms [PASS]
+Running: Import functionality                                    2.313 ms [PASS]
 ================================================================================
 [2]     TESTS= 10        PASS= 10        FAIL=  0        SKIP=  0

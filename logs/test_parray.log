@@ -1,10 +1,10 @@
-[2] core_pointer_array_set    :   13 : 2025-12-31  10:12:20                     
+[2] core_pointer_array_set    :   13 : 2026-01-02  08:37:58                     
 ================================================================================
-Running: array_creation                                          5.776 ms [PASS]
-Running: array_init_from_null                                    3.085 ms [PASS]
-Running: array_init_from_exisiting                               2.777 ms [PASS]
-Running: array_get_capacity                                      2.746 ms [PASS]
-Running: array_clear                                             3.678 ms [PASS]
+Running: array_creation                                          6.385 ms [PASS]
+Running: array_init_from_null                                    3.016 ms [PASS]
+Running: array_init_from_exisiting                               2.675 ms [PASS]
+Running: array_get_capacity                                      3.768 ms [PASS]
+Running: array_clear                                             3.020 ms [PASS]
 Running: array_set_value                         
   - 	Stored value at index 0: exp: 1  act: 1
   - 	Stored value at index 1: exp: 2  act: 2
@@ -12,7 +12,7 @@ Running: array_set_value
   - 	Stored value at index 3: exp: 4  act: 4
   - 	Stored value at index 4: exp: 5  act: 5
 
-                                                                14.744 ms [PASS]
+                                                                15.656 ms [PASS]
 Running: array_get_value                         
   - 	Retrieved value at index 0: exp: 10  act: 10
   - 	Retrieved value at index 1: exp: 20  act: 20
@@ -20,12 +20,12 @@ Running: array_get_value
   - 	Retrieved value at index 3: exp: 40  act: 40
   - 	Retrieved value at index 4: exp: 50  act: 50
 
-                                                                14.012 ms [PASS]
-Running: array_remove_at                                         2.703 ms [PASS]
-Running: array_as_collection                                     2.920 ms [PASS]
-Running: array_to_collection                                     3.043 ms [PASS]
-Running: array_set_out_of_bounds                                 2.476 ms [PASS]
-Running: array_get_out_of_bounds                                 2.441 ms [PASS]
-Running: array_remove_out_of_bounds                              3.195 ms [PASS]
+                                                                14.965 ms [PASS]
+Running: array_remove_at                                         3.024 ms [PASS]
+Running: array_as_collection                                     2.867 ms [PASS]
+Running: array_to_collection                                     2.887 ms [PASS]
+Running: array_set_out_of_bounds                                 2.471 ms [PASS]
+Running: array_get_out_of_bounds                                 2.608 ms [PASS]
+Running: array_remove_out_of_bounds                              2.476 ms [PASS]
 ================================================================================
 [2]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0

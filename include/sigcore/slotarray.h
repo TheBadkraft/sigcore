@@ -25,7 +25,7 @@
  * Description: Header file for SigmaCore slotarray definitions and interfaces
  *
  * SlotArray:  A collection structure derived from Array that allows
- *             dynamic resizing, element insertion, removal, and retrieval by index,
+ *             element insertion, removal, and retrieval by index,
  *             with support for "slots" that can be reused after removal. SlotArray
  *             does not compact the underlying array on removal, preserving indices
  *             for existing elements, reusing freed slots for new elements. Compaction

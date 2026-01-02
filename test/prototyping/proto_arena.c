@@ -56,14 +56,13 @@ void *proto_realloc(void *ptr, size_t size) {
 }
 
 void proto_setup_hooks(void) {
-   // This will be called from test_memory.c to set up the hooks
-   extern void Memory_set_alloc_hooks(
-       void *(*malloc_hook)(size_t),
-       void (*free_hook)(void *),
-       void *(*calloc_hook)(size_t, size_t),
-       void *(*realloc_hook)(void *, size_t));
+   // Hooks removed - this function is no longer used
+   // extern void memory_set_alloc_hooks(
+   //     void *(*malloc_hook)(size_t),
+   //     void (*free_hook)(void *),
+   //     ...);
 
-   Memory_set_alloc_hooks(proto_malloc, proto_free, proto_calloc, proto_realloc);
+   // memory_set_alloc_hooks(proto_malloc, proto_free, proto_calloc, proto_realloc);
 }
 
 int proto_verify_allocations(void) {

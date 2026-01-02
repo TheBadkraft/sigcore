@@ -40,6 +40,8 @@
 				"build/memory.o",
 				"build/parray.o",
 				"build/slotarray.o",
+				"build/arena.o",
+				"build/scope.o",
 				"-o",
 				"build/test/${fileBasenameNoExtension}",
 				"-lstest",

@@ -23,6 +23,14 @@
  * ----------------------------------------------
  * File: scope.c
  * Description: SigmaCore scope transfer implementation
+ *
+ * Memory Allocation Policy:
+ * =========================
+ * This module implements core scope management functionality. All allocations
+ * within scopes use Arena.alloc() for proper scope tracking. External memory
+ * allocations (for scope_export) use sysmem_alloc() which must be imported
+ * into scopes using scope_import() if the external memory needs to be managed
+ * by SigmaCore's scoped system.
  */
 #include "sigcore/scope.h"
 #include "internal/arena_internal.h"
@@ -31,23 +39,98 @@
 #include "sigcore/memory.h"
 #include <string.h>
 
+// Extern declaration for current scope (defined in memory.c)
+extern void *current_scope;
+
 // Forward declarations for internal structs
 struct sc_frame;
 
-// Check if scope is Arena
-static bool is_arena_scope(void *scope) {
-   if (!scope)
-      return false;
-   const char *handle = (const char *)scope;
-   return memcmp(handle, "ARN", 4) == 0;
+// Forward declarations for helper functions
+static bool is_arena_scope(void *scope);
+static bool is_frame_scope(void *scope);
+static int scope_add_object(void *scope, object obj);
+static int scope_remove_object(void *scope, object obj);
+
+// API function definitions
+// Transfer ownership between scopes
+int scope_move_scopes(void *from, void *to, object obj) {
+   if (!from || !to || !obj)
+      return ERR;
+
+   // Validate scope types (only arenas and frames supported)
+   bool from_valid = is_arena_scope(from) || is_frame_scope(from);
+   bool to_valid = is_arena_scope(to) || is_frame_scope(to);
+
+   if (!from_valid || !to_valid) {
+      return ERR;
+   }
+
+   // Remove from source scope
+   if (scope_remove_object(from, obj) != OK) {
+      return ERR; // Object not owned by source
+   }
+
+   // Add to destination scope
+   if (scope_add_object(to, obj) != OK) {
+      // Rollback - add back to source
+      scope_add_object(from, obj);
+      return ERR;
+   }
+
+   return OK;
 }
 
-// Check if scope is Frame
-static bool is_frame_scope(void *scope) {
-   if (!scope)
-      return false;
-   const char *handle = (const char *)scope;
-   return memcmp(handle, "FRM", 4) == 0;
+// Import external data into a scope
+object scope_import(void *scope, const void *data, usize size) {
+   if (!scope || !data || size == 0)
+      return NULL;
+
+   if (is_arena_scope(scope)) {
+      // Import into arena - allocate and copy
+      object ptr = Arena.alloc((arena)scope, size, false);
+      if (!ptr)
+         return NULL;
+      memcpy(ptr, data, size);
+      return ptr;
+   } else if (is_frame_scope(scope)) {
+      // Import into frame's arena - allocate and copy
+      arena frame_arena = frame_get_arena((frame)scope);
+      if (!frame_arena)
+         return NULL;
+      object ptr = Arena.alloc(frame_arena, size, false);
+      if (!ptr)
+         return NULL;
+      memcpy(ptr, data, size);
+      return ptr;
+   }
+
+   // Unsupported scope type
+   return NULL;
+}
+
+// Export data from a scope to external memory
+object scope_export(void *scope, const void *data, usize size) {
+   if (!scope || !data || size == 0)
+      return NULL;
+
+   // Allocate external memory (using system malloc hook)
+   object external_ptr = sysmem_alloc(size);
+   if (!external_ptr)
+      return NULL;
+
+   // Copy data from scope to external memory
+   memcpy(external_ptr, data, size);
+   return external_ptr;
+}
+
+// Get the current active scope for allocations
+void *scope_get_current(void) {
+   return current_scope;
+}
+
+// Set the current active scope for allocations
+void scope_set_current(void *scope) {
+   current_scope = scope;
 }
 
 // Add object to scope tracking
@@ -95,30 +178,19 @@ static int scope_remove_object(void *scope, object obj) {
    return ERR;
 }
 
-// Transfer ownership between scopes
-int scope_move_scopes(void *from, void *to, object obj) {
-   if (!from || !to || !obj)
-      return ERR;
+// Helper/utility function definitions
+// Check if scope is Arena
+static bool is_arena_scope(void *scope) {
+   if (!scope)
+      return false;
+   const char *handle = (const char *)scope;
+   return memcmp(handle, "ARN", 4) == 0;
+}
 
-   // Validate scope types (only arenas and frames supported)
-   bool from_valid = is_arena_scope(from) || is_frame_scope(from);
-   bool to_valid = is_arena_scope(to) || is_frame_scope(to);
-
-   if (!from_valid || !to_valid) {
-      return ERR;
-   }
-
-   // Remove from source scope
-   if (scope_remove_object(from, obj) != OK) {
-      return ERR; // Object not owned by source
-   }
-
-   // Add to destination scope
-   if (scope_add_object(to, obj) != OK) {
-      // Rollback - add back to source
-      scope_add_object(from, obj);
-      return ERR;
-   }
-
-   return OK;
+// Check if scope is Frame
+static bool is_frame_scope(void *scope) {
+   if (!scope)
+      return false;
+   const char *handle = (const char *)scope;
+   return memcmp(handle, "FRM", 4) == 0;
 }

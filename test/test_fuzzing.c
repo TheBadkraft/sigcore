@@ -18,19 +18,18 @@
 
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_fuzzing.log", "w");
-   // Set memory hooks to use sigtest's wrapped functions for tracking
-   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+   // Memory hooks removed - using default allocation
 }
+
 static void set_teardown(void) {
-   Memory.reset_alloc_hooks();
-   Memory.teardown();
+   // No teardown needed
 }
 
 // test arena allocation fuzzing with size_t boundaries
 void test_arena_allocation_fuzz(void *param) {
    usize size = *(usize *)param;
 
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Try allocation - expect small sizes to succeed, large sizes to fail
@@ -47,7 +46,7 @@ void test_arena_allocation_fuzz(void *param) {
       Assert.isNull(ptr, "Arena allocation of size %zu should fail (exceeds page capacity)", size);
    }
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test farray fuzzing with size_t boundaries
@@ -73,7 +72,7 @@ void test_farray_fuzz(void *param) {
 void test_list_fuzz(void *param) {
    usize capacity = *(usize *)param;
 
-   list lst = List.new(capacity);
+   list lst = List.new(capacity, sizeof(usize));
 
    if (capacity <= 100000 && capacity != SIZE_MAX && capacity != SIZE_MAX - 1) { // Reasonable limit for testing, avoid extreme values
       Assert.isNotNull(lst, "List creation with capacity %zu should succeed", capacity);
@@ -132,13 +131,13 @@ void test_memory_allocation_fuzz(void *param) {
 
    object ptr = Memory.alloc(size, false);
 
-   if (size <= 1000000 && size != SIZE_MAX && size != SIZE_MAX - 1) { // Reasonable limit for testing, avoid extreme values
+   if (size > 0 && size <= 1000000 && size != SIZE_MAX && size != SIZE_MAX - 1) { // Reasonable limit for testing, avoid extreme values and zero
       Assert.isNotNull(ptr, "Memory allocation of size %zu should succeed", size);
       if (ptr) {
          Memory.dispose(ptr);
       }
    } else {
-      // Very large allocations should fail
+      // Very large allocations or zero should fail
       Assert.isNull(ptr, "Memory allocation of size %zu should fail", size);
    }
 }

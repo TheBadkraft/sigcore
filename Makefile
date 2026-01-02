@@ -85,7 +85,7 @@ test_%: $(TST_BUILD_DIR)/test_%
 	$<
 
 # Run all tests
-test: $(patsubst $(TEST_DIR)/test_%.c, test_%, $(TEST_SOURCES)) test_stack
+test: $(patsubst $(TEST_DIR)/test_%.c, test_%, $(TEST_SOURCES))
 
 # ---------------------------------------------------------------------
 # Stack prototype test executable

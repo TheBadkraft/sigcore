@@ -26,9 +26,18 @@
  */
 #pragma once
 
+#include "internal/array_base.h"
 #include "sigcore/collections.h"
 #include "sigcore/farray.h"
 #include "sigcore/parray.h"
+
+// collection structure (internal)
+struct sc_collection {
+   sc_array_base array;
+   usize stride;
+   usize length;
+   bool owns_buffer;
+};
 
 // array internal functions
 addr array_get_bucket_start(parray arr);

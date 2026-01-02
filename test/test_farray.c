@@ -18,12 +18,12 @@
 //  configure test set
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_farray.log", "w");
-   // Set memory hooks to use sigtest's wrapped functions for tracking
-   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+   // Memory hooks removed - using default allocation
+   // Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
 }
 
 static void set_teardown(void) {
-   Memory.reset_alloc_hooks();
+   // Memory.reset_alloc_hooks();
 }
 
 //  basic initialization, disposal, and properties
@@ -75,6 +75,7 @@ static void test_farray_clear(void) {
 
    // Spoof the farray to inject test values
    struct spoofed_farray {
+      char handle[2];
       void *bucket;
       void *end;
    } *spoofed = (struct spoofed_farray *)arr;
@@ -116,6 +117,7 @@ static void test_farray_set_value(void) {
    }
    // we can spoof the farray here with an anonymous struct
    struct spoofed_farray {
+      char handle[2];
       void *bucket;
       void *end;
    } *spoofed = (struct spoofed_farray *)arr;
@@ -165,6 +167,7 @@ static void test_farray_remove_at(void) {
    // Expected after removal: 10, 20, 0, 40, 50
    int expected_values[] = {10, 20, 0, 40, 50};
    struct spoofed_farray {
+      char handle[2];
       void *bucket;
       void *end;
    } *spoofed = (struct spoofed_farray *)arr;

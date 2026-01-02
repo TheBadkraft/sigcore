@@ -25,17 +25,17 @@ static void dispose_persons(list);
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_list.log", "w");
    // Set memory hooks to use sigtest's wrapped functions for tracking
-   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+   // Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
 }
 
 static void set_teardown(void) {
-   Memory.reset_alloc_hooks();
+   // Memory.reset_alloc_hooks();
 }
 
 //  basic initialization, disposal, and properties
 static void test_list_new(void) {
    int initial_capacity = 10;
-   list lst = List.new(initial_capacity);
+   list lst = List.new(initial_capacity, sizeof(addr));
    Assert.isNotNull(lst, "List creation ERRed");
 
    if (lst) {
@@ -44,7 +44,7 @@ static void test_list_new(void) {
 }
 static void test_list_dispose(void) {
    int initial_capacity = 10;
-   list lst = List.new(initial_capacity);
+   list lst = List.new(initial_capacity, sizeof(addr));
    Assert.isNotNull(lst, "List creation ERRed");
 
    // Just dispose, assume it works
@@ -52,7 +52,7 @@ static void test_list_dispose(void) {
 }
 static void test_list_capacity(void) {
    int exp_capacity = 20;
-   list lst = List.new(exp_capacity);
+   list lst = List.new(exp_capacity, sizeof(addr));
    Assert.isNotNull(lst, "List creation ERRed");
 
    int act_capacity = List.capacity(lst);
@@ -61,7 +61,7 @@ static void test_list_capacity(void) {
    List.dispose(lst);
 }
 static void test_list_size(void) {
-   list lst = List.new(10);
+   list lst = List.new(10, sizeof(addr));
    Assert.isNotNull(lst, "List creation ERRed");
    // size will just return the difference between
    //   last and start of bucket - 0 for now
@@ -77,7 +77,7 @@ static void test_list_size(void) {
 //  data manipulation tests
 static void test_list_append_value(void) {
    // append value to list and check size increases
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
    // create a data record
    Person *p1 = Memory.alloc(sizeof(Person), false);
    p1->id = 1;
@@ -89,32 +89,11 @@ static void test_list_append_value(void) {
    int act_size = List.size(lst);
    Assert.areEqual(&(int){1}, &act_size, INT, "List size after append mismatch");
 
-   // TODO: spoof removed for now
-   // // spoof the list to access underlying collection
-   // struct sc_list {
-   //    collection coll;
-   // } *spoofed = (struct sc_list *)lst;
-   // // spoof the collection to access farray
-   // struct sc_collection {
-   //    farray arr;
-   //    usize stride;
-   //    usize length;
-   // } *coll = (struct sc_collection *)spoofed->coll;
-   // // spoof the farray to access bucket
-   // struct sc_flex_array {
-   //    void *bucket;
-   //    void *end;
-   // } *farr = (struct sc_flex_array *)coll->arr;
-   // addr *bucket = (addr *)farr->bucket;
-   // Person *actPerson = (Person *)bucket[0];
-   // // just check for pointer equality
-   // Assert.areEqual(p1, actPerson, PTR, "List append pointer mismatch");
-
    Memory.dispose(p1);
    List.dispose(lst);
 }
 static void test_list_get_value(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
    Person *expPerson = Memory.alloc(sizeof(Person), false);
    expPerson->id = 1;
    strcpy(expPerson->name, "Alice");
@@ -140,7 +119,7 @@ static void test_list_get_value(void) {
    List.dispose(lst);
 }
 static void test_list_remove_at(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
    Person *expPerson = Memory.alloc(sizeof(Person), false);
    expPerson->id = 1;
    strcpy(expPerson->name, "Alice");
@@ -163,7 +142,7 @@ static void test_list_remove_at(void) {
    List.dispose(lst);
 }
 static void test_list_set_value(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
    Person *expP1 = Memory.alloc(sizeof(Person), false);
    expP1->id = 1;
    strcpy(expP1->name, "Alice");
@@ -190,7 +169,7 @@ static void test_list_set_value(void) {
    List.dispose(lst);
 }
 static void test_list_insert_value(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
    Person *expP1 = Memory.alloc(sizeof(Person), false);
    expP1->id = 1;
    strcpy(expP1->name, "Alice");
@@ -224,7 +203,7 @@ static void test_list_insert_value(void) {
 }
 static void test_list_prepend_value(void) {
    // just a convenience wrapper around insert at 0
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
    Person *expP1 = Memory.alloc(sizeof(Person), false);
    expP1->id = 1;
    strcpy(expP1->name, "Alice");
@@ -315,7 +294,7 @@ static void test_list_add_from_array(void) {
 
 //  negative & edge test cases
 static void test_list_set_out_of_bounds(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
    Person *p = Memory.alloc(sizeof(Person), false);
    p->id = 1;
    strcpy(p->name, "Test");
@@ -347,7 +326,7 @@ static void test_list_set_out_of_bounds(void) {
    List.dispose(lst);
 }
 static void test_list_get_out_of_bounds(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
    Person *p = Memory.alloc(sizeof(Person), false);
    p->id = 1;
    strcpy(p->name, "Test");
@@ -375,7 +354,7 @@ static void test_list_get_out_of_bounds(void) {
    List.dispose(lst);
 }
 static void test_list_remove_out_of_bounds(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
    Person *p = Memory.alloc(sizeof(Person), false);
    p->id = 1;
    strcpy(p->name, "Test");
@@ -405,7 +384,7 @@ static void test_list_remove_out_of_bounds(void) {
    List.dispose(lst);
 }
 static void test_list_append_null(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
 
    // Try to append NULL value
    int result = List.append(lst, NULL);
@@ -418,7 +397,7 @@ static void test_list_append_null(void) {
    List.dispose(lst);
 }
 static void test_list_prepend_null(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
 
    // Try to prepend NULL value
    int result = List.prepend(lst, NULL);
@@ -431,7 +410,7 @@ static void test_list_prepend_null(void) {
    List.dispose(lst);
 }
 static void test_list_set_empty_list(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
 
    // Try to set at any index on empty list
    Person *p = Memory.alloc(sizeof(Person), false);
@@ -451,7 +430,7 @@ static void test_list_set_empty_list(void) {
    List.dispose(lst);
 }
 static void test_list_get_empty_list(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
 
    // Try to get from empty list
    object retrieved = NULL;
@@ -467,7 +446,7 @@ static void test_list_get_empty_list(void) {
    List.dispose(lst);
 }
 static void test_list_remove_empty_list(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
 
    // Try to remove from empty list
    int result = List.remove(lst, 0);
@@ -480,7 +459,7 @@ static void test_list_remove_empty_list(void) {
    List.dispose(lst);
 }
 static void test_list_append_null_value(void) {
-   list lst = List.new(5);
+   list lst = List.new(5, sizeof(addr));
 
    // Try to append NULL value
    int result = List.append(lst, NULL);
@@ -526,7 +505,7 @@ __attribute__((constructor)) void init_list_tests(void) {
 }
 
 static void load_person_list(list *lst) {
-   *lst = List.new(5);
+   *lst = List.new(5, sizeof(addr));
    Person *expP1 = Memory.alloc(sizeof(Person), false);
    expP1->id = 1;
    strcpy(expP1->name, "Alice");

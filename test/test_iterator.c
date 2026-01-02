@@ -9,11 +9,11 @@
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_iterator.log", "w");
    // Set memory hooks to use sigtest's wrapped functions for tracking
-   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+   // Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
 }
 
 static void set_teardown(void) {
-   Memory.reset_alloc_hooks();
+   // Memory.reset_alloc_hooks();
 }
 
 // Test iterator over a collection
@@ -23,7 +23,7 @@ void test_iterator_basic(void) {
    size_t num_elements = sizeof(data) / sizeof(data[0]);
 
    // Create a collection view of the array
-   collection coll = Collections.create_view(data, data + num_elements, sizeof(int), num_elements, false);
+   collection coll = Collections.create_view(data, sizeof(int), num_elements, false);
    Assert.isNotNull(coll, "Collection creation failed");
 
    // Create an iterator

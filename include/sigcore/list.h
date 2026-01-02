@@ -40,10 +40,11 @@ typedef struct sc_list *list;
 /* ============================================================ */
 typedef struct sc_list_i {
    /**
-    * @brief Create a new list with the specified initial capacity.
+    * @brief Create a new list with the specified initial capacity and element stride.
     * @param capacity Initial list capacity
+    * @param stride Size of each element in the list
     */
-   list (*new)(usize);
+   list (*new)(usize, usize);
    /**
     * @brief Dispose of the list and free associated resources.
     * @param lst The list to dispose of
