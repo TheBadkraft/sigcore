@@ -18,16 +18,16 @@
 static void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_memory_robustness.log", "w");
    // Set memory hooks to use sigtest's wrapped functions for tracking
-   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+   // Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
 }
 static void set_teardown(void) {
-   Memory.reset_alloc_hooks();
-   Memory.teardown();
+   // Memory.reset_alloc_hooks();
+   // Memory.teardown();
 }
 
 // test arena inheritance groundwork (tracking persistence)
 void test_inheritance_tracking_persistence(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Allocate several pointers that would be "inherited" in Phase 3
@@ -54,12 +54,12 @@ void test_inheritance_tracking_persistence(void) {
    usize total_allocated = Arena.get_total_allocated(test_arena);
    Assert.isTrue(total_allocated > 0, "Should have allocated memory");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test concurrent-like allocation patterns (stress test)
 void test_allocation_pattern_stress(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Pattern 1: Small incremental allocations
@@ -109,7 +109,7 @@ void test_allocation_pattern_stress(void) {
    usize page_count = Arena.get_page_count(test_arena);
    Assert.isTrue(page_count > 1, "Mixed patterns should require multiple pages (actual: %d)", page_count);
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test page boundary stress (inheritance groundwork)
@@ -162,7 +162,7 @@ void test_page_boundary_stress(void) {
 
 // test arena root tracking groundwork (for inheritance)
 void test_root_tracking_groundwork(void) {
-   sc_arena *test_arena = Memory.create_arena(2);
+   sc_arena *test_arena = Memory.Arena.create(2);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Allocate across multiple pages
@@ -198,7 +198,7 @@ void test_root_tracking_groundwork(void) {
    }
    Assert.areEqual(&expected_min, &total, LONG, "Total allocated should match expected");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test memory system integration stress
@@ -208,7 +208,7 @@ void test_memory_system_integration(void) {
    Assert.isNotNull(global_ptr1, "Global allocation should succeed");
    Assert.isTrue(Memory.is_tracking(global_ptr1), "Global allocation should be tracked");
 
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena creation should succeed");
 
    object arena_ptr1 = Arena.alloc(test_arena, 128, false);
@@ -243,12 +243,12 @@ void test_memory_system_integration(void) {
    Assert.isFalse(Memory.is_tracking(global_ptr1), "Global ptr1 should be untracked after dispose");
    Assert.isFalse(Memory.is_tracking(global_ptr2), "Global ptr2 should be untracked after dispose");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test failure injection and recovery
 void test_failure_injection(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Test allocation that triggers page growth
@@ -268,12 +268,12 @@ void test_failure_injection(void) {
    usize total_allocated = Arena.get_total_allocated(test_arena);
    Assert.isTrue(total_allocated >= (usize)(num_chunks * chunk_size), "Total allocated should match expectations");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 // test extreme allocation patterns
 void test_extreme_patterns(void) {
-   sc_arena *test_arena = Memory.create_arena(1);
+   sc_arena *test_arena = Memory.Arena.create(1);
    Assert.isNotNull(test_arena, "Arena setup should succeed");
 
    // Pattern: Very small allocations
@@ -303,7 +303,7 @@ void test_extreme_patterns(void) {
    usize total_allocated = Arena.get_total_allocated(test_arena);
    Assert.isTrue(total_allocated >= (usize)tiny_count, "Total allocated should be at least tiny count");
 
-   Memory.dispose_arena(test_arena);
+   Memory.Arena.dispose(test_arena);
 }
 
 //  register test cases

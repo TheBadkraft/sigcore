@@ -1,0 +1,11 @@
+[2] core_battery_set          :    7 : 2026-01-02  08:37:57                     
+================================================================================
+Running: memory_basic_alloc_free                                 4.528 ms [PASS]
+Running: memory_zero_alloc                                       2.834 ms [PASS]
+Running: memory_realloc                                          2.545 ms [PASS]
+Running: farray_basic                                            4.498 ms [PASS]
+Running: parray_basic                                            3.037 ms [PASS]
+Running: list_basic                                              2.940 ms [PASS]
+Running: arena_basic                                            11.134 ms [PASS]
+================================================================================
+[2]     TESTS=  7        PASS=  7        FAIL=  0        SKIP=  0

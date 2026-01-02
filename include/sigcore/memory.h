@@ -66,6 +66,16 @@ typedef struct sc_memory_i {
     */
    struct {
       /**
+       * @brief Get the current active scope for allocations.
+       * @return Current scope, or NULL if no scope is active
+       */
+      void *(*get_current)(void);
+      /**
+       * @brief Set the current active scope for allocations.
+       * @param scope The scope to make current, or NULL to clear
+       */
+      void (*set_current)(void *scope);
+      /**
        * @brief Transfer ownership of an object from one scope to another.
        * @param from Source scope
        * @param to Destination scope
@@ -81,6 +91,14 @@ typedef struct sc_memory_i {
        * @return Pointer to the copied data in scope memory, or NULL if import fails
        */
       object (*import)(void *scope, const void *data, usize size);
+      /**
+       * @brief Export data from a scope to external memory by copying it.
+       * @param scope The scope to export from
+       * @param data Pointer to scope data to copy
+       * @param size Size of data to copy in bytes
+       * @return Pointer to the copied data in external memory, or NULL if export fails
+       */
+      object (*export)(void *scope, const void *data, usize size);
    } Scope;
 
    /**

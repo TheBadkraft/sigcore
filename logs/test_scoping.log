@@ -1,13 +1,14 @@
-[2] core_scoping_set          :    9 : 2026-01-01  07:10:34                     
+[2] core_scoping_set          :   10 : 2026-01-02  08:37:58                     
 ================================================================================
-Running: Handle validation works                                38.523 ms [PASS]
-Running: Invalid handles rejected                                5.109 ms [PASS]
-Running: Frame to Frame transfer                                 7.916 ms [PASS]
-Running: Frame to Arena transfer                                 5.863 ms [PASS]
-Running: Arena to Frame transfer                                 3.216 ms [PASS]
-Running: Transfer between arenas                                 3.174 ms [PASS]
-Running: Transfer between frames                                 4.677 ms [PASS]
-Running: Unowned object transfer fails                           3.016 ms [PASS]
-Running: NULL parameters fail                                    5.290 ms [PASS]
+Running: Handle validation works                                 8.786 ms [PASS]
+Running: Invalid handles rejected                                3.758 ms [PASS]
+Running: Frame to Frame transfer                                 8.590 ms [PASS]
+Running: Frame to Arena transfer                                 6.740 ms [PASS]
+Running: Arena to Frame transfer                                 2.944 ms [PASS]
+Running: Transfer between arenas                                 3.141 ms [PASS]
+Running: Transfer between frames                                 4.996 ms [PASS]
+Running: Unowned object transfer fails                           2.863 ms [PASS]
+Running: NULL parameters fail                                    2.966 ms [PASS]
+Running: Import functionality                                    2.313 ms [PASS]
 ================================================================================
-[2]     TESTS=  9        PASS=  9        FAIL=  0        SKIP=  0
+[2]     TESTS= 10        PASS= 10        FAIL=  0        SKIP=  0

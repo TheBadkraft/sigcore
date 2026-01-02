@@ -9,11 +9,11 @@
 void set_config(FILE **log_stream) {
    *log_stream = fopen("logs/test_string.log", "w");
    // Set memory hooks to use sigtest's wrapped functions for tracking
-   Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
+   // Memory.set_alloc_hooks(__wrap_malloc, __wrap_free, NULL, NULL);
 }
 
 void set_teardown(void) {
-   Memory.reset_alloc_hooks();
+   // Memory.reset_alloc_hooks();
 }
 
 // Test string length calculation

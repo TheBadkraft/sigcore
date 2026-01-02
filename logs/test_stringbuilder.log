@@ -1,11 +1,11 @@
-[2] core_stringbuilder_set    :    7 : 2025-12-31  10:12:20                     
+[2] core_stringbuilder_set    :    7 : 2026-01-02  08:37:58                     
 ================================================================================
-Running: New stringbuilder                                       8.996 ms [PASS]
-Running: Clear stringbuilder                                     4.814 ms [PASS]
-Running: To string                                               4.140 ms [PASS]
-Running: Append empty                                            4.343 ms [PASS]
-Running: Append formatted                                        6.553 ms [PASS]
-Running: Snew from string                                        4.527 ms [PASS]
-Running: Append line                                             4.274 ms [PASS]
+Running: New stringbuilder                                       8.427 ms [PASS]
+Running: Clear stringbuilder                                     7.062 ms [PASS]
+Running: To string                                               6.325 ms [PASS]
+Running: Append empty                                           17.836 ms [PASS]
+Running: Append formatted                                        3.661 ms [PASS]
+Running: Snew from string                                        4.001 ms [PASS]
+Running: Append line                                             4.834 ms [PASS]
 ================================================================================
 [2]     TESTS=  7        PASS=  7        FAIL=  0        SKIP=  0

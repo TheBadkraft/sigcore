@@ -1,17 +1,17 @@
-[2] core_page_set             :   13 : 2025-12-31  10:12:20                     
+[2] core_page_set             :   13 : 2026-01-02  08:37:58                     
 ================================================================================
-Running: Page initialization                                     8.237 ms [PASS]
-Running: Allocation within capacity                              5.104 ms [PASS]
-Running: Allocation exceeds capacity                             3.069 ms [PASS]
-Running: Zero initialization                                     3.038 ms [PASS]
-Running: Tracking allocations                                    3.651 ms [PASS]
-Running: Page destruction                                        2.894 ms [PASS]
-Running: Exact capacity boundary                                 8.721 ms [PASS]
-Running: Zero byte allocation                                    3.484 ms [PASS]
-Running: Zero init stress test                                  12.271 ms [PASS]
-Running: Tracking integrity                                      6.444 ms [PASS]
-Running: Memory exhaustion                                      10.657 ms [PASS]
-Running: Null safety                                             3.335 ms [PASS]
-Running: Size extremes                                           2.920 ms [PASS]
+Running: Page initialization                                     7.333 ms [PASS]
+Running: Allocation within capacity                              2.729 ms [PASS]
+Running: Allocation exceeds capacity                             2.600 ms [PASS]
+Running: Zero initialization                                     2.892 ms [PASS]
+Running: Tracking allocations                                    2.483 ms [PASS]
+Running: Page destruction                                        2.436 ms [PASS]
+Running: Exact capacity boundary                                 3.183 ms [PASS]
+Running: Zero byte allocation                                    2.430 ms [PASS]
+Running: Zero init stress test                                  11.572 ms [PASS]
+Running: Tracking integrity                                      3.168 ms [PASS]
+Running: Memory exhaustion                                       3.400 ms [PASS]
+Running: Null safety                                             2.453 ms [PASS]
+Running: Size extremes                                           3.251 ms [PASS]
 ================================================================================
 [2]     TESTS= 13        PASS= 13        FAIL=  0        SKIP=  0

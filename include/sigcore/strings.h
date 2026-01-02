@@ -40,18 +40,18 @@
 typedef struct string_builder_s *string_builder;
 
 /* IString Helpers */
-size_t str_get_length(const string);
-string str_copy(const string);
-string str_concat(const string, const string);
-int str_compare(const string, const string);
+size_t string_length(const string);
+string string_copy(const string);
+string string_concat(const string, const string);
+int string_compare(const string, const string);
 
 /* IStringBuilder Helpers */
-string_builder sb_new(size_t);
-string_builder sb_from_string(string);
-size_t sb_get_length(string_builder);
-void sb_append(string_builder, string);
-string sb_to_string(string_builder);
-void sb_free(string_builder);
+string_builder stringbuilder_new(size_t);
+string_builder stringbuilder_from_string(string);
+size_t stringbuilder_length(string_builder);
+void stringbuilder_append(string_builder, string);
+string stringbuilder_to_string(string_builder);
+void stringbuilder_dispose(string_builder);
 
 /* IString interface */
 typedef struct sc_string_i {

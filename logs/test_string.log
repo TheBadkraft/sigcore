@@ -1,11 +1,11 @@
-[2] core_strings_set          :    7 : 2025-12-31  10:12:20                     
+[2] core_strings_set          :    7 : 2026-01-02  08:37:58                     
 ================================================================================
-Running: String length                                           5.512 ms [PASS]
-Running: String copy                                             4.608 ms [PASS]
-Running: String concat                                           3.194 ms [PASS]
-Running: String compare                                          2.556 ms [PASS]
-Running: String format                                           3.130 ms [PASS]
-Running: String dupe                                             2.633 ms [PASS]
-Running: String to array                                         2.645 ms [PASS]
+Running: String length                                           4.265 ms [PASS]
+Running: String copy                                             3.235 ms [PASS]
+Running: String concat                                           2.620 ms [PASS]
+Running: String compare                                          2.606 ms [PASS]
+Running: String format                                           3.030 ms [PASS]
+Running: String dupe                                             2.469 ms [PASS]
+Running: String to array                                         2.533 ms [PASS]
 ================================================================================
 [2]     TESTS=  7        PASS=  7        FAIL=  0        SKIP=  0

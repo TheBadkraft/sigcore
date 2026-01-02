@@ -29,8 +29,9 @@
  *          or by appending to the end.
  */
 #include "sigcore/list.h"
-#include "sigcore/collections.h"
 #include "internal/collections.h"
+#include "internal/memory_internal.h"
+#include "sigcore/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
 
@@ -39,20 +40,23 @@ struct sc_list {
    collection coll; // underlying collection
 };
 
-//  create new list with specified initial capacity
-static list list_new(usize capacity) {
+//  create new list with specified initial capacity and stride
+static list list_new(usize capacity, usize stride) {
    //  allocate memory for the list structure
-   struct sc_list *lst = Memory.alloc(sizeof(struct sc_list), false);
+   struct sc_list *lst = scope_alloc(sizeof(struct sc_list), false);
    if (!lst) {
       return NULL; // allocation ERRed
    }
 
-   //  create the underlying collection with stride for addr
-   lst->coll = collection_new(capacity, sizeof(addr));
+   //  create the underlying collection with the specified stride
+   lst->coll = collection_new(capacity, stride);
    if (!lst->coll) {
       Memory.dispose(lst);
       return NULL; // allocation ERRed
    }
+
+   // Collections store pointers for reference semantics
+   // lst->coll->array.handle[0] = 'F';
 
    return lst;
 }
@@ -88,7 +92,7 @@ static int list_append(list lst, object value) {
    if (!lst || !value) {
       return ERR; // invalid parameters
    }
-   return collection_add(lst->coll, &value);
+   return collection_add(lst->coll, value);
 }
 //  get the value at the specified index in the list
 static int list_get_at(list lst, usize index, object *out_value) {

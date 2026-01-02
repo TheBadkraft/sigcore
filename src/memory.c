@@ -38,20 +38,18 @@
 extern arena arena_create(usize initial_pages);
 extern void arena_dispose(arena arena);
 
-// Memory allocation hooks - used internally for page management
-static void *(*memory_malloc_hook)(size_t) = malloc;
-static void (*memory_free_hook)(void *) = free;
+// Forward declarations for scope functions
+extern void *scope_get_current(void);
+extern void scope_set_current(void *scope);
+extern int scope_move_scopes(void *from, void *to, object obj);
+extern object scope_import(void *scope, const void *data, usize size);
+extern object scope_export(void *scope, const void *data, usize size);
 
-struct block {
-   usize size;
-   struct block *next_free;
-   struct block *prev_free;
-   // Allocation tracking (used when block is allocated)
-   object ptr;               // User pointer
-   usize alloc_size;         // Size of user allocation
-   struct block *next_alloc; // Next in scope's allocation list
-   struct block *prev_alloc; // Prev in scope's allocation list
-};
+// Memory allocation hooks - used internally for page management
+sysmem_alloc_fn sysmem_alloc = malloc;
+sysmem_free_fn sysmem_free = free;
+sysmem_calloc_fn sysmem_calloc = calloc;
+sysmem_realloc_fn sysmem_realloc = realloc;
 
 struct sc_pool {
    char handle[4];
@@ -67,6 +65,12 @@ struct sc_page {
 };
 
 static struct sc_pool root_pool;
+
+// Current scope for allocations (NULL means use global Memory.alloc)
+void *current_scope = NULL;
+
+// Forward declaration for utility function
+static void memory_free_page_if_possible(struct block *b);
 
 // Find and allocate a block from the free list that fits the total_size
 static object memory_alloc_from_free(usize total_size, usize size, bool zero) {
@@ -110,7 +114,7 @@ static object memory_alloc_from_free(usize total_size, usize size, bool zero) {
 
 // Grow the pool by allocating a new page
 static void memory_grow_pool(void) {
-   struct sc_page *new_pg = (struct sc_page *)memory_malloc_hook(sizeof(struct sc_page));
+   struct sc_page *new_pg = (struct sc_page *)sysmem_alloc(sizeof(struct sc_page));
    memset(new_pg, 0, sizeof(*new_pg));
    new_pg->next = root_pool.pages;
    root_pool.pages = new_pg;
@@ -143,6 +147,11 @@ object memory_alloc(usize size, bool zero) {
    if (size == 0)
       return NULL;
 
+   // Check for overflow: size + sizeof(struct block) + alignment padding > SIZE_MAX
+   if (size > SIZE_MAX - sizeof(struct block) - 8) {
+      return NULL; // Would overflow
+   }
+
    usize total_size = size + sizeof(struct block);
    total_size = (total_size + 7) & ~7; // Align to 8 bytes
 
@@ -156,6 +165,20 @@ object memory_alloc(usize size, bool zero) {
 
    // Try again with the new page
    return memory_alloc_from_free(total_size, size, zero);
+}
+
+// Allocate from current scope if set, otherwise use global memory
+object scope_alloc(usize size, bool zero) {
+   if (current_scope) {
+      // Check if current scope is an arena
+      const char *handle = (const char *)current_scope;
+      if (memcmp(handle, "ARN", 4) == 0) {
+         return Arena.alloc((arena)current_scope, size, zero);
+      }
+      // TODO: Add support for frame scopes
+   }
+   // Fall back to global memory allocation
+   return memory_alloc(size, zero);
 }
 
 // dispose of a previously allocated block of memory
@@ -195,34 +218,7 @@ void memory_dispose(object ptr) {
       b = prev; // Update b to the merged block
    }
 
-   // Check if entire page is free
-   if (b->size == 4096 && root_pool.total_bytes > 16 * 4096) {
-      // Find and free the page
-      struct sc_page *pg = root_pool.pages;
-      struct sc_page *prev_pg = NULL;
-      while (pg) {
-         if ((char *)pg->data <= (char *)b && (char *)b < (char *)pg->data + 4096) {
-            // Remove from list
-            if (prev_pg)
-               prev_pg->next = pg->next;
-            else
-               root_pool.pages = pg->next;
-            // Remove b from free chain
-            if (b->prev_free)
-               b->prev_free->next_free = b->next_free;
-            else
-               root_pool.free_head = b->next_free;
-            if (b->next_free)
-               b->next_free->prev_free = b->prev_free;
-            // Free page
-            root_pool.total_bytes -= 4096;
-            memory_free_hook(pg);
-            break;
-         }
-         prev_pg = pg;
-         pg = pg->next;
-      }
-   }
+   memory_free_page_if_possible(b);
 }
 
 // reallocate memory
@@ -257,7 +253,7 @@ static void memory_dispose_arena(arena arena) {
 }
 
 // dispose a memory pool
-static void pool_dispose(pool p) {
+void pool_dispose(pool p) {
    if (!p)
       return;
 
@@ -265,12 +261,12 @@ static void pool_dispose(pool p) {
    struct sc_page *pg = p->pages;
    while (pg) {
       struct sc_page *next = pg->next;
-      memory_free_hook(pg);
+      sysmem_free(pg);
       pg = next;
    }
 
    // Free the pool structure
-   memory_free_hook(p);
+   sysmem_free(p);
 }
 
 // Grow a pool by allocating a new page
@@ -278,7 +274,7 @@ static void pool_grow(pool p) {
    if (!p)
       return;
 
-   struct sc_page *new_pg = (struct sc_page *)memory_malloc_hook(sizeof(struct sc_page));
+   struct sc_page *new_pg = (struct sc_page *)sysmem_alloc(sizeof(struct sc_page));
    if (!new_pg)
       return;
 
@@ -296,6 +292,58 @@ static void pool_grow(pool p) {
    p->free_head = new_b;
 }
 
+// Pool allocation helpers
+static struct block *pool_find_suitable_block(pool p, usize total_size) {
+   struct block *b = p->free_head;
+   while (b) {
+      if (b->size >= total_size) {
+         return b;
+      }
+      b = b->next_free;
+   }
+   return NULL;
+}
+
+static void pool_split_block(struct block *b, usize total_size, pool p) {
+   if (b->size > total_size) {
+      // Split the block
+      struct block *split = (struct block *)((char *)b + total_size);
+      split->size = b->size - total_size;
+      split->next_free = b->next_free;
+      split->prev_free = b->prev_free;
+      if (b->prev_free)
+         b->prev_free->next_free = split;
+      else
+         p->free_head = split;
+      if (b->next_free)
+         b->next_free->prev_free = split;
+      b->size = total_size;
+   } else {
+      // Exact fit - remove from free list
+      if (b->prev_free)
+         b->prev_free->next_free = b->next_free;
+      else
+         p->free_head = b->next_free;
+      if (b->next_free)
+         b->next_free->prev_free = b->prev_free;
+   }
+   b->next_free = NULL;
+   b->prev_free = NULL;
+}
+
+static object pool_initialize_allocated_block(struct block *b, usize size, bool zero, pool p) {
+   p->used_bytes += b->size - sizeof(struct block);
+   object ptr = (char *)b + sizeof(struct block);
+   // Initialize allocation tracking
+   b->ptr = ptr;
+   b->alloc_size = size;
+   b->next_alloc = NULL;
+   b->prev_alloc = NULL;
+   if (zero)
+      memset(ptr, 0, size);
+   return ptr;
+}
+
 // Allocate from a specific pool
 object pool_alloc(pool p, usize size, bool zero) {
    if (!p || size == 0)
@@ -305,91 +353,21 @@ object pool_alloc(pool p, usize size, bool zero) {
    if (total_size < size) // Overflow check
       return NULL;
 
-   // Find a suitable block in the free list
-   struct block *b = p->free_head;
-   while (b) {
-      if (b->size >= total_size) {
-         if (b->size > total_size) {
-            // Split the block
-            struct block *split = (struct block *)((char *)b + total_size);
-            split->size = b->size - total_size;
-            split->next_free = b->next_free;
-            split->prev_free = b->prev_free;
-            if (b->prev_free)
-               b->prev_free->next_free = split;
-            else
-               p->free_head = split;
-            if (b->next_free)
-               b->next_free->prev_free = split;
-            b->size = total_size;
-         } else {
-            // Exact fit - remove from free list
-            if (b->prev_free)
-               b->prev_free->next_free = b->next_free;
-            else
-               p->free_head = b->next_free;
-            if (b->next_free)
-               b->next_free->prev_free = b->prev_free;
-         }
-         b->next_free = NULL;
-         b->prev_free = NULL;
-         p->used_bytes += total_size - sizeof(struct block);
-         object ptr = (char *)b + sizeof(struct block);
-         // Initialize allocation tracking
-         b->ptr = ptr;
-         b->alloc_size = size;
-         b->next_alloc = NULL;
-         b->prev_alloc = NULL;
-         if (zero)
-            memset(ptr, 0, size);
-         return ptr;
-      }
-      b = b->next_free;
+   // Try to allocate from existing free blocks
+   struct block *b = pool_find_suitable_block(p, total_size);
+   if (b) {
+      pool_split_block(b, total_size, p);
+      return pool_initialize_allocated_block(b, size, zero, p);
    }
 
    // No suitable block found - grow the pool
    pool_grow(p);
 
    // Try again with the new page
-   b = p->free_head;
-   while (b) {
-      if (b->size >= total_size) {
-         if (b->size > total_size) {
-            // Split the block
-            struct block *split = (struct block *)((char *)b + total_size);
-            split->size = b->size - total_size;
-            split->next_free = b->next_free;
-            split->prev_free = b->prev_free;
-            if (b->prev_free)
-               b->prev_free->next_free = split;
-            else
-               p->free_head = split;
-            if (b->next_free)
-               b->next_free->prev_free = split;
-            b->size = total_size;
-         } else {
-            // Exact fit - remove from free list
-            if (b->prev_free)
-               b->prev_free->next_free = b->next_free;
-            else
-               p->free_head = b->next_free;
-            if (b->next_free)
-               b->next_free->prev_free = b->prev_free;
-         }
-         b->next_free = NULL;
-         b->prev_free = NULL;
-         p->used_bytes += total_size - sizeof(struct block);
-         object ptr = (char *)b + sizeof(struct block);
-         // Initialize allocation tracking
-         b->ptr = ptr;
-         b->alloc_size = size;
-         b->next_alloc = NULL;
-         b->prev_alloc = NULL;
-         if (zero)
-            memset(ptr, 0, size);
-         return ptr;
-      }
-      b = b->next_free;
+   b = pool_find_suitable_block(p, total_size);
+   if (b) {
+      pool_split_block(b, total_size, p);
+      return pool_initialize_allocated_block(b, size, zero, p);
    }
 
    // Still no suitable block (shouldn't happen after growing)
@@ -420,12 +398,12 @@ void pool_free(pool p, object ptr) {
 }
 
 // create a new memory pool
-static pool pool_create(usize initial_pages) {
+pool pool_create(usize initial_pages) {
    if (initial_pages == 0)
       return NULL;
 
    // Allocate the pool structure
-   struct sc_pool *p = (struct sc_pool *)memory_malloc_hook(sizeof(struct sc_pool));
+   struct sc_pool *p = (struct sc_pool *)sysmem_alloc(sizeof(struct sc_pool));
    if (!p)
       return NULL;
 
@@ -434,7 +412,7 @@ static pool pool_create(usize initial_pages) {
 
    // Allocate initial pages
    for (usize i = 0; i < initial_pages; i++) {
-      struct sc_page *pg = (struct sc_page *)memory_malloc_hook(sizeof(struct sc_page));
+      struct sc_page *pg = (struct sc_page *)sysmem_alloc(sizeof(struct sc_page));
       if (!pg) {
          // Cleanup on failure
          pool_dispose(p);
@@ -462,7 +440,7 @@ __attribute__((constructor)) static void memory_auto_init(void) {
    memset(&root_pool, 0, sizeof(root_pool));
    memcpy(root_pool.handle, "POL\0", 4);
    for (usize i = 0; i < 16; i++) {
-      struct sc_page *pg = (struct sc_page *)memory_malloc_hook(sizeof(struct sc_page));
+      struct sc_page *pg = (struct sc_page *)sysmem_alloc(sizeof(struct sc_page));
       memset(pg, 0, sizeof(*pg));
       pg->next = root_pool.pages;
       root_pool.pages = pg;
@@ -474,6 +452,37 @@ __attribute__((constructor)) static void memory_auto_init(void) {
       if (root_pool.free_head)
          root_pool.free_head->prev_free = b;
       root_pool.free_head = b;
+   }
+}
+
+// Free a page if the block is a full page and we have excess pages
+static void memory_free_page_if_possible(struct block *b) {
+   if (b->size == 4096 && root_pool.total_bytes > 16 * 4096) {
+      // Find and free the page
+      struct sc_page *pg = root_pool.pages;
+      struct sc_page *prev_pg = NULL;
+      while (pg) {
+         if ((char *)pg->data <= (char *)b && (char *)b < (char *)pg->data + 4096) {
+            // Remove from list
+            if (prev_pg)
+               prev_pg->next = pg->next;
+            else
+               root_pool.pages = pg->next;
+            // Remove b from free chain
+            if (b->prev_free)
+               b->prev_free->next_free = b->next_free;
+            else
+               root_pool.free_head = b->next_free;
+            if (b->next_free)
+               b->next_free->prev_free = b->prev_free;
+            // Free page
+            root_pool.total_bytes -= 4096;
+            sysmem_free(pg);
+            break;
+         }
+         prev_pg = pg;
+         pg = pg->next;
+      }
    }
 }
 
@@ -498,8 +507,11 @@ const sc_memory_i Memory = {
     .dispose = memory_dispose,
     .realloc = memory_realloc,
     .Scope = {
+        .get_current = scope_get_current,
+        .set_current = scope_set_current,
         .move = scope_move_scopes,
         .import = scope_import,
+        .export = scope_export,
     },
     .Pool = {
         .create = pool_create,

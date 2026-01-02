@@ -23,52 +23,64 @@
  * ----------------------------------------------
  * File: strings.c
  * Description: Implementation of string utilities in SigmaCore
+ *
+ * MEMORY ALLOCATION POLICY:
+ * All memory allocations must use scope_alloc() for proper scope management.
+ * When standard library functions allocate memory (e.g., strdup, asprintf),
+ * the allocated memory must be imported using scope_import() and the original
+ * system allocation freed immediately.
  */
 
 #include "sigcore/strings.h"
-#include "sigcore/collections.h"
 #include "internal/collections.h"
+#include "internal/memory_internal.h"
+#include "sigcore/collections.h"
 #include "sigcore/memory.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+/* ======================================================================== */
+/* String Functions                                                         */
+/* ======================================================================== */
+
+// Helper function definitions
+// Allocate and copy a string of given length
+static string string_alloc_copy(const char *src, size_t len) {
+   if (!src || len == 0)
+      return NULL;
+
+   string result = scope_alloc(len + 1, false);
+   if (result) {
+      memcpy(result, src, len);
+      result[len] = '\0';
+   }
+   return result;
+}
+
 /* Returns the length of a string */
-size_t str_get_length(const string str) {
+size_t string_length(const string str) {
    return str ? strlen(str) : 0;
 }
 
 /* Returns a copy of given string */
-string str_copy(const string str) {
-   size_t len = str_get_length(str);
-   string copy = NULL;
-   if (len > 0) {
-      copy = Memory.alloc(len + 1, false);
-      if (copy)
-         strcpy(copy, str);
-   }
-   return copy;
+string string_copy(const string str) {
+   return string_alloc_copy(str, string_length(str));
 }
 
 /* Returns a duplicate string */
-string str_duplicate(const char *str) {
-   if (!str)
-      return NULL;
-   size_t len = strlen(str);
-   string dup = Memory.alloc(len + 1, false);
-   if (dup)
-      strcpy(dup, str);
-   return dup;
+string string_duplicate(const char *str) {
+   return string_alloc_copy(str, str ? strlen(str) : 0);
 }
 
 /* Returns a concatenated string */
-string str_concat(const string str1, const string str2) {
+string string_concat(const string str1, const string str2) {
    if (!str1 || !str2)
       return NULL;
 
    size_t len1 = strlen(str1);
    size_t len2 = strlen(str2);
-   string result = Memory.alloc(len1 + len2 + 1, false);
+   string result = scope_alloc(len1 + len2 + 1, false);
    if (result) {
       strcpy(result, str1);
       strcpy(result + len1, str2);
@@ -77,7 +89,7 @@ string str_concat(const string str1, const string str2) {
 }
 
 /* Compares two strings */
-int str_compare(const string str1, const string str2) {
+int string_compare(const string str1, const string str2) {
    if (str1 == str2)
       return 0;
    if (!str1 || !str2)
@@ -86,7 +98,7 @@ int str_compare(const string str1, const string str2) {
 }
 
 /* Returns a formatted string */
-string str_format(const string format, ...) {
+string string_format(const string format, ...) {
    if (!format)
       return NULL;
    va_list args;
@@ -96,7 +108,7 @@ string str_format(const string format, ...) {
    if (len < 0)
       return NULL;
 
-   string result = Memory.alloc(len + 1, false);
+   string result = scope_alloc(len + 1, false);
    if (!result)
       return NULL;
    va_start(args, format);
@@ -106,34 +118,29 @@ string str_format(const string format, ...) {
 }
 
 /* Dispose string from allocated memory */
-void str_dispose(string str) {
+void string_dispose(string str) {
    if (str)
       Memory.dispose(str);
 }
 
-char *str_to_array(string str) {
-   if (!str)
-      return NULL;
-   size_t len = str_get_length(str);
-   char *arr = Memory.alloc(len + 1, false);
-   if (!arr)
-      return NULL;
-   memcpy(arr, str, len + 1);
-   return arr;
+char *string_to_array(string str) {
+   return string_alloc_copy(str, string_length(str));
 }
 
 const sc_string_i String = {
-    .length = str_get_length,
-    .copy = str_copy,
-    .dupe = str_duplicate,
-    .concat = str_concat,
-    .compare = str_compare,
-    .format = str_format,
-    .to_array = str_to_array,
-    .dispose = str_dispose,
+    .length = string_length,
+    .copy = string_copy,
+    .dupe = string_duplicate,
+    .concat = string_concat,
+    .compare = string_compare,
+    .format = string_format,
+    .to_array = string_to_array,
+    .dispose = string_dispose,
 };
 
-/* String Builder Implementation */
+/* ======================================================================== */
+/* StringBuilder Implementation                                             */
+/* ======================================================================== */
 struct string_builder_s {
    farray array;    /* The underlying farray for storage */
    char *buffer;    /* Direct pointer to the buffer for efficiency */
@@ -142,10 +149,10 @@ struct string_builder_s {
 };
 
 /* Initializes a string builder with the given capacity */
-string_builder sb_new(size_t capacity) {
+string_builder stringbuilder_new(size_t capacity) {
    if (capacity == 0)
       capacity = 16;
-   string_builder sb = Memory.alloc(sizeof(struct string_builder_s), false);
+   string_builder sb = scope_alloc(sizeof(struct string_builder_s), false);
    if (!sb)
       return NULL;
 
@@ -166,18 +173,18 @@ string_builder sb_new(size_t capacity) {
 }
 
 /* Initializes a new string builder from char* buffer. */
-string_builder sb_from_string(string str) {
+string_builder stringbuilder_from_string(string str) {
    if (!str)
-      return sb_new(0);
+      return stringbuilder_new(0);
    size_t len = strlen(str);
-   string_builder sb = sb_new(len + 1);
+   string_builder sb = stringbuilder_new(len + 1);
    if (sb)
-      sb_append(sb, str);
+      stringbuilder_append(sb, str);
    return sb;
 }
 
 /* Appends a plain string to the buffer, resizing if necessary */
-void sb_append(string_builder sb, string str) {
+void stringbuilder_append(string_builder sb, string str) {
    if (!sb || !str)
       return;
    size_t len = strlen(str);
@@ -207,7 +214,7 @@ void sb_append(string_builder sb, string str) {
 }
 
 /* Appends a formatted string */
-void sb_appendf(string_builder sb, string format, ...) {
+void stringbuilder_appendf(string_builder sb, string format, ...) {
    if (!sb || !format)
       return;
    va_list args;
@@ -250,39 +257,39 @@ void sb_appendf(string_builder sb, string format, ...) {
 }
 
 /* Appends a string followed by a newline */
-void sb_appendl(string_builder sb, string str) {
+void stringbuilder_appendl(string_builder sb, string str) {
    if (!sb)
       return;
    if (str)
-      sb_append(sb, str);
-   sb_append(sb, "\n");
+      stringbuilder_append(sb, str);
+   stringbuilder_append(sb, "\n");
 }
 
 /* Appends a newline followed by the string */
-void sb_lappends(string_builder sb, string str) {
+void stringbuilder_lappends(string_builder sb, string str) {
    if (!sb)
       return;
-   sb_append(sb, "\n");
+   stringbuilder_append(sb, "\n");
    if (str)
-      sb_append(sb, str);
+      stringbuilder_append(sb, str);
 }
 
 /* Appends a newline followed by a formatted string */
-void sb_lappendf(string_builder sb, string format, ...) {
+void stringbuilder_lappendf(string_builder sb, string format, ...) {
    if (!sb || !format)
       return;
-   sb_append(sb, "\n");
+   stringbuilder_append(sb, "\n");
    va_list args;
    va_start(args, format);
    // Simplified: just append the formatted string
    char buffer[1024];
    vsnprintf(buffer, sizeof(buffer), format, args);
-   sb_append(sb, buffer);
+   stringbuilder_append(sb, buffer);
    va_end(args);
 }
 
 /* Resets the buffer to empty */
-void sb_clear(string_builder sb) {
+void stringbuilder_clear(string_builder sb) {
    if (!sb)
       return;
    sb->length = 0;
@@ -290,39 +297,39 @@ void sb_clear(string_builder sb) {
 }
 
 /* Returns a new string with the current content */
-string sb_to_string(string_builder sb) {
+string stringbuilder_to_string(string_builder sb) {
    if (!sb || !sb->buffer)
       return NULL;
-   size_t len = sb_get_length(sb);
-   string result = Memory.alloc(len + 1, false);
+   size_t len = stringbuilder_length(sb);
+   string result = scope_alloc(len + 1, false);
    if (result)
       strcpy(result, sb->buffer);
    return result;
 }
 
 /* Writes the buffer contents to the given stream */
-void sb_to_stream(string_builder sb, FILE *stream) {
+void stringbuilder_to_stream(string_builder sb, FILE *stream) {
    if (!sb || !sb->buffer || !stream)
       return;
-   size_t len = sb_get_length(sb);
+   size_t len = stringbuilder_length(sb);
    if (len > 0)
       fwrite(sb->buffer, 1, len, stream);
 }
 
 /* Returns the current number of characters */
-size_t sb_get_length(string_builder sb) {
+size_t stringbuilder_length(string_builder sb) {
    return sb ? sb->length : 0;
 }
 
 /* Returns the total capacity */
-size_t sb_get_capacity(string_builder sb) {
+size_t stringbuilder_capacity(string_builder sb) {
    if (!sb)
       return 0;
    return FArray.capacity(sb->array, 1) - 1; /* -1 for null terminator */
 }
 
 /* Adjusts the buffer capacity */
-void sb_set_capacity(string_builder sb, size_t new_capacity) {
+void stringbuilder_set_capacity(string_builder sb, size_t new_capacity) {
    if (!sb || new_capacity <= sb->capacity)
       return;
 
@@ -338,7 +345,7 @@ void sb_set_capacity(string_builder sb, size_t new_capacity) {
 }
 
 /* Disposes the string builder */
-void sb_dispose(string_builder sb) {
+void stringbuilder_dispose(string_builder sb) {
    if (!sb)
       return;
    if (sb->array)
@@ -347,18 +354,18 @@ void sb_dispose(string_builder sb) {
 }
 
 const sc_stringbuilder_i StringBuilder = {
-    .new = sb_new,
-    .snew = sb_from_string,
-    .append = sb_append,
-    .appendf = sb_appendf,
-    .appendl = sb_appendl,
-    .lappends = sb_lappends,
-    .lappendf = sb_lappendf,
-    .clear = sb_clear,
-    .toString = sb_to_string,
-    .toStream = sb_to_stream,
-    .length = sb_get_length,
-    .capacity = sb_get_capacity,
-    .setCapacity = sb_set_capacity,
-    .dispose = sb_dispose,
+    .new = stringbuilder_new,
+    .snew = stringbuilder_from_string,
+    .append = stringbuilder_append,
+    .appendf = stringbuilder_appendf,
+    .appendl = stringbuilder_appendl,
+    .lappends = stringbuilder_lappends,
+    .lappendf = stringbuilder_lappendf,
+    .clear = stringbuilder_clear,
+    .toString = stringbuilder_to_string,
+    .toStream = stringbuilder_to_stream,
+    .length = stringbuilder_length,
+    .capacity = stringbuilder_capacity,
+    .setCapacity = stringbuilder_set_capacity,
+    .dispose = stringbuilder_dispose,
 };

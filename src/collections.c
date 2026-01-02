@@ -28,35 +28,69 @@
  *             for arrays (parray/farray), with stride-aware operations.
  */
 #include "sigcore/collections.h"
+#include "internal/array_base.h"
+#include "internal/arrays.h"
 #include "internal/collections.h"
+#include "internal/memory_internal.h"
 #include "sigcore/memory.h"
 #include <string.h>
 
-/* Collection structure                                        */
-/* ============================================================ */
-struct sc_collection {
-   struct {
-      void *buffer;
-      void *end;
-   } array;
-   usize stride;
-   usize length;
-   bool owns_buffer;
-};
+// Forward declarations of array structs for internal use
+// Note: Now using unified sc_array_base from array_base.h
+
+/* Iterator functions */
+bool iter_next(iterator it);
+object iter_current(iterator it);
+void iter_reset(iterator it);
+void iter_dispose(iterator it);
 
 // create a collection view of array data
-collection collection_create_view(void *buffer, void *end, usize stride, usize length, bool owns_buffer) {
-   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection), false);
+collection collection_create_view(void *array, usize stride, usize length, bool owns_buffer) {
+   struct sc_collection *coll = scope_alloc(sizeof(struct sc_collection), false);
    if (!coll) {
       return NULL;
    }
 
-   coll->array.buffer = buffer;
-   coll->array.end = end;
-   coll->stride = stride;
-   coll->length = length;
-   coll->owns_buffer = owns_buffer;
+   if (array) {
+      // Copy handle from the array to determine storage type
+      char array_handle = ((char *)array)[0];
+      coll->array.handle[0] = array_handle;
+      coll->array.handle[1] = ((char *)array)[1];
 
+      if (array_handle == 'F') {
+         // farray - store values like farray
+         sc_array_base *farr = (sc_array_base *)array;
+         coll->array.bucket = farr->bucket;
+         coll->array.end = farr->end;
+         coll->stride = stride; // Use provided stride for values
+         coll->owns_buffer = owns_buffer;
+      } else if (array_handle == 'P') {
+         // parray - store pointers like parray
+         sc_array_base *parr = (sc_array_base *)array;
+         coll->array.bucket = parr->bucket;
+         coll->array.end = parr->end;
+         coll->stride = sizeof(void *); // Pointers
+         coll->owns_buffer = owns_buffer;
+      } else {
+         // Unknown array - treat as farray (store values)
+         coll->array.handle[0] = 'F';
+         coll->array.handle[1] = '\0';
+         coll->array.bucket = array;
+         coll->array.end = NULL; // unknown
+         coll->stride = stride;  // Use provided stride for values
+         coll->owns_buffer = owns_buffer;
+      }
+   } else {
+      // NULL array - treat as farray, store values
+      coll->array.handle[0] = 'F';
+      coll->array.handle[1] = '\0';
+      coll->array.bucket = NULL;
+      coll->array.end = NULL;
+      coll->stride = stride;
+      coll->owns_buffer = owns_buffer;
+   }
+
+   coll->length = length;
    return coll;
 }
 
@@ -66,13 +100,13 @@ void collection_set_data(collection coll, void *data, usize count) {
       return;
    }
 
-   memcpy(coll->array.buffer, data, count * coll->stride);
+   memcpy(coll->array.bucket, data, count * coll->stride);
    coll->length = count;
 }
 
 // collection accessor functions
 void *collection_get_buffer(collection coll) {
-   return coll ? coll->array.buffer : NULL;
+   return coll ? coll->array.bucket : NULL;
 }
 
 inline void *collection_get_end(collection coll) {
@@ -93,48 +127,24 @@ inline void collection_set_length(collection coll, usize length) {
    }
 }
 
-// forward declarations of internal functions
-collection collection_new(usize capacity, usize stride);
-void collection_dispose(collection coll);
-usize collection_count(collection coll);
-int collection_grow(collection coll);
-int collection_add(collection coll, object ptr);
-int collection_remove(collection coll, object ptr);
-void collection_clear(collection coll);
-usize collection_get_count(collection coll);
-collection collection_as_collection(farray arr, usize stride);
-collection collection_to_collection(farray arr, usize stride);
-
 // create a new collection with the specified capacity and stride
 collection collection_new(usize capacity, usize stride) {
-   struct sc_collection *coll = Memory.alloc(sizeof(struct sc_collection), false);
+   void *bucket;
+   char *end;
+
+   struct sc_collection *coll = array_alloc_struct_with_bucket(
+       sizeof(struct sc_collection), 'P', stride, capacity, &bucket, &end);
+
    if (!coll) {
       return NULL;
    }
 
-   // Check for overflow: stride * capacity > SIZE_MAX
-   if (capacity > 0 && stride > SIZE_MAX / capacity) {
-      Memory.dispose(coll);
-      return NULL; // Would overflow
-   }
-
-   coll->array.buffer = Memory.alloc(stride * capacity, false);
-   if (!coll->array.buffer) {
-      Memory.dispose(coll);
-      return NULL;
-   }
-
-   coll->array.end = (char *)coll->array.buffer + stride * capacity;
-   // Check for pointer arithmetic overflow
-   if (coll->array.end < coll->array.buffer) {
-      Memory.dispose(coll->array.buffer);
-      Memory.dispose(coll);
-      return NULL; // Pointer arithmetic overflow
-   }
-
+   coll->array.bucket = bucket;
+   coll->array.end = end;
    coll->stride = stride;
    coll->length = 0;
    coll->owns_buffer = true;
+
    return coll;
 }
 // dispose of the collection
@@ -143,8 +153,8 @@ void collection_dispose(collection coll) {
       return;
    }
 
-   if (coll->owns_buffer && coll->array.buffer) {
-      Memory.dispose(coll->array.buffer);
+   if (coll->owns_buffer && coll->array.bucket) {
+      Memory.dispose(coll->array.bucket);
    }
    Memory.dispose(coll);
 }
@@ -160,16 +170,21 @@ int collection_grow(collection coll) {
    if (!coll) {
       return ERR;
    }
-   usize current_capacity = ((char *)coll->array.end - (char *)coll->array.buffer) / coll->stride;
-   usize new_capacity = current_capacity * 2;
-   void *new_buffer = Memory.alloc(coll->stride * new_capacity, false);
+   usize current_capacity = ((char *)coll->array.end - (char *)coll->array.bucket) / coll->stride;
+   usize new_capacity;
+   if (current_capacity == 0) {
+      new_capacity = 8; // Start with reasonable minimum capacity
+   } else {
+      new_capacity = current_capacity * 2;
+   }
+   void *new_buffer = scope_alloc(coll->stride * new_capacity, false);
    if (!new_buffer) {
       return ERR;
    }
 
-   memcpy(new_buffer, coll->array.buffer, coll->stride * current_capacity);
-   Memory.dispose(coll->array.buffer);
-   coll->array.buffer = new_buffer;
+   memcpy(new_buffer, coll->array.bucket, coll->stride * current_capacity);
+   Memory.dispose(coll->array.bucket);
+   coll->array.bucket = new_buffer;
    coll->array.end = (char *)new_buffer + coll->stride * new_capacity;
    return OK;
 }
@@ -180,15 +195,24 @@ int collection_add(collection coll, object ptr) {
       return ERR;
    }
 
-   usize capacity = ((char *)coll->array.end - (char *)coll->array.buffer) / coll->stride;
+   usize capacity = ((char *)coll->array.end - (char *)coll->array.bucket) / coll->stride;
    if (coll->length >= capacity) {
       if (collection_grow(coll) != 0) {
          return ERR;
       }
    }
 
-   void *dest = (char *)coll->array.buffer + coll->length * coll->stride;
-   memcpy(dest, ptr, coll->stride);
+   void *dest = (char *)coll->array.bucket + coll->length * coll->stride;
+
+   // Store according to the array primitive
+   if (coll->array.handle[0] == 'F') {
+      // farray: store values
+      memcpy(dest, ptr, coll->stride);
+   } else {
+      // parray or raw: store pointers
+      memcpy(dest, &ptr, coll->stride);
+   }
+
    coll->length++;
    return OK;
 }
@@ -199,16 +223,24 @@ int collection_remove(collection coll, object ptr) {
    }
 
    for (usize i = 0; i < coll->length; ++i) {
-      void *slot = (char *)coll->array.buffer + i * coll->stride;
-      if (memcmp(slot, ptr, coll->stride) == 0) {
+      void *slot = (char *)coll->array.bucket + i * coll->stride;
+      bool match;
+      if (coll->array.handle[0] == 'P') {
+         // parray: compare pointer values
+         match = memcmp(slot, ptr, coll->stride) == 0;
+      } else {
+         // farray or raw: compare data values
+         match = memcmp(slot, ptr, coll->stride) == 0;
+      }
+      if (match) {
          // Shift left
          for (usize j = i; j < coll->length - 1; ++j) {
-            void *src = (char *)coll->array.buffer + (j + 1) * coll->stride;
-            void *dest = (char *)coll->array.buffer + j * coll->stride;
+            void *src = (char *)coll->array.bucket + (j + 1) * coll->stride;
+            void *dest = (char *)coll->array.bucket + j * coll->stride;
             memcpy(dest, src, coll->stride);
          }
          // Zero the last
-         memset((char *)coll->array.buffer + (coll->length - 1) * coll->stride, 0, coll->stride);
+         memset((char *)coll->array.bucket + (coll->length - 1) * coll->stride, 0, coll->stride);
          coll->length--;
          return OK;
       }
@@ -217,11 +249,11 @@ int collection_remove(collection coll, object ptr) {
 }
 // clear the collection
 void collection_clear(collection coll) {
-   if (!coll || !coll->array.buffer) {
+   if (!coll || !coll->array.bucket) {
       return;
    }
-   usize capacity = ((char *)coll->array.end - (char *)coll->array.buffer) / coll->stride;
-   memset(coll->array.buffer, 0, capacity * coll->stride);
+   usize capacity = ((char *)coll->array.end - (char *)coll->array.bucket) / coll->stride;
+   memset(coll->array.bucket, 0, capacity * coll->stride);
    coll->length = 0;
 }
 // get count
@@ -229,17 +261,11 @@ usize collection_get_count(collection coll) {
    return collection_count(coll);
 }
 
-/* New Iterator implementation */
-struct iterator_s {
-   collection coll; /* The collection to iterate over */
-   size_t current;  /* Current index */
-};
-
 /* Create an iterator for a collection */
 iterator collection_create_iterator(collection coll) {
    if (!coll)
       return NULL;
-   iterator it = Memory.alloc(sizeof(struct iterator_s), false);
+   iterator it = scope_alloc(sizeof(struct iterator_s), false);
    if (!it)
       return NULL;
    it->coll = coll;
@@ -259,7 +285,7 @@ const sc_collections_i Collections = {
 };
 
 /* Advances to next item and returns true if there is one */
-static bool iter_next(iterator it) {
+bool iter_next(iterator it) {
    if (!it || !it->coll || it->current >= it->coll->length)
       return false;
    it->current++;
@@ -267,20 +293,20 @@ static bool iter_next(iterator it) {
 }
 
 /* Returns the current item, or NULL if none */
-static object iter_current(iterator it) {
+object iter_current(iterator it) {
    if (!it || !it->coll || it->current == 0 || it->current > it->coll->length)
       return NULL;
-   return (char *)it->coll->array.buffer + (it->current - 1) * it->coll->stride;
+   return (char *)it->coll->array.bucket + (it->current - 1) * it->coll->stride;
 }
 
 /* Resets the iterator to the start */
-static void iter_reset(iterator it) {
+void iter_reset(iterator it) {
    if (it)
       it->current = 0;
 }
 
 /* Disposes the iterator */
-static void iter_dispose(iterator it) {
+void iter_dispose(iterator it) {
    if (it)
       Memory.dispose(it);
 }
@@ -289,4 +315,5 @@ const sc_iterator_i Iterator = {
     .next = iter_next,
     .current = iter_current,
     .reset = iter_reset,
-    .dispose = iter_dispose};
+    .dispose = iter_dispose,
+};

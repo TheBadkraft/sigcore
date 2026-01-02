@@ -31,19 +31,23 @@
  *        where memory efficiency is important.
  */
 #include "sigcore/farray.h"
-#include "sigcore/collections.h"
+#include "internal/array_base.h"
 #include "internal/arrays.h"
 #include "internal/collections.h"
+#include "internal/memory_internal.h"
+#include "sigcore/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
 
 //  declare the FlexArray struct: the collection with attitude
 struct sc_flex_array {
-   void *bucket; // pointer to first element (raw bytes)
-   void *end;    // one past allocated memory
+   char handle[2]; // {'F', '\0'} - type identifier
+   void *bucket;   // pointer to first element (raw bytes)
+   void *end;      // one past allocated memory
 };
 
-// forward declarations of internal functions
+#if 1 // Region: Forward declarations
+// API functions
 static farray farray_new(usize, usize);
 static void farray_init(farray *, usize, usize);
 static void farray_dispose(farray);
@@ -53,32 +57,30 @@ static int farray_set_at(farray, usize, usize, object);
 static int farray_get_at(farray, usize, usize, object);
 static int farray_remove_at(farray, usize, usize);
 
-// create a new farray with the specified initial capacity and stride
+// Collection interface functions
+static collection farray_as_collection(farray arr, usize stride);
+static collection farray_to_collection(farray arr, usize stride);
+#endif
+
+// API function implementations
 static farray farray_new(usize capacity, usize stride) {
-   //  allocate memory for the farray structure
-   struct sc_flex_array *arr = Memory.alloc(sizeof(struct sc_flex_array), false);
+   void *bucket;
+   char *end;
+
+   struct sc_flex_array *arr = array_alloc_struct_with_bucket(
+       sizeof(struct sc_flex_array), 'F', stride, capacity, &bucket, &end);
+
    if (!arr) {
-      return NULL; // allocation ERRed
+      return NULL;
    }
 
-   //  allocate memory for the bucket
-   arr->bucket = array_alloc_bucket(stride, capacity);
-   if (!arr->bucket) {
-      Memory.dispose(arr);
-      return NULL; // allocation ERRed
-   }
+   arr->bucket = bucket;
+   arr->end = end;
 
-   arr->end = (char *)arr->bucket + stride * capacity; // set end to the allocated size
-   // Check for pointer arithmetic overflow
-   if (arr->end < arr->bucket) {
-      array_free_resources(arr->bucket, arr);
-      return NULL; // Pointer arithmetic overflow
-   }
    farray_clear(arr, stride);
-
    return (farray)arr;
 }
-// initialize farray with the specified capacity and stride
+
 static void farray_init(farray *arr, usize capacity, usize stride) {
    // we expect the arr to be uninitialized
    if (!*arr) {
@@ -90,7 +92,7 @@ static void farray_init(farray *arr, usize capacity, usize stride) {
       if ((*arr)->bucket) {
          Memory.dispose((*arr)->bucket);
       }
-      (*arr)->bucket = Memory.alloc(stride * capacity, false);
+      (*arr)->bucket = scope_alloc(stride * capacity, false);
       if (!(*arr)->bucket) {
          // allocation ERRed, handle error as needed
          return;
@@ -98,7 +100,7 @@ static void farray_init(farray *arr, usize capacity, usize stride) {
       (*arr)->end = (char *)((*arr)->bucket) + stride * capacity;
    }
 }
-// dispose of the farray and free associated resources
+
 static void farray_dispose(farray arr) {
    if (!arr) {
       return; // nothing to dispose
@@ -107,107 +109,36 @@ static void farray_dispose(farray arr) {
    //  free the bucket and the farray structure itself
    array_free_resources(arr->bucket, arr);
 }
-// clear the contents of the farray
+
 static void farray_clear(farray arr, usize stride) {
-   if (!arr) {
-      return; // invalid farray
-   }
-   // clear the entire capacity
-   size_t num_elements = farray_capacity(arr, stride);
-   memset(arr->bucket, 0, num_elements * stride);
+   array_base_clear((sc_array_base *)arr, stride, farray_element_clear);
 }
 
-// set the value at the specified index in the farray
 static int farray_set_at(farray arr, usize index, usize stride, object value) {
-   if (!arr || !arr->bucket || !value) {
-      return ERR; // invalid parameters
-   }
-   usize cap = farray_capacity(arr, stride);
-   if (index >= cap) {
-      return ERR; // index out of bounds
-   }
-   void *dest = (char *)arr->bucket + index * stride;
-   memcpy(dest, value, stride);
-   return OK; // OK
+   return array_base_set_element((sc_array_base *)arr, stride, index, value, farray_element_copy);
 }
-// get the value at the specified index in the farray
-static int farray_get_at(farray arr, usize index, usize stride, object out_value) {
-   if (!arr || !arr->bucket || !out_value) {
-      return ERR; // invalid parameters
-   }
-   usize cap = farray_capacity(arr, stride);
-   if (index >= cap) {
-      return ERR; // index out of bounds
-   }
-   void *src = (char *)arr->bucket + index * stride;
-   memcpy(out_value, src, stride);
-   return OK; // OK
-}
-// remove the element at the specified index
-static int farray_remove_at(farray arr, usize index, usize stride) {
-   /*
-      The reason farray does not shift elements left upon removal is to maintain
-      consistent performance characteristics and to maintain consistency with
-      expectations from derived structures like SlotArray, where shifting elements
-      leads to complications with index validity; on the other hand, List does
-      shift elements left upon removal to maintain contiguous data for iteration.
-    */
-   if (!arr || !arr->bucket) {
-      return ERR; // invalid farray
-   }
-   usize cap = farray_capacity(arr, stride);
-   if (index >= cap) {
-      return ERR; // index out of bounds
-   }
-   // we do not shift elements, just set to zero
-   void *dest = (char *)arr->bucket + index * stride;
-   memset(dest, 0, stride);
 
-   return OK; // OK
+static int farray_get_at(farray arr, usize index, usize stride, object out_value) {
+   return array_base_get_element((sc_array_base *)arr, stride, index, out_value, farray_element_copy);
+}
+
+static int farray_remove_at(farray arr, usize index, usize stride) {
+   return array_base_remove_element((sc_array_base *)arr, stride, index, farray_element_clear);
+}
+
+#if 1 // Region: Internal utility functions
+static int farray_capacity(farray arr, usize stride) {
+   return array_base_capacity((sc_array_base *)arr, stride);
 }
 
 // compact the array by shifting non-zero elements to the front
 usize farray_compact(farray arr, usize stride) {
-   if (!arr) {
-      return 0;
-   }
-
-   usize capacity = FArray.capacity(arr, stride);
-   usize write_index = 0;
-
-   for (usize read_index = 0; read_index < capacity; ++read_index) {
-      // check if element is all zeros (empty)
-      void *element = (char *)arr->bucket + read_index * stride;
-      bool is_empty = true;
-      for (usize i = 0; i < stride; ++i) {
-         if (((char *)element)[i] != 0) {
-            is_empty = false;
-            break;
-         }
-      }
-
-      if (!is_empty) {
-         if (write_index != read_index) {
-            void *src = (char *)arr->bucket + read_index * stride;
-            void *dest = (char *)arr->bucket + write_index * stride;
-            memcpy(dest, src, stride);
-            memset(src, 0, stride);
-         }
-         ++write_index;
-      }
-   }
-
-   return write_index;
+   return array_base_compact((sc_array_base *)arr, stride, farray_element_is_empty,
+                             farray_element_copy, farray_element_clear);
 }
+#endif
 
-// Internal functions
-static int farray_capacity(farray arr, usize stride) {
-   if (!arr || !arr->bucket) {
-      return 0; // invalid farray
-   }
-   return (int)(((char *)arr->end - (char *)arr->bucket) / stride);
-}
-
+#if 1 // Region: Collection interface functions
 // create a non-owning collection view of the farray
 static collection farray_as_collection(farray arr, usize stride) {
    if (!arr) {
@@ -215,7 +146,7 @@ static collection farray_as_collection(farray arr, usize stride) {
    }
 
    usize length = FArray.capacity(arr, stride);
-   return Collections.create_view(arr->bucket, arr->end, stride, length, false);
+   return Collections.create_view(arr, stride, length, false);
 }
 
 // create an owning collection copy of the farray
@@ -230,12 +161,16 @@ static collection farray_to_collection(farray arr, usize stride) {
       return NULL;
    }
 
+   // Treat as farray for storage
+   coll->array.handle[0] = 'F';
+
    // Copy data
    void *src = arr->bucket;
    collection_set_data(coll, src, capacity);
 
    return coll;
 }
+#endif
 
 //  public interface implementation
 const sc_farray_i FArray = {

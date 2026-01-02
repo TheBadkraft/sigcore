@@ -30,48 +30,56 @@
  *        Iterator mechanism can be uniformly applied across all collection types.
  */
 #include "sigcore/parray.h"
-#include "sigcore/collections.h"
+#include "internal/array_base.h"
 #include "internal/arrays.h"
 #include "internal/collections.h"
+#include "internal/memory_internal.h"
+#include "sigcore/collections.h"
 #include "sigcore/memory.h"
 #include <string.h>
 
 //  declare the PointerArray struct: the collection with attitude
 struct sc_pointer_array {
-   addr *bucket; // pointer to first element (array of addr)
-   addr end;     // one past allocated memory (as raw addr)
+   char handle[2]; // {'P', '\0'} - type identifier
+   addr *bucket;   // pointer to first element (array of addr)
+   addr end;       // one past allocated memory (as raw addr)
 };
 
-// forward declarations of internal functions
+#if 1 // Region: Forward declarations
+// API functions
 static parray array_new(usize);
+static void array_init(parray *, usize);
 static void array_dispose(parray);
+static int array_capacity(parray);
+static void array_clear(parray);
+static int array_set_at(parray, usize, addr);
+static int array_get_at(parray, usize, addr *);
+static int array_remove_at(parray, usize);
 
-// create a new array with the specified initial capacity
+// Collection interface functions
+static collection parray_as_collection(parray arr);
+static collection parray_to_collection(parray arr);
+#endif
+
+// API function implementations
 static parray array_new(usize capacity) {
-   //  allocate memory for the array structure
-   struct sc_pointer_array *arr = Memory.alloc(sizeof(struct sc_pointer_array), false);
+   void *bucket;
+   char *end;
+
+   struct sc_pointer_array *arr = array_alloc_struct_with_bucket(
+       sizeof(struct sc_pointer_array), 'P', sizeof(addr), capacity, &bucket, &end);
+
    if (!arr) {
-      return NULL; // allocation ERRed
+      return NULL;
    }
 
-   //  allocate memory for the bucket
-   arr->bucket = array_alloc_bucket(sizeof(addr), capacity);
-   if (!arr->bucket) {
-      Memory.dispose(arr);
-      return NULL; // allocation ERRed
-   }
+   arr->bucket = (addr *)bucket;
+   arr->end = (addr)end;
 
-   arr->end = (addr)(arr->bucket + capacity); // set end to the allocated size
-   // Check for pointer arithmetic overflow
-   if (arr->end < (addr)arr->bucket) {
-      array_free_resources(arr->bucket, arr);
-      return NULL; // Pointer arithmetic overflow
-   }
    PArray.clear((parray)arr);
-
    return (parray)arr;
 }
-// initialize array with the specified capacity
+
 static void array_init(parray *arr, usize capacity) {
    // we expect the arr to be uninitialized
    if (!*arr) {
@@ -83,7 +91,7 @@ static void array_init(parray *arr, usize capacity) {
       if ((*arr)->bucket) {
          Memory.dispose((*arr)->bucket);
       }
-      (*arr)->bucket = Memory.alloc(sizeof(addr) * capacity, false);
+      (*arr)->bucket = scope_alloc(sizeof(addr) * capacity, false);
       if (!(*arr)->bucket) {
          // allocation ERRed, handle error as needed
          return;
@@ -91,7 +99,7 @@ static void array_init(parray *arr, usize capacity) {
       (*arr)->end = (addr)((*arr)->bucket + capacity);
    }
 }
-// dispose of the array and free associated resources
+
 static void array_dispose(parray arr) {
    if (!arr) {
       return; // nothing to dispose
@@ -101,109 +109,54 @@ static void array_dispose(parray arr) {
    array_free_resources(arr->bucket, arr);
 }
 
-// get the current capacity of the array
 static int array_capacity(parray arr) {
-   if (!arr || !arr->bucket) {
-      return 0; // invalid array
-   }
-   return (int)((arr->end - (addr)(arr->bucket)) / sizeof(addr));
+   return array_base_capacity((sc_array_base *)arr, sizeof(addr));
 }
-// clear the contents of the array
+
 static void array_clear(parray arr) {
-   if (!arr) {
-      return; // invalid array
-   }
-   // clear the entire capacity
-   size_t num_elements = array_capacity(arr);
-   memset(arr->bucket, 0, num_elements * sizeof(addr));
+   array_base_clear((sc_array_base *)arr, sizeof(addr), parray_element_clear);
 }
 
-// set the value at the specified index in the array
 static int array_set_at(parray arr, usize index, addr value) {
-   if (!arr || !arr->bucket) {
-      return ERR; // invalid array
-   }
-   usize cap = array_capacity(arr);
-   if (index >= cap) {
-      return ERR; // index out of bounds
-   }
-   arr->bucket[index] = value;
-   return OK; // OK
+   return array_base_set_element((sc_array_base *)arr, sizeof(addr), index, &value, parray_element_copy);
 }
-// get the value at the specified index in the array
+
 static int array_get_at(parray arr, usize index, addr *out_value) {
-   if (!arr || !arr->bucket || !out_value) {
-      return ERR; // invalid parameters
-   }
-   usize cap = array_capacity(arr);
-   if (index >= cap) {
-      return ERR; // index out of bounds
-   }
-   *out_value = arr->bucket[index];
-   return OK; // OK
+   return array_base_get_element((sc_array_base *)arr, sizeof(addr), index, out_value, parray_element_copy);
 }
-// remove the element at the specified index
+
 static int array_remove_at(parray arr, usize index) {
-   /*
-      The reason array does not shift elements left upon removal is to maintain
-      consistent performance characteristics and to maintain consitency with
-      expectations from derived structures like SlotArray, where shifting elements
-      leads to complications with index validity; on the other hand, List does
-      shift elements left upon removal to maintain contiguous data for iteration.
-    */
-   if (!arr || !arr->bucket) {
-      return ERR; // invalid array
-   }
-   usize cap = array_capacity(arr);
-   if (index >= cap) {
-      return ERR; // index out of bounds
-   }
-   // we do not shift elements, just set to ADDR_EMPTY
-   arr->bucket[index] = ADDR_EMPTY;
-
-   return OK; // OK
+   return array_base_remove_element((sc_array_base *)arr, sizeof(addr), index, parray_element_clear);
 }
 
+#if 1 // Region: Internal utility functions
 // compact the array by shifting non-empty elements to the front
 usize parray_compact(parray arr) {
-   if (!arr) {
-      return 0;
-   }
-
-   usize capacity = PArray.capacity(arr);
-   usize write_index = 0;
-
-   for (usize read_index = 0; read_index < capacity; ++read_index) {
-      addr value;
-      if (PArray.get(arr, read_index, &value) == 0 && value != ADDR_EMPTY) {
-         if (write_index != read_index) {
-            PArray.set(arr, write_index, value);
-            PArray.set(arr, read_index, ADDR_EMPTY);
-         }
-         ++write_index;
-      }
-   }
-
-   return write_index;
+   return array_base_compact((sc_array_base *)arr, sizeof(addr), parray_element_is_empty,
+                             parray_element_copy, parray_element_clear);
 }
 
-// Internal function
+// Internal functions for bucket access
 addr array_get_bucket_start(parray arr) {
    if (!arr)
       return (addr)0;
    return (addr)arr->bucket;
 }
+
 addr array_get_bucket_end(parray arr) {
    if (!arr)
       return (addr)0;
    return arr->end;
 }
+
 addr *array_get_bucket(parray arr) {
    if (!arr)
       return NULL;
    return arr->bucket;
 }
+#endif
 
+#if 1 // Region: Collection interface functions
 // create a non-owning collection view of the parray
 static collection parray_as_collection(parray arr) {
    if (!arr) {
@@ -211,7 +164,7 @@ static collection parray_as_collection(parray arr) {
    }
 
    usize length = PArray.capacity(arr);
-   return Collections.create_view(arr->bucket, (void *)arr->end, sizeof(addr), length, false);
+   return Collections.create_view(arr, sizeof(addr), length, false);
 }
 
 // create an owning collection copy of the parray
@@ -231,6 +184,7 @@ static collection parray_to_collection(parray arr) {
 
    return coll;
 }
+#endif
 
 //  public interface implementation
 const sc_parray_i PArray = {

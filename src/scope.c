@@ -23,6 +23,14 @@
  * ----------------------------------------------
  * File: scope.c
  * Description: SigmaCore scope transfer implementation
+ *
+ * Memory Allocation Policy:
+ * =========================
+ * This module implements core scope management functionality. All allocations
+ * within scopes use Arena.alloc() for proper scope tracking. External memory
+ * allocations (for scope_export) use sysmem_alloc() which must be imported
+ * into scopes using scope_import() if the external memory needs to be managed
+ * by SigmaCore's scoped system.
  */
 #include "sigcore/scope.h"
 #include "internal/arena_internal.h"
@@ -31,70 +39,19 @@
 #include "sigcore/memory.h"
 #include <string.h>
 
+// Extern declaration for current scope (defined in memory.c)
+extern void *current_scope;
+
 // Forward declarations for internal structs
 struct sc_frame;
 
-// Check if scope is Arena
-static bool is_arena_scope(void *scope) {
-   if (!scope)
-      return false;
-   const char *handle = (const char *)scope;
-   return memcmp(handle, "ARN", 4) == 0;
-}
+// Forward declarations for helper functions
+static bool is_arena_scope(void *scope);
+static bool is_frame_scope(void *scope);
+static int scope_add_object(void *scope, object obj);
+static int scope_remove_object(void *scope, object obj);
 
-// Check if scope is Frame
-static bool is_frame_scope(void *scope) {
-   if (!scope)
-      return false;
-   const char *handle = (const char *)scope;
-   return memcmp(handle, "FRM", 4) == 0;
-}
-
-// Add object to scope tracking
-static int scope_add_object(void *scope, object obj) {
-   if (!scope || !obj)
-      return ERR;
-
-   if (is_arena_scope(scope)) {
-      Arena.track((arena)scope, obj);
-      return OK;
-   } else if (is_frame_scope(scope)) {
-      // Frames use arena tracking
-      arena frame_arena = frame_get_arena((frame)scope);
-      if (frame_arena) {
-         Arena.track(frame_arena, obj);
-         return OK;
-      }
-      return ERR;
-   }
-
-   return ERR;
-}
-
-// Remove object from scope tracking
-static int scope_remove_object(void *scope, object obj) {
-   if (!scope || !obj)
-      return ERR;
-
-   if (is_arena_scope(scope)) {
-      if (Arena.is_tracking((arena)scope, obj)) {
-         Arena.untrack((arena)scope, obj);
-         return OK;
-      }
-      return ERR; // Not owned by this scope
-   } else if (is_frame_scope(scope)) {
-      // Frames use arena tracking
-      arena frame_arena = frame_get_arena((frame)scope);
-      if (frame_arena && Arena.is_tracking(frame_arena, obj)) {
-         Arena.untrack(frame_arena, obj);
-         return OK;
-      }
-      return ERR; // Not owned by this scope
-   }
-
-   return ERR;
-}
-
+// API function definitions
 // Transfer ownership between scopes
 int scope_move_scopes(void *from, void *to, object obj) {
    if (!from || !to || !obj)
@@ -149,4 +106,91 @@ object scope_import(void *scope, const void *data, usize size) {
 
    // Unsupported scope type
    return NULL;
+}
+
+// Export data from a scope to external memory
+object scope_export(void *scope, const void *data, usize size) {
+   if (!scope || !data || size == 0)
+      return NULL;
+
+   // Allocate external memory (using system malloc hook)
+   object external_ptr = sysmem_alloc(size);
+   if (!external_ptr)
+      return NULL;
+
+   // Copy data from scope to external memory
+   memcpy(external_ptr, data, size);
+   return external_ptr;
+}
+
+// Get the current active scope for allocations
+void *scope_get_current(void) {
+   return current_scope;
+}
+
+// Set the current active scope for allocations
+void scope_set_current(void *scope) {
+   current_scope = scope;
+}
+
+// Add object to scope tracking
+static int scope_add_object(void *scope, object obj) {
+   if (!scope || !obj)
+      return ERR;
+
+   if (is_arena_scope(scope)) {
+      Arena.track((arena)scope, obj);
+      return OK;
+   } else if (is_frame_scope(scope)) {
+      // Frames use arena tracking
+      arena frame_arena = frame_get_arena((frame)scope);
+      if (frame_arena) {
+         Arena.track(frame_arena, obj);
+         return OK;
+      }
+      return ERR;
+   }
+
+   return ERR;
+}
+
+// Remove object from scope tracking
+static int scope_remove_object(void *scope, object obj) {
+   if (!scope || !obj)
+      return ERR;
+
+   if (is_arena_scope(scope)) {
+      if (Arena.is_tracking((arena)scope, obj)) {
+         Arena.untrack((arena)scope, obj);
+         return OK;
+      }
+      return ERR; // Not owned by this scope
+   } else if (is_frame_scope(scope)) {
+      // Frames use arena tracking
+      arena frame_arena = frame_get_arena((frame)scope);
+      if (frame_arena && Arena.is_tracking(frame_arena, obj)) {
+         Arena.untrack(frame_arena, obj);
+         return OK;
+      }
+      return ERR; // Not owned by this scope
+   }
+
+   return ERR;
+}
+
+// Helper/utility function definitions
+// Check if scope is Arena
+static bool is_arena_scope(void *scope) {
+   if (!scope)
+      return false;
+   const char *handle = (const char *)scope;
+   return memcmp(handle, "ARN", 4) == 0;
+}
+
+// Check if scope is Frame
+static bool is_frame_scope(void *scope) {
+   if (!scope)
+      return false;
+   const char *handle = (const char *)scope;
+   return memcmp(handle, "FRM", 4) == 0;
 }

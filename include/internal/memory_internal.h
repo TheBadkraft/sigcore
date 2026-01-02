@@ -31,10 +31,34 @@
 #include "sigcore/memory.h"
 #include "sigcore/types.h"
 
+// System memory allocation hooks
+typedef void *(*sysmem_alloc_fn)(size_t);
+typedef void (*sysmem_free_fn)(void *);
+typedef void *(*sysmem_calloc_fn)(size_t, size_t);
+typedef void *(*sysmem_realloc_fn)(void *, size_t);
+
+// System memory hook variables
+extern sysmem_alloc_fn sysmem_alloc;
+extern sysmem_free_fn sysmem_free;
+extern sysmem_calloc_fn sysmem_calloc;
+extern sysmem_realloc_fn sysmem_realloc;
+
 // Allocation tracking structure
 struct sc_allocation {
    addr ptr;
    usize size;
+};
+
+// Shared memory block structure used by both pool and arena allocators
+struct block {
+   usize size;
+   struct block *next_free;
+   struct block *prev_free;
+   // Allocation tracking (used when block is allocated)
+   object ptr;               // User pointer
+   usize alloc_size;         // Size of user allocation
+   struct block *next_alloc; // Next in scope's allocation list
+   struct block *prev_alloc; // Prev in scope's allocation list
 };
 
 // Opaque slotarray typedef for backdoor access
@@ -48,8 +72,10 @@ object memory_alloc(usize, bool);
 void memory_dispose(object);
 
 // Pool functions (internal, used by Arena)
+pool pool_create(usize);
 object pool_alloc(pool, usize, bool);
 void pool_free(pool, object);
+void pool_dispose(pool);
 
 // Arena functions (internal, used by Memory)
 arena arena_create(usize);
@@ -57,6 +83,8 @@ void arena_dispose(arena);
 
 // Scope functions (internal, used by Memory)
 object scope_import(void *, const void *, usize);
+object scope_export(void *, const void *, usize);
+object scope_alloc(usize, bool);
 
 // Backdoor functions for testing internals
 struct memory_page *memory_get_current_page(void);
