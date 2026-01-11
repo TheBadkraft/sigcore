@@ -240,6 +240,19 @@ static return_type helper_function(param_type param) {
 ### Coding Standards
 - **No macros unless defining constants** - avoid function-like macros, control flow macros, etc.
 - Use inline functions or static helpers instead of macros for code reuse
+- Use `goto` for error cleanup and exit paths only (no `return` in middle of function)
+```c
+object fn(...) {
+   // fast path work
+   if (error)
+      goto cleanup;
+   // ...
+cleanup:
+   // cleanup path
+exit:
+   return NULL;
+}
+```
 
 ### Documentation
 - Doxygen comments on all public interfaces
