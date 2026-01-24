@@ -1,0 +1,187 @@
+#!/bin/bash
+# Bash build script for C projects
+# Sources config.sh for variables, uses shell commands, loops, and conditionals
+# Supports targets: all, compile, clean, clean_all, install
+# Run with: ./build.sh [target]
+
+set -e  # Exit on any error for robustness
+
+# Source configuration variables (optional)
+if [ -f "config.sh" ]; then
+    source config.sh
+fi
+
+# Handle --about flag
+if [ "$1" = "--about" ]; then
+    BUILD_VERSION="${BUILD_SYSTEM_VERSION:-unknown}"
+    echo "Build System v$BUILD_VERSION"
+    echo "Generic C project build scripts"
+    exit 0
+fi
+
+# Set default values for basic variables if not defined
+CC=${CC:-gcc}
+STD=${STD:-c2x}
+CFLAGS=${CFLAGS:-"-Wall -Wextra -g -fPIC -std=$STD -I./include"}
+LDFLAGS=${LDFLAGS:-"-shared"}
+SRC_DIR=${SRC_DIR:-src}
+BUILD_DIR=${BUILD_DIR:-build}
+BIN_DIR=${BIN_DIR:-bin}
+LIB_DIR=${LIB_DIR:-"$BIN_DIR/lib"}
+TEST_DIR=${TEST_DIR:-test}
+TST_BUILD_DIR=${TST_BUILD_DIR:-"$BUILD_DIR/test"}
+# Library name (override via LIB_NAME in config.sh); defaults to current directory name
+LIB_NAME=${LIB_NAME:-$(basename "$(pwd)")}
+
+# Initialize default BUILD_TARGETS if not defined
+if ! declare -p BUILD_TARGETS >/dev/null 2>&1; then
+    declare -A BUILD_TARGETS=(
+        ["all"]="build_lib"
+        ["compile"]="compile_only"
+        ["clean"]="clean"
+        ["clean_all"]="clean_all"
+        ["install"]="build_lib && install_lib"
+        ["test"]="run_all_tests"
+        ["root"]="show_project_info"
+    )
+fi
+
+# Initialize default TEST_CONFIGS if not defined
+if ! declare -p TEST_CONFIGS >/dev/null 2>&1; then
+    declare -A TEST_CONFIGS=(
+        ["memory"]="with_proto_objects"
+        ["arena"]="standard"
+        ["farray"]="standard"
+        ["list"]="standard"
+        ["parray"]="standard"
+        ["slotarray"]="standard"
+        ["string"]="standard"
+        ["stringbuilder"]="standard"
+    )
+fi
+
+# Enable nullglob to handle empty globs safely
+shopt -s nullglob
+
+# Discover source files using globbing
+SOURCES=("$SRC_DIR"/*.c)
+
+# Derive object file paths from sources
+OBJECTS=()
+for src in "${SOURCES[@]}"; do
+    obj="${src/$SRC_DIR/$BUILD_DIR}"
+    obj="${obj%.c}.o"
+    OBJECTS+=("$obj")
+done
+
+LIB_TARGET="$LIB_DIR/lib${LIB_NAME}.so"
+
+# Function to compile a single source to object
+compile() {
+    local src=$1
+    local obj=$2
+    local cflags=$3
+    mkdir -p "$(dirname "$obj")"
+    echo "Compiling $src -> $obj"
+    $CC $cflags -c "$src" -o "$obj"
+}
+
+# Build the library (all target)
+build_lib() {
+    # Compile all library objects
+    for i in "${!SOURCES[@]}"; do
+        compile "${SOURCES[$i]}" "${OBJECTS[$i]}" "$CFLAGS"
+    done
+    # Link into shared library
+    mkdir -p "$LIB_DIR"
+    if [ ${#OBJECTS[@]} -gt 0 ]; then
+        echo "Linking $LIB_TARGET"
+        $CC "${OBJECTS[@]}" -o "$LIB_TARGET" $LDFLAGS
+    else
+        echo "Warning: No source files – creating empty shared library"
+        touch "$LIB_TARGET"
+    fi
+}
+
+# Compile only (compile target)
+compile_only() {
+    # Compile all library objects without linking
+    for i in "${!SOURCES[@]}"; do
+        compile "${SOURCES[$i]}" "${OBJECTS[$i]}" "$CFLAGS"
+    done
+}
+
+# Clean build artifacts
+clean() {
+    find "$BUILD_DIR" -name "*.o" -type f -delete 2>/dev/null || true
+}
+
+# Clean all (files only, preserve directories)
+clean_all() {
+    clean  # Remove .o files from BUILD_DIR
+    rm -f "$LIB_TARGET"  # Remove final library
+}
+
+# Install library system-wide
+install_lib() {
+    sudo install -m 644 "$LIB_TARGET" /usr/lib/
+    sudo mkdir -p "/usr/include/${LIB_NAME}"
+    sudo install -m 644 include/core/*.h "/usr/include/${LIB_NAME}/"
+    sudo ldconfig
+}
+
+# Show project information (verifies local config.sh usage)
+show_project_info() {
+    echo "Project root: $(pwd)"
+    echo "Config file: $(pwd)/config.sh"
+    echo "CC: $CC"
+    echo "SRC_DIR: $SRC_DIR"
+    echo "BUILD_DIR: $BUILD_DIR"
+    echo "Available targets:"
+    for var in "${!BUILD_TARGETS[@]}"; do
+        echo "  $var -> ${BUILD_TARGETS[$var]}"
+    done
+}
+
+# Run all tests (placeholder - would need test discovery logic)
+run_all_tests() {
+    echo "Running all tests..."
+    # This would need to discover and run all available tests
+    # For now, just show available tests
+    echo "Available tests:"
+    for test_config in "${!TEST_CONFIGS[@]}"; do
+        echo "  $test_config"
+    done
+    echo "Use 'ctest <test_name>' to run individual tests"
+}
+
+# Main logic: handle target argument
+target=${1:-all}  # Default to 'all' if no argument
+
+# Handle help option
+if [ "$target" = "--help" ] || [ "$target" = "-h" ]; then
+    echo "Bash Build System (cbuild)"
+    echo ""
+    echo "Usage: cbuild [target]"
+    echo ""
+    echo "Available targets:"
+    for t in "${!BUILD_TARGETS[@]}"; do
+        echo "  $t"
+    done | sort
+    echo "  --help   - Show this help message"
+    echo ""
+    echo "Targets are defined in config.sh BUILD_TARGETS associative array."
+    exit 0
+fi
+
+# Execute target
+if [[ -n "${BUILD_TARGETS[$target]}" ]]; then
+    eval "${BUILD_TARGETS[$target]}"
+else
+    echo "Unknown target: $target"
+    echo "Available targets:"
+    for t in "${!BUILD_TARGETS[@]}"; do
+        echo "  $t"
+    done | sort
+    exit 1
+fi

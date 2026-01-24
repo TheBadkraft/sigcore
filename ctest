@@ -1,0 +1,220 @@
+#!/bin/bash
+# Test runner script for individual tests
+# Usage: ./ctest <test_name> [options]
+# e.g., ./ctest memory (runs test_memory)
+#      ./ctest memory --valgrind (runs with valgrind)
+#      ./ctest memory --asan (runs with ASAN if compiled)
+
+set -e
+
+# Source configuration (optional)
+if [ -f "config.sh" ]; then
+    source config.sh
+fi
+
+# Set default values for basic variables if not defined
+CC=${CC:-gcc}
+STD=${STD:-c2x}
+CFLAGS=${CFLAGS:-"-Wall -Wextra -g -fPIC -std=$STD -I./include"}
+LDFLAGS=${LDFLAGS:-"-shared"}
+SRC_DIR=${SRC_DIR:-src}
+BUILD_DIR=${BUILD_DIR:-build}
+BIN_DIR=${BIN_DIR:-bin}
+LIB_DIR=${LIB_DIR:-"$BIN_DIR/lib"}
+TEST_DIR=${TEST_DIR:-test}
+TST_BUILD_DIR=${TST_BUILD_DIR:-"$BUILD_DIR/test"}
+
+# Initialize default TEST_CONFIGS if not defined
+if ! declare -p TEST_CONFIGS >/dev/null 2>&1; then
+    declare -A TEST_CONFIGS=(
+        ["memory"]="with_proto_objects"
+        ["arena"]="standard"
+        ["farray"]="standard"
+        ["list"]="standard"
+        ["parray"]="standard"
+        ["slotarray"]="standard"
+        ["string"]="standard"
+        ["stringbuilder"]="standard"
+    )
+fi
+
+# Enable nullglob
+shopt -s nullglob
+
+# Parse arguments
+USE_VALGRIND=false
+USE_ASAN=false
+SHOW_HELP=false
+test_name=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --valgrind)
+            USE_VALGRIND=true
+            shift
+            ;;
+        --asan)
+            USE_ASAN=true
+            shift
+            ;;
+        --help|-h)
+            SHOW_HELP=true
+            shift
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            echo "Usage: $0 <test_name> [--valgrind] [--asan] [--help]"
+            exit 1
+            ;;
+        *)
+            if [ -z "$test_name" ]; then
+                test_name="$1"
+            else
+                echo "Multiple test names specified. Usage: $0 <test_name> [--valgrind] [--asan] [--help]"
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Show help if requested
+if [ "$SHOW_HELP" = true ]; then
+    echo "Bash Test Runner (ctest)"
+    echo ""
+    echo "Usage: ctest <test_name> [options]"
+    echo ""
+    echo "Options:"
+    echo "  --valgrind    Run test with valgrind memory checker"
+    echo "  --asan        Run test with AddressSanitizer"
+    echo "  --help, -h    Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  ctest memory"
+    echo "  ctest memory --valgrind"
+    echo "  ctest arrays --asan"
+    echo ""
+    echo "Requires config.sh in current directory and SigmaTest framework."
+    exit 0
+fi
+
+# Check if test name was provided
+if [ -z "$test_name" ]; then
+    echo "Usage: $0 <test_name> [--valgrind] [--asan] [--help]"
+    echo "e.g., $0 memory"
+    echo "     $0 memory --valgrind"
+    echo "     $0 memory --asan"
+    exit 1
+fi
+test_src="$TEST_DIR/test_$test_name.c"
+
+if [ ! -f "$test_src" ]; then
+    echo "Test source not found: $test_src"
+    exit 1
+fi
+
+# Get test-specific compile flags if defined
+test_flags="${TEST_COMPILE_FLAGS[$test_name]:-}"
+if [ -n "$test_flags" ]; then
+    COMPILE_CFLAGS="$CFLAGS"
+    COMPILE_TST_CFLAGS="$TST_CFLAGS"
+    # Add each flag with -D prefix
+    for flag in $test_flags; do
+        COMPILE_CFLAGS="$COMPILE_CFLAGS -D$flag"
+        COMPILE_TST_CFLAGS="$COMPILE_TST_CFLAGS -D$flag"
+    done
+else
+    COMPILE_CFLAGS="$CFLAGS"
+    COMPILE_TST_CFLAGS="$TST_CFLAGS"
+fi
+
+# Discover sources and derive objects
+SOURCES=("$SRC_DIR"/*.c)
+PROTO_SOURCES=("$TEST_DIR"/prototyping/*.c)
+
+OBJECTS=()
+for src in "${SOURCES[@]}"; do
+    obj="${src/$SRC_DIR/$BUILD_DIR}"
+    obj="${obj%.c}.o"
+    OBJECTS+=("$obj")
+done
+
+PROTO_OBJECTS=()
+for src in "${PROTO_SOURCES[@]}"; do
+    obj="${src/$TEST_DIR/$TST_BUILD_DIR}"
+    obj="${obj%.c}.o"
+    PROTO_OBJECTS+=("$obj")
+done
+
+# Compile library objects if needed
+for i in "${!SOURCES[@]}"; do
+    src="${SOURCES[$i]}"
+    obj="${OBJECTS[$i]}"
+    if [ ! -f "$obj" ] || [ "$src" -nt "$obj" ]; then
+        mkdir -p "$(dirname "$obj")"
+        echo "Compiling $src -> $obj"
+        $CC $COMPILE_CFLAGS -c "$src" -o "$obj"
+    fi
+done
+
+# Compile proto objects if needed
+for i in "${!PROTO_SOURCES[@]}"; do
+    src="${PROTO_SOURCES[$i]}"
+    obj="${PROTO_OBJECTS[$i]}"
+    if [ ! -f "$obj" ] || [ "$src" -nt "$obj" ]; then
+        mkdir -p "$(dirname "$obj")"
+        echo "Compiling $src -> $obj"
+        $CC $COMPILE_TST_CFLAGS -c "$src" -o "$obj"
+    fi
+done
+
+# Compile test object
+test_obj="$TST_BUILD_DIR/test_$test_name.o"
+mkdir -p "$(dirname "$test_obj")"
+echo "Compiling $test_src -> $test_obj"
+$CC $COMPILE_TST_CFLAGS -c "$test_src" -o "$test_obj"
+
+# Link test executable based on TEST_CONFIGS
+exe="$TST_BUILD_DIR/test_$test_name"
+test_config="${TEST_CONFIGS[$test_name]:-standard}"
+
+case "$test_config" in
+    "with_proto_objects")
+        echo "Linking $exe (with proto objects)"
+        $CC "$test_obj" "${PROTO_OBJECTS[@]}" "${OBJECTS[@]}" -o "$exe" $TST_LDFLAGS
+        ;;
+    "standard"|*)
+        echo "Linking $exe"
+        $CC "$test_obj" "${OBJECTS[@]}" -o "$exe" $TST_LDFLAGS
+        ;;
+esac
+
+# Run the test
+echo "=== Running $test_name ==="
+
+# Handle valgrind execution
+if [ "$USE_VALGRIND" = true ]; then
+    if [ "$VALGRIND_ENABLED" != true ]; then
+        echo "Error: Valgrind requested but VALGRIND_ENABLED=false in config.sh"
+        echo "Install valgrind and set VALGRIND_ENABLED=true in config.sh"
+        exit 1
+    fi
+    echo "Running with valgrind..."
+    valgrind $VALGRIND_OPTS "$exe"
+    exit $?
+fi
+
+# Handle ASAN execution
+if [ "$USE_ASAN" = true ]; then
+    if [ "$ASAN_ENABLED" != true ]; then
+        echo "Error: ASAN requested but ASAN_ENABLED=false in config.sh"
+        echo "Set ASAN_ENABLED=true in config.sh to compile with AddressSanitizer"
+        exit 1
+    fi
+    echo "Running with ASAN..."
+    ASAN_OPTIONS="$ASAN_OPTIONS" "$exe"
+    exit $?
+fi
+
+# Run normally
+"$exe"
